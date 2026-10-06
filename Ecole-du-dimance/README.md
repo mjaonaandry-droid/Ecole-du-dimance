@@ -27,7 +27,7 @@ Les chiffres ci-dessous sont lus dans le journal de ce workflow (étape « Résu
 | Schéma Room | ✅ versionné | `app/schemas/.../1.json`, identique octet pour octet (SHA-256) au fichier généré par la compilation. |
 | Variante *release* | ✅ compile | `:app:assembleRelease` réussit mais reste **non signée** donc non installable (§6). |
 | Tests instrumentés Room + parcours sur **émulateur** Android 14 | ⏳ résultat non encore relevé | Job « emulateur » du workflow (vraie base SQLite, mode avion, caméra virtuelle). Ce tableau sera complété avec le résultat **observé** ; tant qu'il ne l'est pas, considérez ces vérifications comme **non exécutées**. |
-| Vérification sur un **vrai téléphone** | ❌ **non exécutée** | Vraie caméra, redémarrage du téléphone, ergonomie : procédures au §9. |
+| Vérification sur un **vrai téléphone** | 🟡 **retour de l'utilisateur** | Après installation de l'APK de débogage : « test sur mon téléphone ok ». C'est un retour déclaré : je ne sais pas précisément ce qui a été essayé (caméra, mode avion, redémarrage, clôture à 10 h…) et je ne l'ai pas reproduit. Les points non essayés restent à dérouler avec la liste du §9. |
 | APK *release* signé | ❌ non produit | Il faut **votre** clé de signature (§6) : je n'en ai ni créé ni utilisé. |
 
 ### Où récupérer l'APK
