@@ -26,7 +26,7 @@ Les chiffres ci-dessous sont lus dans le journal de ce workflow (étape « Résu
 | Sauvegarde cloud / transfert | ✅ **désactivés** dans l'APK | Manifeste de l'APK : `allowBackup=false`, `fullBackupContent` et `dataExtractionRules` présents. |
 | Schéma Room | ✅ versionné | `app/schemas/.../1.json`, identique octet pour octet (SHA-256) au fichier généré par la compilation. |
 | Variante *release* | ✅ compile | `:app:assembleRelease` réussit mais reste **non signée** donc non installable (§6). |
-| Tests instrumentés Room + parcours sur **émulateur** Android 14 | ⏳ résultat non encore relevé | Job « emulateur » du workflow (vraie base SQLite, mode avion, caméra virtuelle). Ce tableau sera complété avec le résultat **observé** ; tant qu'il ne l'est pas, considérez ces vérifications comme **non exécutées**. |
+| Tests instrumentés Room / parcours sur **émulateur** | ❌ **non exécutés** | Les tests instrumentés **compilent** (`assembleDebugAndroidTest`) mais n'ont jamais tourné. Un essai de CI sur émulateur Android n'a jamais démarré (dépendances de l'émulateur sur le runner) ; il a été **abandonné** à la demande de l'utilisateur (« si l'APK est vert, c'est bon ») et retiré du workflow. |
 | Vérification sur un **vrai téléphone** | 🟡 **retour de l'utilisateur** | Après installation de l'APK de débogage : « test sur mon téléphone ok ». C'est un retour déclaré : je ne sais pas précisément ce qui a été essayé (caméra, mode avion, redémarrage, clôture à 10 h…) et je ne l'ai pas reproduit. Les points non essayés restent à dérouler avec la liste du §9. |
 | APK *release* signé | ❌ non produit | Il faut **votre** clé de signature (§6) : je n'en ai ni créé ni utilisé. |
 
@@ -124,15 +124,9 @@ quand Android le permet, à la recréation du processus.
   (rouge), plus « Annuler le pointage » (retour à *Non enregistré*). L'écriture est immédiate dans Room ; la carte ne
   change **qu'après** la réussite (sinon un message d'erreur s'affiche). Les couleurs ne sont jamais seules : chaque
   statut a aussi une icône et un libellé.
-- **Dimanche futur et mode essai** : pour un dimanche futur (par exemple du lundi au samedi), le **vrai** pointage reste
-  désactivé (« Séance à venir »), comme demandé : aucune présence ne peut y être écrite. Pour pouvoir quand même
-  **essayer** l'application avant le dimanche, le bouton **« Essayer le pointage »** (visible seulement sur un dimanche futur
-  qui a des enfants) active un **mode essai** : les photos deviennent cliquables, le panneau PRÉSENT / EN RETARD s'ouvre et la
-  carte change de couleur, mais les statuts sont **simulés en mémoire et ne sont jamais enregistrés** (ni présence, ni séance).
-  Un bandeau « Mode essai : rien n'est enregistré » est affiché ; **« Quitter l'essai »**, un changement de dimanche ou la
-  fermeture de l'application effacent tout. Ce mode est absent un dimanche réel (le pointage y est alors réel).
-  Ce choix évite de fausser l'historique et les statistiques. Pour essayer le **vrai** enregistrement (Room, clôture à 10 h),
-  il faut un dimanche réel : ajouter un enfant un dimanche avant 10 h, ou utiliser l'horloge d'un émulateur (§9, point 9).
+- **Dimanche futur** : le pointage est **désactivé** (« Séance à venir ») et aucune présence ni absence n'est écrite pour
+  une séance qui n'a pas commencé. Pour essayer le pointage réel, il faut un dimanche réel : ajouter un enfant un dimanche
+  **avant 10 h**, ou attendre le dimanche suivant l'inscription.
 - **À 10 h 00** : *Présent* et *En retard* sont conservés ; *Non enregistré* devient *Absent* ; une ligne manquante est
   créée en *Absent*. À 09 h 59 un enfant non pointé est encore *Non enregistré*. La clôture se fait dans **une transaction Room**
   par séance, et elle est **idempotente** (jamais de doublon, jamais d'écrasement).
@@ -297,9 +291,6 @@ Choisissez donc la clé définitive **avant** d'enregistrer de vraies données.
 
 Elles demandent un appareil ou un émulateur. À dérouler après l'installation :
 
-0. **Mode essai** (un jour qui n'est pas dimanche) : sur l'écran Dimanche (« Séance à venir »), toucher « Essayer le pointage »,
-   puis une photo → panneau, PRÉSENT / EN RETARD → la carte change ; « Quitter l'essai » → tout revient à « Non enregistré » ;
-   rouvrir l'application → rien n'a été enregistré.
 1. **Permission caméra** : au premier « Ajouter », la demande apparaît une fois ; accepter → caméra ; rouvrir « Ajouter » → caméra directe, sans nouvelle demande.
 2. **Refus** : refuser → message avec « Réessayer » et « Annuler l'ajout » ; refuser une seconde fois (ou « Ne plus demander ») → « Ouvrir les paramètres » ; accorder dans les paramètres puis revenir → la caméra s'ouvre. Vérifier que Dimanche, Enfants et Assiduité fonctionnent pendant ce temps.
 3. **Annulation** : fermer la caméra, ou « Reprendre » puis retour, ou retour dans le formulaire (confirmation) → aucune fiche créée dans *Enfants*.
@@ -338,7 +329,8 @@ Les repositories sont testés sur une base **en mémoire** qui reproduit clés p
 
 **Tests instrumentés (`app/src/androidTest`)** — rejouent le scénario principal sur la vraie base Room, vérifient clé
 primaire composite, clés étrangères RESTRICT, conservation après fermeture / relance, archivage, et le schéma
-(`MigrationRoomTest`). **Non exécutés ici.**
+(`MigrationRoomTest`). **Compilés** par la CI mais **jamais exécutés** : ils demandent un appareil ou un émulateur
+(`./gradlew :app:connectedDebugAndroidTest`).
 
 ---
 

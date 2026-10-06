@@ -68,7 +68,8 @@ jobs:
         if: ${{ !cancelled() }}
         run: ./gradlew :app:lintDebug --stacktrace --console=plain
 
-      # Compile aussi les tests instrumentés (Room sur la vraie base) : ils sont exécutés par le job « emulateur ».
+      # Compile aussi les tests instrumentés (Room sur la vraie base) pour vérifier qu'ils restent compilables ;
+      # ils ne sont PAS exécutés ici (il faudrait un appareil ou un émulateur).
       - name: Compiler l'APK des tests instrumentés
         if: ${{ !cancelled() }}
         run: ./gradlew :app:assembleDebugAndroidTest --stacktrace --console=plain
@@ -101,14 +102,6 @@ jobs:
         with:
           name: app-debug-apk
           path: Ecole-du-dimance/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: warn
-
-      - name: Enregistrer l'APK des tests instrumentés
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug-androidTest-apk
-          path: Ecole-du-dimance/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
           if-no-files-found: warn
 
       - name: Enregistrer les rapports (tests, lint)
@@ -176,111 +169,3 @@ jobs:
           else
             echo "ATTENTION : le schéma généré diffère du schéma versionné :"; git diff --stat -- app/schemas
           fi
-
-  # Vérification sur un émulateur Android 14 : tests instrumentés Room (vraie base SQLite) puis parcours réel
-  # de l'application en mode avion. L'émulateur n'a pas la vraie caméra : cela ne remplace pas un essai sur téléphone.
-  # « continue-on-error » : un émulateur capricieux ne doit jamais masquer qu'un APK a bien été produit.
-  emulateur:
-    needs: apk
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    continue-on-error: true
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: app-debug-apk
-          path: apks
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: app-debug-androidTest-apk
-          path: apks
-
-      - name: Accélération matérielle (KVM)
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-          ls -l /dev/kvm
-
-      # L'émulateur (QEMU) a besoin de libpulse0, absente de l'image du runner (erreur observée :
-      # « libpulse.so.0: cannot open shared object file »).
-      - name: Bibliothèques système de l'émulateur
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq libpulse0
-          sudo apt-get install -y -qq libxkbfile1 libnss3 libasound2t64 || true
-
-      - name: Image système Android 14 et AVD
-        run: |
-          # Dossier d'AVD explicite et identique pour la création et le lancement.
-          mkdir -p "$HOME/.android/avd"
-          echo "ANDROID_AVD_HOME=$HOME/.android/avd" >> "$GITHUB_ENV"
-          export ANDROID_AVD_HOME="$HOME/.android/avd"
-          SDKM="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)"
-          AVDM="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/avdmanager | sort -V | tail -1)"
-          yes | "$SDKM" --licenses > /dev/null || true
-          "$SDKM" "platform-tools" "emulator" "system-images;android-34;google_apis;x86_64" | tail -3
-          echo no | "$AVDM" create avd --force -n ci -k "system-images;android-34;google_apis;x86_64" -d pixel_6
-          echo "AVD créés :"; "$ANDROID_HOME/emulator/emulator" -list-avds; ls -la "$ANDROID_AVD_HOME"
-          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
-
-      - name: Démarrer l'émulateur
-        run: |
-          echo "--- utilisateur : $(id)"; ls -l /dev/kvm || true; nproc; free -m | head -2
-          "$ANDROID_HOME/emulator/emulator" -version | head -3 || true
-          "$ANDROID_HOME/emulator/emulator" -accel-check || true
-          QEMU="$ANDROID_HOME/emulator/qemu/linux-x86_64/qemu-system-x86_64"
-          if [ -x "$QEMU" ]; then
-            echo "Bibliothèques manquantes pour QEMU :"; (ldd "$QEMU" | grep "not found") || echo "  aucune"
-          fi
-          adb start-server
-          # setsid : l'émulateur ne reste attaché ni à cette étape ni à ses flux (sinon l'étape ne se termine jamais).
-          setsid nohup "$ANDROID_HOME/emulator/emulator" -avd ci -no-window -no-audio -no-boot-anim -no-snapshot \
-            -gpu swiftshader_indirect -accel on -memory 3072 -camera-back virtualscene -camera-front emulated \
-            > emulateur.log 2>&1 < /dev/null &
-          echo "émulateur lancé (pid $!)"
-          for i in $(seq 1 72); do   # 72 x 5 s = 6 minutes au plus
-            if ! pgrep -f "qemu-system" > /dev/null && ! pgrep -f "emulator -avd ci" > /dev/null; then
-              echo "ERREUR : le processus de l'émulateur s'est arrêté."; break
-            fi
-            etat="$(timeout 10 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
-            [ "$etat" = "1" ] && { echo "démarré après ~$((i * 5)) s"; break; }
-            if [ $((i % 6)) -eq 0 ]; then
-              echo "--- attente ($((i * 5)) s) ; adb : $(timeout 10 adb devices | tail -n +2 | tr '\n' ' ')"
-              tail -3 emulateur.log
-            fi
-            sleep 5
-          done
-          echo "sys.boot_completed=$(timeout 10 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
-          timeout 10 adb shell input keyevent 82 || true
-          timeout 10 adb shell settings put global window_animation_scale 0 || true
-          timeout 10 adb shell settings put global transition_animation_scale 0 || true
-          timeout 10 adb shell settings put global animator_duration_scale 0 || true
-          timeout 10 adb devices -l
-          echo "--- fin du journal de l'émulateur :"; tail -20 emulateur.log
-          [ "$(timeout 10 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]
-
-      - name: Tests instrumentés (Room sur la vraie base SQLite)
-        run: |
-          adb install -r -t apks/app-debug.apk
-          adb install -r -t apks/app-debug-androidTest.apk
-          adb shell am instrument -w -r mg.ecoledimanche.presences.test/androidx.test.runner.AndroidJUnitRunner | tee instrumentation.txt
-          python3 .github/scripts/resume_instrumentation.py instrumentation.txt
-          adb shell pm clear mg.ecoledimanche.presences
-
-      - name: Parcours de l'application sur l'émulateur (mode avion)
-        run: python3 .github/scripts/verification_emulateur.py
-
-      - name: Diagnostic de l'émulateur
-        if: ${{ !cancelled() }}
-        run: |
-          timeout 20 adb devices -l || true
-          echo "--- journal de l'émulateur :"; tail -40 emulateur.log || true
-          echo "--- /dev/kvm :"; ls -l /dev/kvm || true
-          echo "--- logcat (erreurs) :"; timeout 30 adb logcat -d -t 150 '*:E' || true

@@ -50,12 +50,6 @@
     <string name="dimanche_erreur">Impossible de lire les présences.</string>
     <string name="carte_description">%1$s %2$s : %3$s</string>
 
-    <!-- Mode essai (dimanche futur) : on peut cliquer sur les photos, rien n'est enregistré -->
-    <string name="essai_demarrer">Essayer le pointage</string>
-    <string name="essai_bandeau">Mode essai : rien n’est enregistré. Les choix disparaissent quand vous quittez l’essai.</string>
-    <string name="essai_quitter">Quitter l’essai</string>
-    <string name="panneau_essai_note">Essai : ce choix n’est pas enregistré.</string>
-
     <!-- Panneau de pointage et de correction -->
     <string name="panneau_statut_actuel">Statut actuel :</string>
     <string name="panneau_correction_titre">Corriger le statut</string>

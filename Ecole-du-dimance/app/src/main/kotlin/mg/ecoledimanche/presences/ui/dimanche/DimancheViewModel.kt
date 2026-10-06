@@ -41,8 +41,6 @@ sealed interface EtatEcranDimanche {
         /** Dimanches proposés par le sélecteur, du plus récent au plus ancien. */
         val dimanchesProposes: List<LocalDate>,
         val estDimancheParDefaut: Boolean,
-        /** Mode essai (dimanche futur uniquement) : les statuts montrés sont simulés, jamais enregistrés. */
-        val essaiActif: Boolean = false,
     ) : EtatEcranDimanche
 }
 
@@ -72,12 +70,6 @@ data class PanneauStatutUi(
     val erreur: ErreurPointage? = null,
 )
 
-/** Mode essai : statuts simulés en mémoire pour un dimanche futur. Rien n'est écrit dans Room. */
-private data class EssaiUi(
-    val actif: Boolean = false,
-    val statuts: Map<Long, StatutPresence> = emptyMap(),
-)
-
 class DimancheViewModel(
     private val presences: PresenceRepository,
     private val horloge: AppClock,
@@ -89,12 +81,9 @@ class DimancheViewModel(
     private val _panneau = MutableStateFlow(PanneauStatutUi())
     val panneau: StateFlow<PanneauStatutUi> = _panneau
 
-    private val essai = MutableStateFlow(EssaiUi())
-
     @OptIn(ExperimentalCoroutinesApi::class)
     val etat: StateFlow<EtatEcranDimanche> = combine(choix, actualisation) { choisi, _ -> choisi }
         .flatMapLatest { choisi -> fluxDimanche(choisi) }
-        .combine(essai) { etatBase, essaiCourant -> appliquerEssai(etatBase, essaiCourant) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EtatEcranDimanche.Chargement)
 
     private fun fluxDimanche(choisi: LocalDate?): Flow<EtatEcranDimanche> = flow<EtatEcranDimanche> {
@@ -124,12 +113,12 @@ class DimancheViewModel(
     }
 
     fun choisirDimanche(dimanche: LocalDate) {
-        quitterEssai()
+        fermerPanneau()
         choix.value = dimanche
     }
 
     fun revenirAuDimancheParDefaut() {
-        quitterEssai()
+        fermerPanneau()
         choix.value = null
     }
 
@@ -144,8 +133,7 @@ class DimancheViewModel(
 
     fun ouvrirPanneau(enfantId: Long) {
         val pret = etat.value as? EtatEcranDimanche.Pret ?: return
-        // Pointage réel désactivé pour un dimanche futur ; seul le mode essai (rien d'enregistré) l'ouvre.
-        if (pret.phase == PhaseSeance.A_VENIR && !pret.essaiActif) return
+        if (pret.phase == PhaseSeance.A_VENIR) return // pointage désactivé pour un dimanche futur
         _panneau.value = PanneauStatutUi(enfantId = enfantId)
     }
 
@@ -160,10 +148,6 @@ class DimancheViewModel(
     fun pointer(statut: StatutPresence) {
         val pret = etat.value as? EtatEcranDimanche.Pret ?: return
         val enfantId = _panneau.value.enfantId ?: return
-        if (pret.essaiActif) {
-            pointerEnEssai(enfantId, statut)
-            return
-        }
         if (_panneau.value.enregistrement) return // clics rapprochés : un seul enregistrement à la fois
         _panneau.update { it.copy(enregistrement = true, erreur = null) }
         viewModelScope.launch {
@@ -180,43 +164,6 @@ class DimancheViewModel(
                 null -> _panneau.update { it.copy(enregistrement = false, erreur = ErreurPointage.ECRITURE) }
             }
         }
-    }
-
-    // ---------------------------------------------------------------------------------------------
-    // Mode essai : cliquer sur les photos d'un dimanche futur pour s'entraîner, sans rien enregistrer
-    // ---------------------------------------------------------------------------------------------
-
-    /** Active l'essai ; ignoré hors dimanche futur (un vrai pointage reste un vrai pointage). */
-    fun demarrerEssai() {
-        val pret = etat.value as? EtatEcranDimanche.Pret ?: return
-        if (pret.phase != PhaseSeance.A_VENIR) return
-        fermerPanneau()
-        essai.value = EssaiUi(actif = true)
-    }
-
-    /** Quitte l'essai : tous les statuts simulés disparaissent. */
-    fun quitterEssai() {
-        fermerPanneau()
-        essai.value = EssaiUi()
-    }
-
-    private fun pointerEnEssai(enfantId: Long, statut: StatutPresence) {
-        if (statut == StatutPresence.ABSENT) return // « Absent » n'existe qu'à la clôture
-        essai.update { courant ->
-            val statuts = if (statut == StatutPresence.NON_ENREGISTRE) courant.statuts - enfantId else courant.statuts + (enfantId to statut)
-            courant.copy(statuts = statuts)
-        }
-        _panneau.value = PanneauStatutUi()
-    }
-
-    private fun appliquerEssai(base: EtatEcranDimanche, essaiCourant: EssaiUi): EtatEcranDimanche {
-        if (base !is EtatEcranDimanche.Pret || !essaiCourant.actif || base.phase != PhaseSeance.A_VENIR) return base
-        return base.copy(
-            essaiActif = true,
-            elements = base.elements.map { element ->
-                essaiCourant.statuts[element.enfant.id]?.let { element.copy(statut = it) } ?: element
-            },
-        )
     }
 
     private companion object {

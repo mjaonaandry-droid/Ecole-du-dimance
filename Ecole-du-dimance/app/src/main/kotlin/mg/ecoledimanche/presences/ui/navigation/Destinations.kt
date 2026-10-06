@@ -59,8 +59,6 @@ fun DimancheRoute(conteneur: ConteneurApp, onAjouter: () -> Unit) {
             onFermerPanneau = vm::fermerPanneau,
             onPointer = vm::pointer,
             onAjouter = onAjouter,
-            onDemarrerEssai = vm::demarrerEssai,
-            onQuitterEssai = vm::quitterEssai,
         ),
     )
 }
