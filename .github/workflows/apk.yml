@@ -1,0 +1,94 @@
+name: Construire l'APK
+
+# Ce fichier DOIT rester à la racine du dépôt (.github/workflows/) : GitHub ignore
+# les workflows situés dans un sous-dossier. Le projet Android se trouve dans « Ecole-du-dimance/ ».
+on:
+  push:
+    branches: [main, 'claude/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+        working-directory: Ecole-du-dimance
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Le runner ubuntu-latest fournit déjà un SDK Android (ANDROID_HOME) : on s'assure seulement
+      # de la présence de la plateforme 36 et des build-tools, et on accepte les licences.
+      - name: SDK Android 36 et licences
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          SDKM="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)"
+          echo "sdkmanager=$SDKM"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-36" "build-tools;36.0.0" \
+            || sudo env "PATH=$PATH" "JAVA_HOME=$JAVA_HOME" "$SDKM" "platforms;android-36" "build-tools;36.0.0"
+          ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools"
+
+      - name: Préparer gradlew
+        run: |
+          sed -i 's/\r$//' gradlew
+          chmod +x gradlew
+          ./gradlew --version
+
+      - name: Compiler l'APK de débogage
+        run: ./gradlew :app:assembleDebug --stacktrace --console=plain
+
+      - name: Tests unitaires
+        if: ${{ !cancelled() }}
+        run: ./gradlew :app:testDebugUnitTest --stacktrace --console=plain
+
+      - name: Lint
+        if: ${{ !cancelled() }}
+        run: ./gradlew :app:lintDebug --stacktrace --console=plain
+
+      # Contrôle indépendant de la permission INTERNET sur l'APK réellement produit.
+      - name: Permissions déclarées par l'APK
+        if: ${{ !cancelled() }}
+        run: |
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          test -f "$APK" || { echo "Aucun APK produit."; exit 1; }
+          AAPT2="$(ls -d "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)"
+          "$AAPT2" dump permissions "$APK" | tee permissions.txt
+          if grep -q 'android.permission.INTERNET' permissions.txt; then
+            echo "ERREUR : la permission INTERNET est présente dans l'APK."
+            exit 1
+          fi
+          echo "OK : aucune permission INTERNET dans l'APK."
+
+      - name: Enregistrer l'APK
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: Ecole-du-dimance/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: warn
+
+      - name: Enregistrer les rapports (tests, lint)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapports
+          path: |
+            Ecole-du-dimance/app/build/reports/tests
+            Ecole-du-dimance/app/build/reports/lint-results-debug.html
+            Ecole-du-dimance/app/build/test-results
+            Ecole-du-dimance/app/schemas
+          if-no-files-found: ignore
