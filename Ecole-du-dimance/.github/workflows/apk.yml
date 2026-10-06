@@ -8,7 +8,7 @@ on:
 jobs:
   apk:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
     defaults:
       run:
         shell: bash
@@ -19,7 +19,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
       - name: Diagnostic
         run: |
           pwd
@@ -28,6 +27,15 @@ jobs:
           head -c 60 gradlew | od -c
           java -version
           echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME" || true
+          ls "$ANDROID_HOME/platforms" || true
+          ls "$ANDROID_HOME/cmdline-tools" || true
+      - name: SDK Android 36 et licences
+        continue-on-error: true
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | sudo env "PATH=$PATH" "JAVA_HOME=$JAVA_HOME" "$SDKM" --licenses > /dev/null || true
+          sudo env "PATH=$PATH" "JAVA_HOME=$JAVA_HOME" "$SDKM" "platforms;android-36" "build-tools;36.0.0"
       - name: Préparer gradlew
         run: |
           sed -i 's/\r$//' gradlew
