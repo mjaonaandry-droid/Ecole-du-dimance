@@ -11,25 +11,40 @@ Elle fonctionne **sans aucune connexion Internet**, y compris après un redémar
 
 ## 1. État de la livraison — ce qui est fait, et ce qui ne l'est pas
 
-| Étape | État | Détail |
+Les lignes « exécuté » ont été **réellement exécutées** par l'intégration continue GitHub Actions (workflow
+`.github/workflows/apk.yml`, runner `ubuntu-latest`, JDK 17 Temurin, Gradle 8.14.3, AGP 8.13.2, SDK Android 36).
+Les chiffres ci-dessous sont lus dans le journal de ce workflow (étape « Résumé vérifiable »), pas supposés.
+
+| Étape | État | Preuve |
 |---|---|---|
-| Code créé | ✅ fait | Projet Android complet, dans ce dossier. |
-| Tests unitaires de la logique métier | ✅ **exécutés** | 129 tests JVM, tous réussis (voir §10). |
-| Requêtes SQL | ✅ **exécutées** | Les 21 `@Query` de `Daos.kt` exécutées sur un vrai SQLite, clés étrangères actives. |
-| Compilation du code d'interface | 🟡 partielle | Les écrans Compose « sans état », les ViewModels, les repositories et les écrans de caméra ont été compilés contre Compose Multiplatform (même API Material 3). Cela a détecté et fait corriger une vraie erreur de typage. |
-| **Compilation Android (Gradle + AGP)** | ❌ **non exécutée** | Voir ci-dessous. |
-| **APK produit** | ❌ **non produit** | Aucun APK n'existe : je ne prétends pas en avoir un. |
-| Vérification sur téléphone / émulateur | ❌ non exécutée | Caméra, redémarrage, mode avion : procédures au §9. |
+| Code créé | ✅ fait | Projet Android complet (≈ 5 500 lignes Kotlin), dossier `Ecole-du-dimance/`. |
+| **Compilation Android** (Gradle + AGP + KSP + Compose) | ✅ **exécutée** | `:app:assembleDebug` : *BUILD SUCCESSFUL* ; la tâche `verifierSansInternetDebug` (garde-fou INTERNET) est exécutée. |
+| **Tests unitaires JVM** | ✅ **exécutés** | **129 tests** dans 12 classes : 0 échec, 0 erreur, 0 ignoré (comptés dans les rapports JUnit XML). |
+| **Lint** | ✅ **exécuté** | `:app:lintDebug` : *BUILD SUCCESSFUL*, **0 erreur**, 30 avertissements (§11). |
+| **APK de débogage produit** | ✅ **produit** | `app-debug.apk`, 21 971 501 octets (≈ 22 Mo), `mg.ecoledimanche.presences` 1.0.0, minSdk 26, targetSdk 36, libellé « École du Dimanche », signé (schéma v2) avec la clé de débogage Android. |
+| Permission `INTERNET` | ✅ **absente** de l'APK | `aapt2 dump permissions` : `CAMERA`, `WAKE_LOCK`, `ACCESS_NETWORK_STATE`, `RECEIVE_BOOT_COMPLETED`, `FOREGROUND_SERVICE` (ces quatre dernières viennent de WorkManager). |
+| Sauvegarde cloud / transfert | ✅ **désactivés** dans l'APK | Manifeste de l'APK : `allowBackup=false`, `fullBackupContent` et `dataExtractionRules` présents. |
+| Schéma Room | ✅ versionné | `app/schemas/.../1.json`, identique octet pour octet (SHA-256) au fichier généré par la compilation. |
+| Variante *release* | ✅ compile | `:app:assembleRelease` réussit mais reste **non signée** donc non installable (§6). |
+| Tests instrumentés Room + parcours sur **émulateur** Android 14 | ⏳ résultat non encore relevé | Job « emulateur » du workflow (vraie base SQLite, mode avion, caméra virtuelle). Ce tableau sera complété avec le résultat **observé** ; tant qu'il ne l'est pas, considérez ces vérifications comme **non exécutées**. |
+| Vérification sur un **vrai téléphone** | ❌ **non exécutée** | Vraie caméra, redémarrage du téléphone, ergonomie : procédures au §9. |
+| APK *release* signé | ❌ non produit | Il faut **votre** clé de signature (§6) : je n'en ai ni créé ni utilisé. |
 
-**Pourquoi la compilation Android n'a pas eu lieu.** L'environnement où ce projet a été écrit n'autorise pas l'accès
-à `dl.google.com`, qui héberge le SDK Android, le plugin Android Gradle et toutes les bibliothèques AndroidX
-(Room, Compose, CameraX, WorkManager…). Sans ces fichiers, `./gradlew assembleDebug` ne peut pas s'exécuter.
-Ce n'est pas un défaut du projet : sur une machine normale (Android Studio + Internet pour le développement), la
-commande du §5 doit fonctionner. Si elle échoue, le message de Gradle indiquera précisément quoi corriger, et il
-faut me le transmettre.
+### Où récupérer l'APK
 
-**Ce qu'il reste à faire, dans l'ordre :** (1) exécuter la commande du §5 ; (2) installer l'APK et dérouler les
-vérifications du §9 ; (3) committer le dossier `app/schemas/` généré à la première compilation (§7).
+L'APK est produit par GitHub Actions, pas dans l'environnement de développement (celui-ci n'a pas accès au SDK
+Android, voir ci-dessous). Dans le dépôt GitHub : onglet **Actions** ▸ workflow **« Construire l'APK »** ▸ choisir
+une exécution **verte** ▸ section **Artifacts** ▸ **`app-debug-apk`** (un `.zip` contenant `app-debug.apk`).
+Il faut être connecté à GitHub pour le télécharger ; les artefacts sont conservés 90 jours. Le workflow se lance à chaque
+envoi (`push`) sur `main` et sur les branches `claude/**`, ou à la demande (« Run workflow ») une fois le fichier présent
+sur la branche par défaut.
+
+### Pourquoi cela n'a pas pu être fait localement
+
+L'environnement où ce projet a été écrit n'autorise pas l'accès à `dl.google.com`, qui héberge le SDK Android, le
+plugin Android Gradle et toutes les bibliothèques AndroidX. Sans ces fichiers, `./gradlew assembleDebug` ne peut pas
+s'y exécuter. Les runners GitHub y ont accès : c'est donc là que la compilation a été réellement vérifiée.
+Sur votre poste (Android Studio + Internet pour le développement), la commande du §5 fait la même chose.
 
 ---
 
@@ -145,11 +160,11 @@ Les versions sont **fixées explicitement** (aucune version dynamique) dans `gra
 | Room / WorkManager / CameraX | 2.8.4 / 2.10.5 / 1.5.1 |
 | Activity / Core / Lifecycle / Navigation | 1.11.0 / 1.17.0 / 2.9.4 / 2.9.5 |
 
-**Pourquoi pas les toutes dernières versions ?** À la date de rédaction, les dernières versions stables de Compose,
-Lifecycle et Navigation exigent `compileSdk 37`, **AGP ≥ 9.2** et **Gradle 9.x** ; AGP 9 change aussi la façon d'intégrer
-Kotlin. Je n'ai pas pu compiler contre cet ensemble, donc j'ai fixé un ensemble cohérent, stable et dont chaque version
-existe dans les notes de version officielles. La montée de version vers AGP 9 est possible plus tard (Android Studio
-propose l'« AGP Upgrade Assistant »).
+**Pourquoi pas les toutes dernières versions ?** Cet ensemble de versions est celui qui a été **compilé et testé** (§1).
+Des versions plus récentes existent : le lint de la compilation le signale (par exemple AGP 9.4.1, Compose BOM 2026.09.00,
+Room 2.8.5, CameraX 1.6.2, Kotlin 2.4.20, Gradle 8.14.5). Ne les adoptez qu'**ensemble** et après essai : la montée vers
+AGP 9 change notamment la façon d'intégrer Kotlin et demande Gradle 9 (Android Studio propose l'« AGP Upgrade Assistant »).
+La CI utilise le JDK **Temurin 17**.
 
 À installer sur le poste de développement :
 
@@ -164,7 +179,7 @@ propose l'« AGP Upgrade Assistant »).
 
 ## 5. Ouvrir, synchroniser, lancer, générer l'APK
 
-**Android Studio :** *File ▸ Open…* ▸ choisir ce dossier (`ecole-du-dimanche`) ▸ attendre la synchronisation Gradle ▸
+**Android Studio :** *File ▸ Open…* ▸ choisir le dossier **`Ecole-du-dimance/`** du dépôt (celui qui contient `settings.gradle.kts`, pas la racine du dépôt) ▸ attendre la synchronisation Gradle ▸
 choisir un téléphone ou un émulateur ▸ ▶ *Run*.
 
 **Ligne de commande** (depuis ce dossier). macOS / Linux :
@@ -302,11 +317,12 @@ scénario principal (Sarah présente, David en retard, Nathan absent), rattrapag
 existante, idempotence, correction conservée, archivage (avec et avant le premier dimanche), séance à venir, fuseau figé,
 horloge qui recule, atomicité de la clôture, unicité d'une présence, photo (échec de fichier, échec de base, remplacement),
 et les ViewModels (double clic, échec puis réessai, restauration après rotation, photo temporaire perdue).
-**Les tests ont été éprouvés** : 21 défauts ont été injectés volontairement dans le code (heure de clôture décalée, frontière
-09 h 59 / 10 h, retards non comptés, arrondi tronqué, absences non créées, garde anti-double-clic retirée, ancienne photo supprimée
-avant la base…). Les 21 ont été détectés ; trois d'entre eux ne l'étaient pas au départ, ce qui a conduit à renforcer les tests.
+**Résultat réel en CI : 129 tests, 0 échec** (voir §1). Lors de la rédaction initiale du code, 21 défauts avaient été injectés
+volontairement pour éprouver ces tests (heure de clôture décalée, frontière 09 h 59 / 10 h, retards non comptés, arrondi tronqué,
+absences non créées, garde anti-double-clic retirée…) ; cette vérification n'a **pas** été rejouée dans la CI.
 Les repositories sont testés sur une base **en mémoire** qui reproduit clés primaires, `INSERT OR IGNORE`, clés
-étrangères RESTRICT et annulation de transaction. Les requêtes SQL réelles sont vérifiées séparément sur SQLite.
+étrangères RESTRICT et annulation de transaction ; les vraies requêtes SQL et contraintes sont testées en instrumenté
+(ci-dessous) et validées à la compilation par Room.
 
 **Tests instrumentés (`app/src/androidTest`)** — rejouent le scénario principal sur la vraie base Room, vérifient clé
 primaire composite, clés étrangères RESTRICT, conservation après fermeture / relance, archivage, et le schéma
