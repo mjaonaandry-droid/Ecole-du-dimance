@@ -1,0 +1,3 @@
+# Fichiers générés (Python des scripts de CI)
+__pycache__/
+*.pyc
