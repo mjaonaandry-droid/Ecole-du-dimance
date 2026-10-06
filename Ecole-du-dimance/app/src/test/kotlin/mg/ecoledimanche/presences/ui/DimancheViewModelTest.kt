@@ -79,6 +79,81 @@ class DimancheViewModelTest : TestAvecMain() {
     }
 
     @Test
+    fun essai_permetLeClicSurUnePhoto_unDimancheFutur_sansRienEnregistrer() = runTest(dispatcher) {
+        val (env, sarah, david) = prepare("2026-10-07", 9)
+        val modele = vm(env)
+        advanceUntilIdle()
+        assertFalse(modele.pret().essaiActif) // par défaut : pointage réel désactivé, comme le cahier des charges
+
+        modele.demarrerEssai(); advanceUntilIdle()
+        assertTrue(modele.pret().essaiActif)
+        modele.ouvrirPanneau(sarah)
+        assertEquals(sarah, modele.panneau.value.enfantId) // le clic sur la photo fonctionne en essai
+        modele.pointer(StatutPresence.PRESENT); advanceUntilIdle()
+        assertNull(modele.panneau.value.enfantId) // panneau refermé
+        assertEquals(StatutPresence.PRESENT, modele.pret().elements.single { it.enfant.id == sarah }.statut)
+
+        modele.ouvrirPanneau(david)
+        modele.pointer(StatutPresence.EN_RETARD); advanceUntilIdle()
+        assertEquals(StatutPresence.EN_RETARD, modele.pret().elements.single { it.enfant.id == david }.statut)
+
+        // Garantie centrale : rien n'est jamais écrit, ni présence ni séance.
+        assertTrue(env.magasin.presences.isEmpty())
+        assertTrue(env.magasin.seances.isEmpty())
+
+        modele.quitterEssai(); advanceUntilIdle()
+        assertFalse(modele.pret().essaiActif)
+        assertTrue(modele.pret().elements.all { it.statut == StatutPresence.NON_ENREGISTRE }) // tout a disparu
+        assertTrue(env.magasin.presences.isEmpty())
+        assertTrue(env.magasin.seances.isEmpty())
+    }
+
+    @Test
+    fun essai_annulerLePointage_remetNonEnregistre_et_absentNExistePasEnEssai() = runTest(dispatcher) {
+        val (env, sarah, _) = prepare("2026-10-07", 9)
+        val modele = vm(env)
+        advanceUntilIdle()
+        modele.demarrerEssai(); advanceUntilIdle()
+        modele.ouvrirPanneau(sarah)
+        modele.pointer(StatutPresence.PRESENT); advanceUntilIdle()
+        modele.ouvrirPanneau(sarah)
+        modele.pointer(StatutPresence.NON_ENREGISTRE); advanceUntilIdle()
+        assertEquals(StatutPresence.NON_ENREGISTRE, modele.pret().elements.single { it.enfant.id == sarah }.statut)
+        modele.ouvrirPanneau(sarah)
+        modele.pointer(StatutPresence.ABSENT); advanceUntilIdle() // « Absent » n'existe qu'à la clôture
+        assertEquals(StatutPresence.NON_ENREGISTRE, modele.pret().elements.single { it.enfant.id == sarah }.statut)
+        assertTrue(env.magasin.presences.isEmpty())
+    }
+
+    @Test
+    fun essai_neSeLanceQuePourUnDimancheFutur_unVraiPointageResteUnVraiPointage() = runTest(dispatcher) {
+        val (env, sarah, _) = prepare("2026-10-11", 9, 0) // dimanche, avant 10 h : séance réelle en cours
+        val modele = vm(env)
+        advanceUntilIdle()
+        modele.demarrerEssai(); advanceUntilIdle()
+        assertFalse(modele.pret().essaiActif)
+        modele.ouvrirPanneau(sarah)
+        modele.pointer(StatutPresence.PRESENT); advanceUntilIdle()
+        assertEquals(StatutPresence.PRESENT, env.magasin.presences.getValue(sarah to dimanche).statut) // vraiment enregistré
+    }
+
+    @Test
+    fun essai_s_arrete_quand_on_change_de_dimanche() = runTest(dispatcher) {
+        val (env, sarah, _) = prepare("2026-10-07", 9)
+        val modele = vm(env)
+        advanceUntilIdle()
+        modele.demarrerEssai(); advanceUntilIdle()
+        modele.ouvrirPanneau(sarah)
+        modele.pointer(StatutPresence.PRESENT); advanceUntilIdle()
+        modele.dimancheSuivant(); advanceUntilIdle()
+        assertFalse(modele.pret().essaiActif)
+        modele.revenirAuDimancheParDefaut(); advanceUntilIdle()
+        assertFalse(modele.pret().essaiActif)
+        assertTrue(modele.pret().elements.all { it.statut == StatutPresence.NON_ENREGISTRE })
+        assertTrue(env.magasin.presences.isEmpty())
+    }
+
+    @Test
     fun pointage_ferme_le_panneau_apresLEcritureReussie_et_metLaCarteAJour() = runTest(dispatcher) {
         val (env, sarah, _) = prepare("2026-10-11", 9, 0)
         val modele = vm(env)

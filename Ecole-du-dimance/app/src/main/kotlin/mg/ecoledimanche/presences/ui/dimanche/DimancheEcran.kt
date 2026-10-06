@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.EventAvailable
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -44,6 +45,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -89,6 +91,8 @@ class ActionsDimanche(
     val onFermerPanneau: () -> Unit,
     val onPointer: (StatutPresence) -> Unit,
     val onAjouter: () -> Unit,
+    val onDemarrerEssai: () -> Unit,
+    val onQuitterEssai: () -> Unit,
 )
 
 @Composable
@@ -105,6 +109,9 @@ fun DimancheEcran(
             EtatEcranDimanche.Erreur -> EcranErreur(stringResource(R.string.dimanche_erreur))
             is EtatEcranDimanche.Pret -> {
                 EnteteDimanche(etat, actions)
+                if (etat.phase == PhaseSeance.A_VENIR && etat.elements.isNotEmpty()) {
+                    BandeauEssai(actif = etat.essaiActif, actions = actions)
+                }
                 if (etat.elements.isEmpty()) {
                     EtatVide(
                         icone = Icons.Filled.Groups,
@@ -123,7 +130,7 @@ fun DimancheEcran(
                 }
                 val selection = etat.elements.firstOrNull { it.enfant.id == panneau.enfantId }
                 if (selection != null) {
-                    PanneauStatut(selection, etat.phase, panneau, actions.onPointer, actions.onFermerPanneau)
+                    PanneauStatut(selection, etat.phase, etat.essaiActif, panneau, actions.onPointer, actions.onFermerPanneau)
                 }
             }
         }
@@ -170,6 +177,37 @@ private fun EnteteDimanche(pret: EtatEcranDimanche.Pret, actions: ActionsDimanch
     }
 }
 
+/**
+ * Dimanche futur : le vrai pointage est désactivé. Le mode essai permet seulement de s'entraîner à cliquer
+ * sur les photos : les statuts sont simulés à l'écran et ne sont JAMAIS enregistrés.
+ */
+@Composable
+private fun BandeauEssai(actif: Boolean, actions: ActionsDimanche) {
+    if (!actif) {
+        TextButton(onClick = actions.onDemarrerEssai, modifier = Modifier.padding(horizontal = 12.dp)) {
+            Icon(Icons.Filled.PlayArrow, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.essai_demarrer))
+        }
+    } else {
+        Surface(
+            color = MaterialTheme.colorScheme.tertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 12.dp, top = 4.dp, bottom = 4.dp, end = 4.dp)) {
+                Text(
+                    text = stringResource(R.string.essai_bandeau),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = actions.onQuitterEssai) { Text(stringResource(R.string.essai_quitter)) }
+            }
+        }
+    }
+}
+
 /** « Séance à venir » / « Pointage en cours — clôture à 10 h » / « Séance clôturée ». */
 @Composable
 private fun LignePhase(phase: PhaseSeance) {
@@ -187,7 +225,7 @@ private fun LignePhase(phase: PhaseSeance) {
 
 @Composable
 private fun GrilleEnfants(pret: EtatEcranDimanche.Pret, aujourdhui: LocalDate, actions: ActionsDimanche) {
-    val pointageActif = pret.phase != PhaseSeance.A_VENIR
+    val pointageActif = pret.phase != PhaseSeance.A_VENIR || pret.essaiActif
     // Le nom n'est ajouté sous le prénom que pour distinguer des homonymes ; l'âge, si même nom et prénom.
     val prenomsDoubles = pret.elements.groupingBy { Recherche.normaliser(it.enfant.prenom) }.eachCount().filterValues { it > 1 }.keys
     val nomsCompletsDoubles = pret.elements
@@ -279,6 +317,7 @@ private fun CarteEnfant(
 private fun PanneauStatut(
     element: ElementDimanche,
     phase: PhaseSeance,
+    essai: Boolean,
     panneau: PanneauStatutUi,
     onPointer: (StatutPresence) -> Unit,
     onFermer: () -> Unit,
@@ -312,6 +351,14 @@ private fun PanneauStatut(
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.panneau_statut_actuel), style = MaterialTheme.typography.bodyLarge)
                 BadgeStatut(element.statut)
+            }
+            if (essai) {
+                Text(
+                    text = stringResource(R.string.panneau_essai_note),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    textAlign = TextAlign.Center,
+                )
             }
             if (correction) {
                 Text(

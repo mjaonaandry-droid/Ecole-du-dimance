@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: apk-${{ github.ref }}
+  group: verification-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -183,7 +183,7 @@ jobs:
   emulateur:
     needs: apk
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     continue-on-error: true
     defaults:
       run:
@@ -219,21 +219,35 @@ jobs:
 
       - name: Démarrer l'émulateur
         run: |
-          nohup "$ANDROID_HOME/emulator/emulator" -avd ci -no-window -no-audio -no-boot-anim -no-snapshot \
+          echo "--- utilisateur : $(id)"; ls -l /dev/kvm || true; nproc; free -m | head -2
+          "$ANDROID_HOME/emulator/emulator" -version | head -3 || true
+          "$ANDROID_HOME/emulator/emulator" -accel-check || true
+          adb start-server
+          # setsid : l'émulateur ne reste attaché ni à cette étape ni à ses flux (sinon l'étape ne se termine jamais).
+          setsid nohup "$ANDROID_HOME/emulator/emulator" -avd ci -no-window -no-audio -no-boot-anim -no-snapshot \
             -gpu swiftshader_indirect -accel on -memory 3072 -camera-back virtualscene -camera-front emulated \
-            > emulateur.log 2>&1 &
-          timeout 300 adb wait-for-device
-          for i in $(seq 1 90); do
-            [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ] && break
+            > emulateur.log 2>&1 < /dev/null &
+          echo "émulateur lancé (pid $!)"
+          for i in $(seq 1 72); do   # 72 x 5 s = 6 minutes au plus
+            if ! pgrep -f "qemu-system" > /dev/null && ! pgrep -f "emulator -avd ci" > /dev/null; then
+              echo "ERREUR : le processus de l'émulateur s'est arrêté."; break
+            fi
+            etat="$(timeout 10 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
+            [ "$etat" = "1" ] && { echo "démarré après ~$((i * 5)) s"; break; }
+            if [ $((i % 6)) -eq 0 ]; then
+              echo "--- attente ($((i * 5)) s) ; adb : $(timeout 10 adb devices | tail -n +2 | tr '\n' ' ')"
+              tail -3 emulateur.log
+            fi
             sleep 5
           done
-          echo "sys.boot_completed=$(adb shell getprop sys.boot_completed | tr -d '\r')"
-          adb shell input keyevent 82
-          adb shell settings put global window_animation_scale 0
-          adb shell settings put global transition_animation_scale 0
-          adb shell settings put global animator_duration_scale 0
-          adb devices -l
-          tail -5 emulateur.log
+          echo "sys.boot_completed=$(timeout 10 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
+          timeout 10 adb shell input keyevent 82 || true
+          timeout 10 adb shell settings put global window_animation_scale 0 || true
+          timeout 10 adb shell settings put global transition_animation_scale 0 || true
+          timeout 10 adb shell settings put global animator_duration_scale 0 || true
+          timeout 10 adb devices -l
+          echo "--- fin du journal de l'émulateur :"; tail -20 emulateur.log
+          [ "$(timeout 10 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]
 
       - name: Tests instrumentés (Room sur la vraie base SQLite)
         run: |
@@ -247,8 +261,9 @@ jobs:
         run: python3 .github/scripts/verification_emulateur.py
 
       - name: Diagnostic de l'émulateur
-        if: ${{ always() }}
+        if: ${{ !cancelled() }}
         run: |
-          adb devices -l || true
-          tail -15 emulateur.log || true
-          adb logcat -d -t 150 '*:E' || true
+          timeout 20 adb devices -l || true
+          echo "--- journal de l'émulateur :"; tail -40 emulateur.log || true
+          echo "--- /dev/kvm :"; ls -l /dev/kvm || true
+          echo "--- logcat (erreurs) :"; timeout 30 adb logcat -d -t 150 '*:E' || true

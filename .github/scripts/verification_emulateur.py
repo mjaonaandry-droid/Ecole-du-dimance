@@ -431,6 +431,29 @@ def dimanche_avec_enfant(prenom, nom):
         controle("Aucun panneau de pointage pour une séance à venir", not trouve(noeuds, texte="PRÉSENT"))
 
 
+def essai_dimanche_futur(prenom, nom):
+    etape("Mode essai sur un dimanche futur (rien ne doit être enregistré)")
+    ok, noeuds = attendre(lambda ns: trouve(ns, texte="Essayer le pointage"), delai=20)
+    if not controle("Bouton « Essayer le pointage » visible sur un dimanche futur", ok):
+        return
+    toucher(ok[0])
+    ok, noeuds = attendre(lambda ns: trouve(ns, motif=r"^Mode essai"), delai=15)
+    controle("Bandeau « Mode essai : rien n'est enregistré » affiché", ok)
+    carte = trouve(noeuds, motif=rf"^{prenom} {nom} : ")
+    if not controle("La carte de l'enfant est cliquable en essai", carte):
+        return
+    toucher(carte[0])
+    ok, noeuds = attendre(lambda ns: trouve(ns, texte="PRÉSENT"), delai=15)
+    montrer(noeuds, "Panneau d'essai")
+    controle("Le clic sur la photo ouvre le panneau PRÉSENT / EN RETARD", ok)
+    controle("Le panneau rappelle que l'essai n'est pas enregistré", trouve(noeuds, motif=r"^Essai : ce choix"))
+    if ok:
+        toucher(ok[0])
+        time.sleep(1.5)
+        noeuds = ecran()
+        controle("La carte passe à « Présent » (simulation)", trouve(noeuds, motif=rf"^{prenom} {nom} : Présent"))
+
+
 def relance():
     etape("Fermeture puis relance de l'application")
     sh(f"am force-stop {PKG}")
@@ -440,6 +463,7 @@ def relance():
     ok, noeuds = attendre(est_dimanche_affiche, delai=60)
     controle("Application relancée", ok)
     controle("L'enfant est toujours là après relance", trouve(noeuds, motif=r" : (Non enregistré|Présent|En retard|Absent)$"))
+    controle("L'essai n'a rien enregistré : l'enfant est toujours « Non enregistré »", trouve(noeuds, motif=r" : Non enregistré$"))
     controle("Aucun plantage dans le journal Android", plantage() == "", plantage()[:300])
 
 
@@ -453,6 +477,7 @@ def principal():
         if remplir_et_enregistrer("Rakoto", "Sarah", "Fille"):
             verifier_photo_definitive()
             dimanche_avec_enfant("Sarah", "Rakoto")
+            essai_dimanche_futur("Sarah", "Rakoto")
             relance()
     etape("Résumé")
     echecs = [nom for nom, ok in RESULTATS if not ok]
