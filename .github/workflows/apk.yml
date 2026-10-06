@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -72,6 +72,60 @@ jobs:
             exit 1
           fi
           echo "OK : aucune permission INTERNET dans l'APK."
+
+      # Tout ce qui suit est AFFICHÉ dans le journal : les chiffres cités dans le README viennent de là.
+      - name: Résumé vérifiable (tests, lint, APK, sauvegarde, schéma Room)
+        if: ${{ !cancelled() }}
+        run: |
+          echo "################ TESTS UNITAIRES (rapports JUnit XML) ################"
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          total = echecs = erreurs = ignores = 0
+          fichiers = sorted(glob.glob('app/build/test-results/testDebugUnitTest/*.xml'))
+          for chemin in fichiers:
+              racine = ET.parse(chemin).getroot()
+              n, f, e, s = (int(racine.get(k)) for k in ('tests', 'failures', 'errors', 'skipped'))
+              total += n; echecs += f; erreurs += e; ignores += s
+              print(f"  {racine.get('name').split('.')[-1]:48s} tests={n:3d} échecs={f} erreurs={e} ignorés={s}")
+          print(f"TOTAL : {total} tests dans {len(fichiers)} classes, {echecs} échecs, {erreurs} erreurs, {ignores} ignorés")
+          PY
+          echo
+          echo "################ LINT (lint-results-debug.xml) ################"
+          python3 - <<'PY'
+          import collections, os, xml.etree.ElementTree as ET
+          chemin = 'app/build/reports/lint-results-debug.xml'
+          if not os.path.exists(chemin):
+              print("Pas de lint-results-debug.xml")
+          else:
+              anomalies = list(ET.parse(chemin).getroot().iter('issue'))
+              print("Anomalies par sévérité :", dict(collections.Counter(a.get('severity') for a in anomalies)))
+              for a in sorted(anomalies, key=lambda a: (a.get('severity'), a.get('id'))):
+                  lieu = a.find('location')
+                  lieu_txt = f"{lieu.get('file', '?').split('app/')[-1]}:{lieu.get('line', '?')}" if lieu is not None else '?'
+                  print(f"  [{a.get('severity')}] {a.get('id')} — {a.get('message')[:150]} ({lieu_txt})")
+          PY
+          echo
+          echo "################ APK ################"
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)"
+          echo "build-tools utilisés : $BT"
+          ls -l "$APK"
+          sha256sum "$APK"
+          "$BT/aapt2" dump badging "$APK" | grep -E "^(package:|sdkVersion|targetSdkVersion|application-label:|application-label-fr|launchable-activity|uses-feature|uses-implied-feature)" || true
+          echo "--- Sauvegarde / réseau dans le manifeste de l'APK :"
+          "$BT/aapt2" dump xmltree --file AndroidManifest.xml "$APK" | grep -E "allowBackup|dataExtractionRules|fullBackupContent|usesCleartextTraffic|debuggable|android:name\(0x01010003\)=\"mg" || true
+          echo "--- Signature de l'APK (clé de débogage Android) :"
+          "$BT/apksigner" verify --verbose --print-certs "$APK" 2>&1 | head -8 || true
+          echo
+          echo "################ SCHÉMA ROOM GÉNÉRÉ ################"
+          for schema in app/schemas/*/*.json; do
+            echo "=== $schema"
+            wc -c "$schema"
+            sha256sum "$schema"
+            cat "$schema"
+            echo
+            echo "=== fin du schéma"
+          done
 
       - name: Enregistrer l'APK
         if: ${{ !cancelled() }}
