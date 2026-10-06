@@ -95,6 +95,34 @@ jobs:
           fi
           echo "OK : aucune permission INTERNET dans l'APK."
 
+      - name: Enregistrer l'APK
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: Ecole-du-dimance/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: warn
+
+      - name: Enregistrer l'APK des tests instrumentés
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-androidTest-apk
+          path: Ecole-du-dimance/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          if-no-files-found: warn
+
+      - name: Enregistrer les rapports (tests, lint)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapports
+          path: |
+            Ecole-du-dimance/app/build/reports/tests
+            Ecole-du-dimance/app/build/reports/lint-results-debug.html
+            Ecole-du-dimance/app/build/test-results
+            Ecole-du-dimance/app/schemas
+          if-no-files-found: ignore
+
       # Tout ce qui suit est AFFICHÉ dans le journal : les chiffres cités dans le README viennent de là.
       - name: Résumé vérifiable (tests, lint, APK, sauvegarde, schéma Room)
         if: ${{ !cancelled() }}
@@ -139,43 +167,15 @@ jobs:
           echo "--- Signature de l'APK (clé de débogage Android) :"
           "$BT/apksigner" verify --verbose --print-certs "$APK" 2>&1 | head -8 || true
           echo
-          echo "################ SCHÉMA ROOM GÉNÉRÉ ################"
-          for schema in app/schemas/*/*.json; do
-            echo "=== $schema"
-            wc -c "$schema"
-            sha256sum "$schema"
-            cat "$schema"
-            echo
-            echo "=== fin du schéma"
-          done
-
-      - name: Enregistrer l'APK
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug-apk
-          path: Ecole-du-dimance/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: warn
-
-      - name: Enregistrer l'APK des tests instrumentés
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug-androidTest-apk
-          path: Ecole-du-dimance/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-          if-no-files-found: warn
-
-      - name: Enregistrer les rapports (tests, lint)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: rapports
-          path: |
-            Ecole-du-dimance/app/build/reports/tests
-            Ecole-du-dimance/app/build/reports/lint-results-debug.html
-            Ecole-du-dimance/app/build/test-results
-            Ecole-du-dimance/app/schemas
-          if-no-files-found: ignore
+          echo "################ SCHÉMA ROOM ################"
+          ls -l app/schemas/*/*.json
+          sha256sum app/schemas/*/*.json
+          # La compilation régénère le schéma sur place : s'il diffère du fichier versionné, git le voit.
+          if git diff --quiet -- app/schemas; then
+            echo "OK : le schéma généré par la compilation est identique au schéma versionné."
+          else
+            echo "ATTENTION : le schéma généré diffère du schéma versionné :"; git diff --stat -- app/schemas
+          fi
 
   # Vérification sur un émulateur Android 14 : tests instrumentés Room (vraie base SQLite) puis parcours réel
   # de l'application en mode avion. L'émulateur n'a pas la vraie caméra : cela ne remplace pas un essai sur téléphone.
@@ -208,13 +208,26 @@ jobs:
           sudo udevadm trigger --name-match=kvm
           ls -l /dev/kvm
 
+      # L'émulateur (QEMU) a besoin de libpulse0, absente de l'image du runner (erreur observée :
+      # « libpulse.so.0: cannot open shared object file »).
+      - name: Bibliothèques système de l'émulateur
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libpulse0
+          sudo apt-get install -y -qq libxkbfile1 libnss3 libasound2t64 || true
+
       - name: Image système Android 14 et AVD
         run: |
+          # Dossier d'AVD explicite et identique pour la création et le lancement.
+          mkdir -p "$HOME/.android/avd"
+          echo "ANDROID_AVD_HOME=$HOME/.android/avd" >> "$GITHUB_ENV"
+          export ANDROID_AVD_HOME="$HOME/.android/avd"
           SDKM="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)"
           AVDM="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/avdmanager | sort -V | tail -1)"
           yes | "$SDKM" --licenses > /dev/null || true
           "$SDKM" "platform-tools" "emulator" "system-images;android-34;google_apis;x86_64" | tail -3
           echo no | "$AVDM" create avd --force -n ci -k "system-images;android-34;google_apis;x86_64" -d pixel_6
+          echo "AVD créés :"; "$ANDROID_HOME/emulator/emulator" -list-avds; ls -la "$ANDROID_AVD_HOME"
           echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
 
       - name: Démarrer l'émulateur
@@ -222,6 +235,10 @@ jobs:
           echo "--- utilisateur : $(id)"; ls -l /dev/kvm || true; nproc; free -m | head -2
           "$ANDROID_HOME/emulator/emulator" -version | head -3 || true
           "$ANDROID_HOME/emulator/emulator" -accel-check || true
+          QEMU="$ANDROID_HOME/emulator/qemu/linux-x86_64/qemu-system-x86_64"
+          if [ -x "$QEMU" ]; then
+            echo "Bibliothèques manquantes pour QEMU :"; (ldd "$QEMU" | grep "not found") || echo "  aucune"
+          fi
           adb start-server
           # setsid : l'émulateur ne reste attaché ni à cette étape ni à ses flux (sinon l'étape ne se termine jamais).
           setsid nohup "$ANDROID_HOME/emulator/emulator" -avd ci -no-window -no-audio -no-boot-anim -no-snapshot \
