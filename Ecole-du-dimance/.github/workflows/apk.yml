@@ -11,18 +11,29 @@ jobs:
     timeout-minutes: 40
     defaults:
       run:
+        shell: bash
         working-directory: Ecole-du-dimance
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
-      - name: Droit d'exécution de gradlew
-        run: chmod +x gradlew
+      - name: Diagnostic
+        run: |
+          pwd
+          ls -la
+          echo "--- début du fichier gradlew :"
+          head -c 60 gradlew | od -c
+          java -version
+          echo "ANDROID_HOME=$ANDROID_HOME"
+      - name: Préparer gradlew
+        run: |
+          sed -i 's/\r$//' gradlew
+          chmod +x gradlew
       - name: Construire l'APK de débogage
-        run: ./gradlew :app:assembleDebug --stacktrace
+        run: sh ./gradlew :app:assembleDebug --stacktrace
       - name: Enregistrer l'APK
         uses: actions/upload-artifact@v4
         with:
@@ -31,7 +42,7 @@ jobs:
       - name: Tests unitaires
         if: always()
         continue-on-error: true
-        run: ./gradlew :app:testDebugUnitTest
+        run: sh ./gradlew :app:testDebugUnitTest
       - name: Rapports de tests
         if: always()
         uses: actions/upload-artifact@v4
