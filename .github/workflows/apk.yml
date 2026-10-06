@@ -30,6 +30,15 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # Cache des dépendances Gradle (et du cache de compilation) : les builds suivants sont bien plus rapides.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('Ecole-du-dimance/**/*.gradle.kts', 'Ecole-du-dimance/gradle/libs.versions.toml', 'Ecole-du-dimance/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
       # Le runner ubuntu-latest fournit déjà un SDK Android (ANDROID_HOME) : on s'assure seulement
       # de la présence de la plateforme 36 et des build-tools, et on accepte les licences.
       - name: SDK Android 36 et licences
@@ -58,6 +67,11 @@ jobs:
       - name: Lint
         if: ${{ !cancelled() }}
         run: ./gradlew :app:lintDebug --stacktrace --console=plain
+
+      # Compile aussi les tests instrumentés (Room sur la vraie base) : ils sont exécutés par le job « emulateur ».
+      - name: Compiler l'APK des tests instrumentés
+        if: ${{ !cancelled() }}
+        run: ./gradlew :app:assembleDebugAndroidTest --stacktrace --console=plain
 
       # Contrôle indépendant de la permission INTERNET sur l'APK réellement produit.
       - name: Permissions déclarées par l'APK
@@ -111,7 +125,7 @@ jobs:
           echo "build-tools utilisés : $BT"
           ls -l "$APK"
           sha256sum "$APK"
-          "$BT/aapt2" dump badging "$APK" | grep -E "^(package:|sdkVersion|targetSdkVersion|application-label:|application-label-fr|launchable-activity|uses-feature|uses-implied-feature)" || true
+          "$BT/aapt2" dump badging "$APK" | grep -E "^(package:|sdkVersion|minSdkVersion|targetSdkVersion|application-label:|application-label-fr|launchable-activity|uses-feature|uses-implied-feature)" || true
           echo "--- Sauvegarde / réseau dans le manifeste de l'APK :"
           "$BT/aapt2" dump xmltree --file AndroidManifest.xml "$APK" | grep -E "allowBackup|dataExtractionRules|fullBackupContent|usesCleartextTraffic|debuggable|android:name\(0x01010003\)=\"mg" || true
           echo "--- Signature de l'APK (clé de débogage Android) :"
@@ -135,6 +149,14 @@ jobs:
           path: Ecole-du-dimance/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: warn
 
+      - name: Enregistrer l'APK des tests instrumentés
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-androidTest-apk
+          path: Ecole-du-dimance/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          if-no-files-found: warn
+
       - name: Enregistrer les rapports (tests, lint)
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
@@ -146,3 +168,79 @@ jobs:
             Ecole-du-dimance/app/build/test-results
             Ecole-du-dimance/app/schemas
           if-no-files-found: ignore
+
+  # Vérification sur un émulateur Android 14 : tests instrumentés Room (vraie base SQLite) puis parcours réel
+  # de l'application en mode avion. L'émulateur n'a pas la vraie caméra : cela ne remplace pas un essai sur téléphone.
+  # « continue-on-error » : un émulateur capricieux ne doit jamais masquer qu'un APK a bien été produit.
+  emulateur:
+    needs: apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: app-debug-apk
+          path: apks
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: app-debug-androidTest-apk
+          path: apks
+
+      - name: Accélération matérielle (KVM)
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+
+      - name: Image système Android 14 et AVD
+        run: |
+          SDKM="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)"
+          AVDM="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/avdmanager | sort -V | tail -1)"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platform-tools" "emulator" "system-images;android-34;google_apis;x86_64" | tail -3
+          echo no | "$AVDM" create avd --force -n ci -k "system-images;android-34;google_apis;x86_64" -d pixel_6
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+
+      - name: Démarrer l'émulateur
+        run: |
+          nohup "$ANDROID_HOME/emulator/emulator" -avd ci -no-window -no-audio -no-boot-anim -no-snapshot \
+            -gpu swiftshader_indirect -accel on -memory 3072 -camera-back virtualscene -camera-front emulated \
+            > emulateur.log 2>&1 &
+          timeout 300 adb wait-for-device
+          for i in $(seq 1 90); do
+            [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ] && break
+            sleep 5
+          done
+          echo "sys.boot_completed=$(adb shell getprop sys.boot_completed | tr -d '\r')"
+          adb shell input keyevent 82
+          adb shell settings put global window_animation_scale 0
+          adb shell settings put global transition_animation_scale 0
+          adb shell settings put global animator_duration_scale 0
+          adb devices -l
+          tail -5 emulateur.log
+
+      - name: Tests instrumentés (Room sur la vraie base SQLite)
+        run: |
+          adb install -r -t apks/app-debug.apk
+          adb install -r -t apks/app-debug-androidTest.apk
+          adb shell am instrument -w -r mg.ecoledimanche.presences.test/androidx.test.runner.AndroidJUnitRunner | tee instrumentation.txt
+          python3 .github/scripts/resume_instrumentation.py instrumentation.txt
+          adb shell pm clear mg.ecoledimanche.presences
+
+      - name: Parcours de l'application sur l'émulateur (mode avion)
+        run: python3 .github/scripts/verification_emulateur.py
+
+      - name: Diagnostic de l'émulateur
+        if: ${{ always() }}
+        run: |
+          adb devices -l || true
+          tail -15 emulateur.log || true
+          adb logcat -d -t 150 '*:E' || true
