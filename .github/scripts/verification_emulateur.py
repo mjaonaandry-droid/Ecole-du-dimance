@@ -92,14 +92,22 @@ def fermer_boites_systeme(noeuds):
     return False
 
 
+def segments(n):
+    """Compose fusionne les textes d'un conteneur cliquable (« A,B » ou « A\nB ») : on teste aussi chaque morceau."""
+    morceaux = [n.texte, n.desc]
+    for brut in (n.texte, n.desc):
+        morceaux += [m.strip() for m in re.split(r"[,\n]", brut) if m.strip()]
+    return morceaux
+
+
 def trouve(noeuds, texte=None, motif=None, resid_fin=None, classe=None, cliquable=None, bas=None, ecran_h=None):
     resultat = []
     for n in noeuds:
         if n.x2 <= n.x1 or n.y2 <= n.y1:
             continue
-        if texte is not None and texte not in (n.texte, n.desc):
+        if texte is not None and texte not in segments(n):
             continue
-        if motif is not None and not (re.search(motif, n.texte) or re.search(motif, n.desc)):
+        if motif is not None and not any(re.search(motif, m) for m in segments(n)):
             continue
         if resid_fin is not None and not n.resid.endswith(resid_fin):
             continue
@@ -203,7 +211,7 @@ def plantage():
 
 
 def est_dimanche_affiche(noeuds):
-    return trouve(noeuds, motif=r"^DIMANCHE \d{1,2} \S+ \d{4}$")
+    return trouve(noeuds, motif=r"^DIMANCHE \d{1,2} \S+ \d{4}")
 
 
 def dimensions_jpeg(donnees):
@@ -365,17 +373,15 @@ def remplir_et_enregistrer(nom, prenom, sexe):
     liste = champs(noeuds)
     toucher(liste[1])
     taper(prenom)
-    sh("input keyevent 4")  # BACK : ferme le clavier
-    time.sleep(1)
 
     noeuds = ecran()
     liste = champs(noeuds)
     toucher(liste[2])  # date de naissance : ouvre le calendrier
-    ok, noeuds = attendre(lambda ns: trouve(ns, texte="OK", cliquable=True) and trouve(ns, texte="15"), delai=20)
+    ok, noeuds = attendre(lambda ns: trouve(ns, texte="OK") and trouve(ns, motif=r"^15\b"), delai=20)
     montrer(noeuds, "Calendrier")
     if not controle("Calendrier de la date de naissance affiché", ok):
         return False
-    toucher(trouve(noeuds, texte="15")[0])
+    toucher(trouve(noeuds, motif=r"^15\b")[0])
     toucher(trouve(ecran(), texte="OK")[0])
     time.sleep(1.5)
     noeuds = ecran()

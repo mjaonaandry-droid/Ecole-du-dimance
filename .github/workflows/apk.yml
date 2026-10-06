@@ -73,6 +73,14 @@ jobs:
         if: ${{ !cancelled() }}
         run: ./gradlew :app:assembleDebugAndroidTest --stacktrace --console=plain
 
+      # La variante release doit aussi compiler (garde-fou INTERNET et lintVital inclus). Sans clé de signature
+      # elle reste NON SIGNÉE, donc non installable : elle n'est volontairement pas publiée (voir README).
+      - name: Compiler la variante release (non signée, non publiée)
+        if: ${{ !cancelled() }}
+        run: |
+          ./gradlew :app:assembleRelease --stacktrace --console=plain
+          ls -l app/build/outputs/apk/release/
+
       # Contrôle indépendant de la permission INTERNET sur l'APK réellement produit.
       - name: Permissions déclarées par l'APK
         if: ${{ !cancelled() }}
