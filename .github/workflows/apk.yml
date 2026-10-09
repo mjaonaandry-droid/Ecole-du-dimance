@@ -1,59 +1,171 @@
 name: Construire l'APK
 
+# Ce fichier DOIT rester à la racine du dépôt (.github/workflows/) : GitHub ignore
+# les workflows situés dans un sous-dossier. Le projet Android se trouve dans « Ecole-du-dimance/ ».
 on:
   push:
     branches: [main, 'claude/**']
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: verification-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   apk:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     defaults:
       run:
         shell: bash
+        working-directory: Ecole-du-dimance
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
-      - name: Diagnostic
-        run: |
-          pwd
-          ls -la
-          echo "--- début du fichier gradlew :"
-          head -c 60 gradlew | od -c
-          java -version
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          ls "$ANDROID_HOME" || true
-          ls "$ANDROID_HOME/platforms" || true
-          ls "$ANDROID_HOME/cmdline-tools" || true
+
+      # Cache des dépendances Gradle (et du cache de compilation) : les builds suivants sont bien plus rapides.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('Ecole-du-dimance/**/*.gradle.kts', 'Ecole-du-dimance/gradle/libs.versions.toml', 'Ecole-du-dimance/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      # Le runner ubuntu-latest fournit déjà un SDK Android (ANDROID_HOME) : on s'assure seulement
+      # de la présence de la plateforme 36 et des build-tools, et on accepte les licences.
       - name: SDK Android 36 et licences
-        continue-on-error: true
         run: |
-          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          yes | sudo env "PATH=$PATH" "JAVA_HOME=$JAVA_HOME" "$SDKM" --licenses > /dev/null || true
-          sudo env "PATH=$PATH" "JAVA_HOME=$JAVA_HOME" "$SDKM" "platforms;android-36" "build-tools;36.0.0"
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          SDKM="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)"
+          echo "sdkmanager=$SDKM"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-36" "build-tools;36.0.0" \
+            || sudo env "PATH=$PATH" "JAVA_HOME=$JAVA_HOME" "$SDKM" "platforms;android-36" "build-tools;36.0.0"
+          ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools"
+
       - name: Préparer gradlew
         run: |
           sed -i 's/\r$//' gradlew
           chmod +x gradlew
-      - name: Construire l'APK de débogage
-        run: sh ./gradlew :app:assembleDebug --stacktrace
+          ./gradlew --version
+
+      - name: Compiler l'APK de débogage
+        run: ./gradlew :app:assembleDebug --stacktrace --console=plain
+
+      - name: Tests unitaires
+        if: ${{ !cancelled() }}
+        run: ./gradlew :app:testDebugUnitTest --stacktrace --console=plain
+
+      - name: Lint
+        if: ${{ !cancelled() }}
+        run: ./gradlew :app:lintDebug --stacktrace --console=plain
+
+      # Compile aussi les tests instrumentés (Room sur la vraie base) pour vérifier qu'ils restent compilables ;
+      # ils ne sont PAS exécutés ici (il faudrait un appareil ou un émulateur).
+      - name: Compiler l'APK des tests instrumentés
+        if: ${{ !cancelled() }}
+        run: ./gradlew :app:assembleDebugAndroidTest --stacktrace --console=plain
+
+      # La variante release doit aussi compiler (garde-fou INTERNET et lintVital inclus). Sans clé de signature
+      # elle reste NON SIGNÉE, donc non installable : elle n'est volontairement pas publiée (voir README).
+      - name: Compiler la variante release (non signée, non publiée)
+        if: ${{ !cancelled() }}
+        run: |
+          ./gradlew :app:assembleRelease --stacktrace --console=plain
+          ls -l app/build/outputs/apk/release/
+
+      # Contrôle indépendant de la permission INTERNET sur l'APK réellement produit.
+      - name: Permissions déclarées par l'APK
+        if: ${{ !cancelled() }}
+        run: |
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          test -f "$APK" || { echo "Aucun APK produit."; exit 1; }
+          AAPT2="$(ls -d "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)"
+          "$AAPT2" dump permissions "$APK" | tee permissions.txt
+          if grep -q 'android.permission.INTERNET' permissions.txt; then
+            echo "ERREUR : la permission INTERNET est présente dans l'APK."
+            exit 1
+          fi
+          echo "OK : aucune permission INTERNET dans l'APK."
+
       - name: Enregistrer l'APK
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
-      - name: Tests unitaires
-        if: always()
-        continue-on-error: true
-        run: sh ./gradlew :app:testDebugUnitTest
-      - name: Rapports de tests
-        if: always()
+          path: Ecole-du-dimance/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: warn
+
+      - name: Enregistrer les rapports (tests, lint)
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: rapports-tests
-          path: app/build/reports/tests
+          name: rapports
+          path: |
+            Ecole-du-dimance/app/build/reports/tests
+            Ecole-du-dimance/app/build/reports/lint-results-debug.html
+            Ecole-du-dimance/app/build/test-results
+            Ecole-du-dimance/app/schemas
           if-no-files-found: ignore
+
+      # Tout ce qui suit est AFFICHÉ dans le journal : les chiffres cités dans le README viennent de là.
+      - name: Résumé vérifiable (tests, lint, APK, sauvegarde, schéma Room)
+        if: ${{ !cancelled() }}
+        run: |
+          echo "################ TESTS UNITAIRES (rapports JUnit XML) ################"
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          total = echecs = erreurs = ignores = 0
+          fichiers = sorted(glob.glob('app/build/test-results/testDebugUnitTest/*.xml'))
+          for chemin in fichiers:
+              racine = ET.parse(chemin).getroot()
+              n, f, e, s = (int(racine.get(k)) for k in ('tests', 'failures', 'errors', 'skipped'))
+              total += n; echecs += f; erreurs += e; ignores += s
+              print(f"  {racine.get('name').split('.')[-1]:48s} tests={n:3d} échecs={f} erreurs={e} ignorés={s}")
+          print(f"TOTAL : {total} tests dans {len(fichiers)} classes, {echecs} échecs, {erreurs} erreurs, {ignores} ignorés")
+          PY
+          echo
+          echo "################ LINT (lint-results-debug.xml) ################"
+          python3 - <<'PY'
+          import collections, os, xml.etree.ElementTree as ET
+          chemin = 'app/build/reports/lint-results-debug.xml'
+          if not os.path.exists(chemin):
+              print("Pas de lint-results-debug.xml")
+          else:
+              anomalies = list(ET.parse(chemin).getroot().iter('issue'))
+              print("Anomalies par sévérité :", dict(collections.Counter(a.get('severity') for a in anomalies)))
+              for a in sorted(anomalies, key=lambda a: (a.get('severity'), a.get('id'))):
+                  lieu = a.find('location')
+                  lieu_txt = f"{lieu.get('file', '?').split('app/')[-1]}:{lieu.get('line', '?')}" if lieu is not None else '?'
+                  print(f"  [{a.get('severity')}] {a.get('id')} — {a.get('message')[:150]} ({lieu_txt})")
+          PY
+          echo
+          echo "################ APK ################"
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)"
+          echo "build-tools utilisés : $BT"
+          ls -l "$APK"
+          sha256sum "$APK"
+          "$BT/aapt2" dump badging "$APK" | grep -E "^(package:|sdkVersion|minSdkVersion|targetSdkVersion|application-label:|application-label-fr|launchable-activity|uses-feature|uses-implied-feature)" || true
+          echo "--- Sauvegarde / réseau dans le manifeste de l'APK :"
+          "$BT/aapt2" dump xmltree --file AndroidManifest.xml "$APK" | grep -E "allowBackup|dataExtractionRules|fullBackupContent|usesCleartextTraffic|debuggable|android:name\(0x01010003\)=\"mg" || true
+          echo "--- Signature de l'APK (clé de débogage Android) :"
+          "$BT/apksigner" verify --verbose --print-certs "$APK" 2>&1 | head -8 || true
+          echo
+          echo "################ SCHÉMA ROOM ################"
+          ls -l app/schemas/*/*.json
+          sha256sum app/schemas/*/*.json
+          # La compilation régénère le schéma sur place : s'il diffère du fichier versionné, git le voit.
+          if git diff --quiet -- app/schemas; then
+            echo "OK : le schéma généré par la compilation est identique au schéma versionné."
+          else
+            echo "ATTENTION : le schéma généré diffère du schéma versionné :"; git diff --stat -- app/schemas
+          fi
