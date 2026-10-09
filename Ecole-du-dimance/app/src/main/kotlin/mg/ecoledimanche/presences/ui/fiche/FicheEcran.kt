@@ -46,6 +46,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import mg.ecoledimanche.presences.R
 import mg.ecoledimanche.presences.data.local.EnfantEntity
+import mg.ecoledimanche.presences.data.local.aUnePhoto
 import mg.ecoledimanche.presences.domain.FormatsFr
 import mg.ecoledimanche.presences.domain.Sexe
 import mg.ecoledimanche.presences.ui.components.EcranChargement
@@ -133,6 +134,7 @@ private fun ContenuFiche(etat: EtatEcranFiche.Pret, actions: ActionsFiche) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
             PhotoEnfant(
                 chemin = enfant.photoPath,
+                sexe = enfant.sexe,
                 description = stringResource(R.string.photo_de, enfant.prenom, enfant.nom),
                 coteMaxPx = 720,
                 forme = RoundedCornerShape(24.dp),
@@ -156,7 +158,15 @@ private fun ContenuFiche(etat: EtatEcranFiche.Pret, actions: ActionsFiche) {
                     )
                 }
             }
-            if (!etat.photoDisponible) {
+            if (!enfant.aUnePhoto) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.fiche_photo_non_prise),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                )
+            } else if (!etat.photoDisponible) {
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = stringResource(R.string.fiche_photo_manquante),
@@ -213,7 +223,7 @@ private fun Actions(enfant: EnfantEntity, actions: ActionsFiche) {
             FilledTonalButton(onClick = actions.onChangerPhoto, modifier = Modifier.weight(1f).heightIn(min = 52.dp)) {
                 Icon(Icons.Filled.CameraAlt, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.fiche_changer_photo))
+                Text(stringResource(if (enfant.aUnePhoto) R.string.fiche_changer_photo else R.string.fiche_prendre_photo))
             }
         }
         if (!enfant.isArchived) {

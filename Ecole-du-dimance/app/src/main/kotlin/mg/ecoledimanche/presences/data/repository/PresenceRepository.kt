@@ -16,11 +16,13 @@ import mg.ecoledimanche.presences.data.local.SeanceEntity
 import mg.ecoledimanche.presences.domain.AppClock
 import mg.ecoledimanche.presences.domain.CompteursAssiduite
 import mg.ecoledimanche.presences.domain.Dimanches
+import mg.ecoledimanche.presences.domain.LigneExport
 import mg.ecoledimanche.presences.domain.PhaseSeance
 import mg.ecoledimanche.presences.domain.Recherche
 import mg.ecoledimanche.presences.domain.RegleSeance
 import mg.ecoledimanche.presences.domain.RegleSuivi
 import mg.ecoledimanche.presences.domain.StatutPresence
+import mg.ecoledimanche.presences.domain.TableauExport
 import mg.ecoledimanche.presences.domain.aujourdhui
 
 /** Un enfant dans la grille d'un dimanche, avec son statut tel qu'il doit être affiché. */
@@ -293,6 +295,71 @@ class PresenceRepository(
                 ),
             )
         }
+
+    // ------------------------------------------------------------------------------------------
+    // Export
+    // ------------------------------------------------------------------------------------------
+
+    /**
+     * Données de l'export CSV : informations de base des enfants et leur statut pour chaque
+     * dimanche, depuis le premier début de suivi jusqu'au dernier dimanche échu (ou jusqu'au dimanche
+     * à venir s'il a déjà été pointé). Les statuts sont ceux de l'écran Dimanche (un non-pointé d'une
+     * séance clôturée y est « Absent »), les comptes ne portent que sur les séances clôturées.
+     *
+     * @param inclureArchives vrai pour exporter aussi les enfants archivés (colonne « Statut »).
+     */
+    suspend fun tableauExport(inclureArchives: Boolean): TableauExport {
+        rattraper() // les absences des dimanches échus sont matérialisées avant la lecture
+        val maintenant = clock.instant()
+        val zone = clock.zone()
+        val aujourdhui = maintenant.atZone(zone).toLocalDate()
+
+        val enfants = enfantDao.tous()
+            .filter { inclureArchives || !it.isArchived }
+            .sortedWith { a, b -> comparateur.compare(a.prenom to a.nom, b.prenom to b.nom) }
+        if (enfants.isEmpty()) return TableauExport(emptyList(), emptyList())
+
+        val identifiants = enfants.map { it.id }.toSet()
+        val presences = presenceDao.toutes().filter { it.enfantId in identifiants }.associateBy { it.enfantId to it.dateDimanche }
+        val seances = seanceDao.toutes().associateBy { it.dateDimanche }
+
+        val premier = Dimanches.courantOuSuivant(enfants.minOf { it.dateDebutSuivi })
+        val dernierEchu = if (Dimanches.estDimanche(aujourdhui)) aujourdhui else Dimanches.precedentStrict(aujourdhui)
+        val dernier = maxOf(dernierEchu, presences.keys.maxOfOrNull { it.second } ?: dernierEchu)
+        val dimanches = Dimanches.entre(premier, dernier)
+        val phases = dimanches.associateWith { RegleSeance.phase(it, seances[it]?.versEtat(), maintenant, zone) }
+
+        val lignes = enfants.map { enfant ->
+            val statuts = LinkedHashMap<LocalDate, StatutPresence>()
+            var presents = 0
+            var retards = 0
+            var absences = 0
+            for (dimanche in dimanches) {
+                if (!RegleSuivi.estAdmissible(dimanche, enfant.dateDebutSuivi, enfant.dateFinSuivi)) continue
+                val phase = phases.getValue(dimanche)
+                val statut = statutAffiche(presences[enfant.id to dimanche]?.statut, phase)
+                statuts[dimanche] = statut
+                if (phase == PhaseSeance.CLOTUREE) {
+                    when (statut) {
+                        StatutPresence.PRESENT -> presents++
+                        StatutPresence.EN_RETARD -> retards++
+                        StatutPresence.ABSENT -> absences++
+                        StatutPresence.NON_ENREGISTRE -> Unit
+                    }
+                }
+            }
+            LigneExport(
+                nom = enfant.nom,
+                prenom = enfant.prenom,
+                sexe = enfant.sexe,
+                dateNaissance = enfant.dateNaissance,
+                archive = enfant.isArchived,
+                statuts = statuts,
+                compteurs = CompteursAssiduite(presents, retards, absences),
+            )
+        }
+        return TableauExport(dimanches, lignes)
+    }
 
     private fun statutAffiche(statut: StatutPresence?, phase: PhaseSeance): StatutPresence =
         if (phase == PhaseSeance.CLOTUREE && (statut == null || statut == StatutPresence.NON_ENREGISTRE)) {

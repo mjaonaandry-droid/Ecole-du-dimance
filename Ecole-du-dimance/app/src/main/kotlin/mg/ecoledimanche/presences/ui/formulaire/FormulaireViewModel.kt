@@ -23,13 +23,16 @@ import mg.ecoledimanche.presences.domain.Sexe
 import mg.ecoledimanche.presences.domain.ValidationEnfant
 import mg.ecoledimanche.presences.domain.aujourdhui
 
-enum class ErreurEnregistrement { ECRITURE, PHOTO_ABSENTE, INTROUVABLE }
+enum class ErreurEnregistrement { ECRITURE, INTROUVABLE }
 
 data class EtatFormulaire(
     val modeAjout: Boolean,
     val champs: ChampsFormulaire = ChampsFormulaire(),
     val erreurs: Map<ChampEnfant, ErreurChamp> = emptyMap(),
-    /** Ajout : photo temporaire validée (nulle tant qu'elle n'a pas été prise). Modification : photo actuelle. */
+    /**
+     * Ajout : photo temporaire validée (nulle tant qu'elle n'a pas été prise : la photo est facultative,
+     * une silhouette est alors affichée). Modification : photo actuelle (chemin vide si jamais prise).
+     */
     val photo: String? = null,
     /** Âge calculé, en lecture seule. */
     val age: Int? = null,
@@ -114,8 +117,8 @@ class FormulaireViewModel(
         if (precedente != null && precedente != cheminTemporaire) supprimerEnArrierePlan(precedente)
     }
 
-    /** « Reprendre la photo » : la photo temporaire est supprimée et la caméra s'ouvre à nouveau. */
-    fun reprendrePhoto() {
+    /** « Retirer la photo » : la photo temporaire est supprimée, la silhouette est de nouveau affichée. */
+    fun retirerPhoto() {
         val precedente = _etat.value.photo
         sauvegarde.remove<String>(CLE_PHOTO)
         _etat.update { it.copy(photo = null) }
@@ -158,17 +161,14 @@ class FormulaireViewModel(
             _etat.update { it.copy(erreurs = (resultat as ResultatValidation.Invalide).erreurs) }
             return
         }
+        // La photo est facultative : sans photo validée, la fiche est créée avec une silhouette.
         val cheminPhoto = courant.photo
-        if (modeAjout && cheminPhoto == null) {
-            _etat.update { it.copy(erreurEnregistrement = ErreurEnregistrement.PHOTO_ABSENTE) }
-            return
-        }
 
         _etat.update { it.copy(enregistrement = true, erreurs = emptyMap(), erreurEnregistrement = null) }
         viewModelScope.launch {
             try {
                 val id: Long? = if (modeAjout) {
-                    enfants.ajouter(resultat.donnees, cheminPhoto!!)
+                    enfants.ajouter(resultat.donnees, cheminPhoto)
                 } else if (enfants.modifier(enfantId!!, resultat.donnees)) {
                     enfantId
                 } else {

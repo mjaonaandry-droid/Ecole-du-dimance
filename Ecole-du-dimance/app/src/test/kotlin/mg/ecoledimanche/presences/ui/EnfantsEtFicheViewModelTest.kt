@@ -6,6 +6,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import mg.ecoledimanche.presences.data.Environnement
 import mg.ecoledimanche.presences.data.instantLocal
+import mg.ecoledimanche.presences.data.local.aUnePhoto
 import mg.ecoledimanche.presences.ui.enfants.EnfantsViewModel
 import mg.ecoledimanche.presences.ui.fiche.EtatEcranFiche
 import mg.ecoledimanche.presences.ui.fiche.FicheViewModel
@@ -68,6 +69,18 @@ class EnfantsEtFicheViewModelTest : TestAvecMain() {
         env.enfants.modifier(id, mg.ecoledimanche.presences.data.donnees("Rakoto", "Sarah")) // force une réémission
         advanceUntilIdle()
         assertFalse((vm.etat.value as EtatEcranFiche.Pret).photoDisponible)
+    }
+
+    @Test
+    fun ficheSansPhoto_neSignalePasUnePhotoManquante_etLEnfantEstSansPhoto() = runTest(dispatcher) {
+        val env = environnement()
+        val id = env.enfants.ajouter(mg.ecoledimanche.presences.data.donnees("Rakoto", "Sarah"), null)
+        val vm = FicheViewModel(env.enfants, env.photos, id, env.horloge)
+        backgroundScope.launch { vm.etat.collect { } }
+        advanceUntilIdle()
+        val pret = vm.etat.value as EtatEcranFiche.Pret
+        assertFalse(pret.enfant.aUnePhoto) // l'écran affiche la silhouette et propose « Prendre la photo »
+        assertTrue(pret.photoDisponible) // ce n'est pas un fichier perdu : aucune erreur affichée
     }
 
     @Test

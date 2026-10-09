@@ -7,6 +7,8 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import mg.ecoledimanche.presences.data.Environnement
 import mg.ecoledimanche.presences.data.instantLocal
+import mg.ecoledimanche.presences.data.local.PHOTO_NON_PRISE
+import mg.ecoledimanche.presences.data.local.aUnePhoto
 import mg.ecoledimanche.presences.domain.ChampEnfant
 import mg.ecoledimanche.presences.domain.ErreurChamp
 import mg.ecoledimanche.presences.domain.Sexe
@@ -23,6 +25,12 @@ import org.junit.Test
 class FormulaireViewModelTest : TestAvecMain() {
     private fun environnement() = Environnement(instantLocal("2026-10-06", 14))
 
+    /** Vérifie que la valeur est présente et la retourne (évite un `!!` dans chaque test). */
+    private fun <T : Any> assertNotNull(valeur: T?): T {
+        org.junit.Assert.assertNotNull(valeur)
+        return valeur!!
+    }
+
     private fun ajout(env: Environnement, etat: SavedStateHandle = SavedStateHandle()) =
         FormulaireViewModel(env.enfants, env.photos, env.horloge, null, etat)
 
@@ -32,14 +40,20 @@ class FormulaireViewModelTest : TestAvecMain() {
     }
 
     @Test
-    fun ajoutSansPhoto_neCreeAucuneFiche() = runTest(dispatcher) {
+    fun ajoutSansPhoto_creeLaFiche_avecUneSilhouetteEtSansFichierPhoto() = runTest(dispatcher) {
         val env = environnement()
         val vm = ajout(env)
         vm.remplirObligatoires()
+        assertNull(vm.etat.value.photo) // la photo est facultative
         vm.enregistrer()
         advanceUntilIdle()
-        assertEquals(ErreurEnregistrement.PHOTO_ABSENTE, vm.etat.value.erreurEnregistrement)
-        assertTrue(env.magasin.enfants.isEmpty())
+        assertNull(vm.etat.value.erreurEnregistrement)
+        val id = assertNotNull(vm.etat.value.enfantEnregistre)
+        val fiche = env.magasin.enfants.getValue(id)
+        assertEquals(PHOTO_NON_PRISE, fiche.photoPath)
+        assertFalse(fiche.aUnePhoto)
+        assertEquals(Sexe.FILLE, fiche.sexe) // le sexe détermine la silhouette affichée
+        assertTrue(env.photos.definitives.isEmpty())
     }
 
     @Test
@@ -166,7 +180,7 @@ class FormulaireViewModelTest : TestAvecMain() {
     }
 
     @Test
-    fun photoTemporaireDisparue_ramenAuParcoursPhoto_sansPlanter() = runTest(dispatcher) {
+    fun photoTemporaireDisparue_revientALaSilhouette_etLeSignale_sansPlanter() = runTest(dispatcher) {
         val env = environnement()
         val sauvegarde = SavedStateHandle()
         val temporaire = env.photos.nouvelleTemporaire()
@@ -190,15 +204,48 @@ class FormulaireViewModelTest : TestAvecMain() {
     }
 
     @Test
-    fun reprendreLaPhoto_supprimeLaTemporaire_etRamenaALaCamera() = runTest(dispatcher) {
+    fun retirerLaPhoto_supprimeLaTemporaire_etRevientALaSilhouette() = runTest(dispatcher) {
         val env = environnement()
         val vm = ajout(env)
         val temporaire = env.photos.nouvelleTemporaire()
         vm.definirPhoto(temporaire)
-        vm.reprendrePhoto()
+        vm.retirerPhoto()
         advanceUntilIdle()
         assertNull(vm.etat.value.photo)
         assertFalse(temporaire in env.photos.temporaires)
+    }
+
+    @Test
+    fun reprendreLaPhoto_remplaceLaTemporairePrecedente_sansRienLaisserTraîner() = runTest(dispatcher) {
+        val env = environnement()
+        val vm = ajout(env)
+        val premiere = env.photos.nouvelleTemporaire()
+        val seconde = env.photos.nouvelleTemporaire()
+        vm.definirPhoto(premiere)
+        vm.definirPhoto(seconde) // « Reprendre la photo » : la nouvelle photo remplace l'ancienne
+        advanceUntilIdle()
+        assertEquals(seconde, vm.etat.value.photo)
+        assertFalse(premiere in env.photos.temporaires)
+        assertTrue(seconde in env.photos.temporaires)
+    }
+
+    @Test
+    fun ajoutAvecPhoto_puisSansSaisieDePhoto_lesDeuxChemins_donnentUneFicheValide() = runTest(dispatcher) {
+        val env = environnement()
+        val avec = ajout(env)
+        avec.remplirObligatoires()
+        avec.definirPhoto(env.photos.nouvelleTemporaire())
+        avec.enregistrer()
+        advanceUntilIdle()
+        val idAvec = assertNotNull(avec.etat.value.enfantEnregistre)
+        assertTrue(env.magasin.enfants.getValue(idAvec).aUnePhoto)
+
+        val sans = ajout(env)
+        sans.remplirObligatoires()
+        sans.enregistrer()
+        advanceUntilIdle()
+        val idSans = assertNotNull(sans.etat.value.enfantEnregistre)
+        assertFalse(env.magasin.enfants.getValue(idSans).aUnePhoto)
     }
 
     @Test

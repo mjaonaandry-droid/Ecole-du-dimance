@@ -7,6 +7,7 @@ import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -21,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -29,6 +32,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -55,6 +59,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import java.time.Instant
 import java.time.LocalDate
@@ -71,7 +76,9 @@ import mg.ecoledimanche.presences.ui.components.libelleAge
 class ActionsFormulaire(
     val onRetour: () -> Unit,
     val onChamps: ((ChampsFormulaire) -> ChampsFormulaire) -> Unit,
-    val onReprendrePhoto: () -> Unit,
+    /** Ouvre le parcours photo (caméra, aperçu) ; sans effet en modification. */
+    val onPrendrePhoto: () -> Unit,
+    val onRetirerPhoto: () -> Unit,
     val onEnregistrer: () -> Unit,
 )
 
@@ -126,18 +133,56 @@ fun FormulaireEcran(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxSize().padding(marges).verticalScroll(rememberScrollState()).padding(16.dp),
         ) {
-            // --- Photo -------------------------------------------------------------------------
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+            // --- Photo (facultative) -------------------------------------------------------
+            val sansPhoto = etat.photo.isNullOrBlank()
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                // Tant que la photo n'est pas prise : silhouette grisée, garçon ou fille selon le sexe choisi plus bas.
                 PhotoEnfant(
                     chemin = etat.photo,
-                    description = stringResource(R.string.formulaire_photo_description),
+                    sexe = champs.sexe,
+                    description = stringResource(if (sansPhoto) R.string.formulaire_photo_non_prise else R.string.formulaire_photo_description),
                     coteMaxPx = 480,
                     forme = RoundedCornerShape(20.dp),
                     modifier = Modifier.size(140.dp),
                 )
                 if (etat.modeAjout) {
-                    TextButton(onClick = actions.onReprendrePhoto, enabled = !etat.enregistrement) {
-                        Text(stringResource(R.string.formulaire_reprendre_photo))
+                    if (sansPhoto) {
+                        FilledTonalButton(
+                            onClick = actions.onPrendrePhoto,
+                            enabled = !etat.enregistrement,
+                            modifier = Modifier.heightIn(min = 48.dp),
+                        ) {
+                            Icon(Icons.Filled.CameraAlt, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.formulaire_prendre_photo))
+                        }
+                        Text(
+                            text = stringResource(R.string.formulaire_photo_facultative),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                        )
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            TextButton(onClick = actions.onPrendrePhoto, enabled = !etat.enregistrement) {
+                                Text(stringResource(R.string.formulaire_reprendre_photo))
+                            }
+                            TextButton(onClick = actions.onRetirerPhoto, enabled = !etat.enregistrement) {
+                                Text(stringResource(R.string.formulaire_retirer_photo))
+                            }
+                        }
+                    }
+                    if (etat.photoTemporairePerdue) {
+                        Text(
+                            text = stringResource(R.string.photo_temporaire_perdue),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center,
+                        )
                     }
                 }
             }
@@ -207,7 +252,6 @@ fun FormulaireEcran(
                     text = stringResource(
                         when (erreurGenerale) {
                             ErreurEnregistrement.ECRITURE -> R.string.erreur_formulaire_ecriture
-                            ErreurEnregistrement.PHOTO_ABSENTE -> R.string.erreur_photo_absente
                             ErreurEnregistrement.INTROUVABLE -> R.string.fiche_introuvable
                         },
                     ),

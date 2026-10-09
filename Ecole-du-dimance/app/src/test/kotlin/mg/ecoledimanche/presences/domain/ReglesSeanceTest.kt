@@ -58,10 +58,50 @@ class ReglesSeanceTest {
     }
 
     @Test
-    fun dimancheFutur_estAVenir_meme_laVeilleAu23h59() {
-        assertEquals(PhaseSeance.A_VENIR, RegleSeance.phase(dimanche, null, instant("2026-10-06", 12, 0), madagascar))
-        assertEquals(PhaseSeance.A_VENIR, RegleSeance.phase(dimanche, null, instant("2026-10-10", 23, 59, 59), madagascar))
+    fun dimancheAVenir_leProchainDimancheEstOuvertAuPointageDesMaintenant_laVeilleAu23h59_commeLeJourJ() {
+        // Le dimanche à venir n'est plus « à venir » au sens du pointage : il est ouvert (EN_COURS) avant le jour J.
+        assertEquals(PhaseSeance.EN_COURS, RegleSeance.phase(dimanche, null, instant("2026-10-06", 12, 0), madagascar))
+        assertEquals(PhaseSeance.EN_COURS, RegleSeance.phase(dimanche, null, instant("2026-10-09", 10, 0), madagascar)) // vendredi
+        assertEquals(PhaseSeance.EN_COURS, RegleSeance.phase(dimanche, null, instant("2026-10-10", 23, 59, 59), madagascar))
         assertEquals(PhaseSeance.EN_COURS, RegleSeance.phase(dimanche, null, instant("2026-10-11", 0, 0), madagascar))
+    }
+
+    @Test
+    fun auDelaDuDimancheAVenir_laSeanceResteAVenir_pointageDesactive() {
+        val suivant = LocalDate.parse("2026-10-18")
+        assertEquals(PhaseSeance.A_VENIR, RegleSeance.phase(suivant, null, instant("2026-10-09", 10, 0), madagascar))
+        assertEquals(PhaseSeance.A_VENIR, RegleSeance.phase(suivant, null, instant("2026-10-11", 9, 59), madagascar))
+        assertEquals(PhaseSeance.A_VENIR, RegleSeance.phase(suivant.plusWeeks(40), null, instant("2026-10-09", 10, 0), madagascar))
+    }
+
+    @Test
+    fun apresLaClotureDuDimanche_leDimancheSuivantDevientLeDimancheAVenir() {
+        val suivant = LocalDate.parse("2026-10-18")
+        assertEquals(PhaseSeance.CLOTUREE, RegleSeance.phase(dimanche, null, instant("2026-10-11", 10, 0), madagascar))
+        assertEquals(PhaseSeance.EN_COURS, RegleSeance.phase(suivant, null, instant("2026-10-11", 10, 0), madagascar))
+        assertEquals(PhaseSeance.A_VENIR, RegleSeance.phase(suivant.plusWeeks(1), null, instant("2026-10-11", 10, 0), madagascar))
+    }
+
+    @Test
+    fun dimancheAVenir_dureLaSemaine_etBasculeExactementALaCloture() {
+        val vendredi = instant("2026-10-09", 10, 0)
+        assertEquals(dimanche, RegleSeance.dimancheAVenir(vendredi, madagascar)) // « si je clique aujourd'hui : 11/10 »
+        for (jour in listOf("2026-10-05", "2026-10-06", "2026-10-10")) {
+            assertEquals(dimanche, RegleSeance.dimancheAVenir(instant(jour, 12, 0), madagascar))
+        }
+        assertEquals(dimanche, RegleSeance.dimancheAVenir(instant("2026-10-11", 9, 59, 59, 999_000_000), madagascar))
+        assertEquals(LocalDate.parse("2026-10-18"), RegleSeance.dimancheAVenir(instant("2026-10-11", 10, 0), madagascar))
+        assertEquals(LocalDate.parse("2026-10-18"), RegleSeance.dimancheAVenir(instant("2026-10-11", 18, 0), madagascar))
+        assertEquals(LocalDate.parse("2026-10-18"), RegleSeance.dimancheAVenir(instant("2026-10-12", 8, 0), madagascar))
+    }
+
+    @Test
+    fun prochaineCloture_estToujoursLaClotureDuDimancheAVenir() {
+        assertEquals(RegleSeance.instantCloture(dimanche, madagascar), RegleSeance.prochaineCloture(instant("2026-10-09", 10, 0), madagascar))
+        assertEquals(
+            RegleSeance.instantCloture(LocalDate.parse("2026-10-18"), madagascar),
+            RegleSeance.prochaineCloture(instant("2026-10-11", 10, 0), madagascar),
+        )
     }
 
     @Test

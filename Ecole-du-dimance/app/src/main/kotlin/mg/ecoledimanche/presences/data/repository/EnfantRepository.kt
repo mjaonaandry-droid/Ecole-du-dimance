@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import mg.ecoledimanche.presences.data.local.EnfantDao
 import mg.ecoledimanche.presences.data.local.EnfantEntity
+import mg.ecoledimanche.presences.data.local.PHOTO_NON_PRISE
 import mg.ecoledimanche.presences.data.local.SeanceDao
 import mg.ecoledimanche.presences.domain.AppClock
 import mg.ecoledimanche.presences.domain.Dimanches
@@ -34,7 +35,10 @@ class EnfantRepository(
     fun observer(id: Long): Flow<EnfantEntity?> = enfantDao.observer(id)
 
     /**
-     * Crée la fiche : la photo temporaire validée est d'abord copiée définitivement, puis la
+     * Crée la fiche. La photo est facultative : sans [cheminPhotoTemporaire], la fiche est créée
+     * sans photo ([PHOTO_NON_PRISE]) et une silhouette est affichée ; elle pourra être prise plus tard.
+     *
+     * Avec une photo, la photo temporaire validée est d'abord copiée définitivement, puis la
      * ligne est insérée. Si l'insertion échoue, la copie définitive est retirée (la temporaire
      * reste, pour réessayer) : aucune fiche incomplète ni photo orpheline volontaire. La
      * temporaire n'est supprimée qu'une fois la fiche enregistrée.
@@ -44,8 +48,8 @@ class EnfantRepository(
      * nettoyage ne doit jamais retirer la photo d'une fiche déjà enregistrée.
      * @return l'identifiant de l'enfant créé.
      */
-    suspend fun ajouter(donnees: DonneesEnfant, cheminPhotoTemporaire: String): Long = withContext(NonCancellable) {
-        val cheminFinal = photos.promouvoirTemporaire(cheminPhotoTemporaire)
+    suspend fun ajouter(donnees: DonneesEnfant, cheminPhotoTemporaire: String?): Long = withContext(NonCancellable) {
+        val cheminFinal = if (cheminPhotoTemporaire == null) PHOTO_NON_PRISE else photos.promouvoirTemporaire(cheminPhotoTemporaire)
         val id = try {
             transaction.executer {
                 val maintenant = clock.instant()
@@ -78,10 +82,10 @@ class EnfantRepository(
                 )
             }
         } catch (erreur: Throwable) {
-            photos.supprimer(cheminFinal)
+            if (cheminPhotoTemporaire != null) photos.supprimer(cheminFinal)
             throw erreur
         }
-        photos.supprimer(cheminPhotoTemporaire)
+        if (cheminPhotoTemporaire != null) photos.supprimer(cheminPhotoTemporaire)
         id
     }
 
@@ -138,7 +142,8 @@ class EnfantRepository(
             false
         } else {
             photos.supprimer(cheminPhotoTemporaire)
-            if (ancien != nouveau) photos.supprimer(ancien)
+            // Un enfant sans photo n'a pas d'ancien fichier à retirer.
+            if (ancien != PHOTO_NON_PRISE && ancien != nouveau) photos.supprimer(ancien)
             true
         }
     }
@@ -146,12 +151,15 @@ class EnfantRepository(
     /**
      * Archive l'enfant : fiche, photo et historique sont conservés. La fin de suivi est la date
      * locale du jour (borne incluse) : un archivage le dimanche garde ce dimanche, puis l'enfant
-     * est exclu des dimanches suivants.
+     * est exclu des dimanches suivants : les présences déjà pointées d'avance pour ces dimanches
+     * (pointage anticipé du dimanche à venir) sont retirées, pour ne pas fausser l'assiduité.
      * @return vrai si l'enfant vient d'être archivé.
      */
     suspend fun archiver(id: Long): Boolean = transaction.executer {
         val maintenant = clock.instant()
         val aujourdhui = maintenant.atZone(clock.zone()).toLocalDate()
-        enfantDao.archiver(id, aujourdhui, maintenant) > 0
+        val archive = enfantDao.archiver(id, aujourdhui, maintenant) > 0
+        if (archive) enfantDao.retirerPresencesApres(id, aujourdhui)
+        archive
     }
 }

@@ -105,6 +105,15 @@ class FauxMagasin {
         override fun observerSelonArchivage(archive: Boolean): Flow<List<EnfantEntity>> =
             flux { enfants.values.filter { it.isArchived == archive } }
 
+        override suspend fun tous(): List<EnfantEntity> = enfants.values.toList()
+
+        override suspend fun retirerPresencesApres(id: Long, finSuivi: LocalDate): Int {
+            val aRetirer = presences.keys.filter { it.first == id && it.second > finSuivi }
+            aRetirer.forEach { presences.remove(it) }
+            if (aRetirer.isNotEmpty()) notifier()
+            return aRetirer.size
+        }
+
         override suspend fun plagesDeSuivi(): List<PlageSuivi> =
             enfants.values.map { PlageSuivi(it.dateDebutSuivi, it.dateFinSuivi) }
 
@@ -208,6 +217,8 @@ class FauxMagasin {
 
         override suspend fun duDimanche(dimanche: LocalDate): List<PresenceEntity> =
             presences.values.filter { it.dateDimanche == dimanche }
+
+        override suspend fun toutes(): List<PresenceEntity> = presences.values.toList()
 
         override suspend fun trouver(enfantId: Long, dimanche: LocalDate): PresenceEntity? = presences[enfantId to dimanche]
 

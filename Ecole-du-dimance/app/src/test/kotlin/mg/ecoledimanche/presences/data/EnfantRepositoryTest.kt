@@ -4,6 +4,8 @@ import java.io.IOException
 import java.time.LocalDate
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import mg.ecoledimanche.presences.data.local.PHOTO_NON_PRISE
+import mg.ecoledimanche.presences.data.local.aUnePhoto
 import mg.ecoledimanche.presences.domain.StatutPresence
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -26,6 +28,43 @@ class EnfantRepositoryTest {
         assertFalse(fiche.isArchived)
         assertEquals(null, fiche.dateFinSuivi)
         assertEquals(dimanche, fiche.dateDebutSuivi)
+    }
+
+    @Test
+    fun ajout_sansPhoto_creeLaFicheAvecUneSilhouette_etAucunFichierOrphelin() = runTest {
+        val env = Environnement(instantLocal("2026-10-06", 14))
+        val id = env.enfants.ajouter(donnees("Rakoto", "Sarah"), null)
+        val fiche = env.magasin.enfants.getValue(id)
+        assertEquals(PHOTO_NON_PRISE, fiche.photoPath)
+        assertFalse(fiche.aUnePhoto)
+        assertEquals(dimanche, fiche.dateDebutSuivi) // le suivi commence comme pour une fiche avec photo
+        assertTrue(env.photos.definitives.isEmpty())
+        assertTrue(env.photos.temporaires.isEmpty())
+    }
+
+    @Test
+    fun ajout_sansPhoto_siLaBaseEchoue_rienNEstCree_etRienNEstSupprime() = runTest {
+        val env = Environnement(instantLocal("2026-10-06", 14))
+        val autre = env.photos.nouvelleTemporaire() // une autre photo en cours : elle ne doit pas être touchée
+        env.magasin.echecSurInsertionEnfant = true
+        try {
+            env.enfants.ajouter(donnees("Rakoto", "Sarah"), null)
+            fail("l'ajout aurait dû échouer")
+        } catch (e: IllegalStateException) {
+            // attendu
+        }
+        assertTrue(env.magasin.enfants.isEmpty())
+        assertTrue(autre in env.photos.temporaires)
+    }
+
+    @Test
+    fun photoPrisePlusTard_lapremierePhotoEstEnregistree_sansAncienFichierASupprimer() = runTest {
+        val env = Environnement(instantLocal("2026-10-06", 14))
+        val id = env.enfants.ajouter(donnees("Rakoto", "Sarah"), null)
+        assertTrue(env.enfants.remplacerPhoto(id, env.photos.nouvelleTemporaire()))
+        val fiche = env.magasin.enfants.getValue(id)
+        assertTrue(fiche.aUnePhoto)
+        assertEquals(setOf(fiche.photoPath), env.photos.definitives)
     }
 
     @Test

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Silhouette de garçon (short). Affichée tant que la photo n'a pas été prise ; teintée en gris par
+    l'application (voir ui/components/PhotoEnfant.kt). Dessin sur une grille de 48 × 48.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M16.4,10.8a7.6,7.6 0 1,0 15.2,0a7.6,7.6 0 1,0 -15.2,0z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M17.5,20.5h13a3.5,3.5 0 0,1 3.5,3.5v10.5h-20v-10.5a3.5,3.5 0 0,1 3.5,-3.5z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M12.1,22h0.10000000000000053a2.6,2.6 0 0,1 2.6,2.6v8.8a2.6,2.6 0 0,1 -2.6,2.6h-0.10000000000000053a2.6,2.6 0 0,1 -2.6,-2.6v-8.8a2.6,2.6 0 0,1 2.6,-2.6z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M35.800000000000004,22h0.09999999999999698a2.6,2.6 0 0,1 2.6,2.6v8.8a2.6,2.6 0 0,1 -2.6,2.6h-0.09999999999999698a2.6,2.6 0 0,1 -2.6,-2.6v-8.8a2.6,2.6 0 0,1 2.6,-2.6z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M14.5,33h19v6h-9.2v-1.5h-0.6v1.5h-9.2z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M17.4,38.5h3.000000000000001a2.4,2.4 0 0,1 2.4,2.4v3.2a2.4,2.4 0 0,1 -2.4,2.4h-3.000000000000001a2.4,2.4 0 0,1 -2.4,-2.4v-3.2a2.4,2.4 0 0,1 2.4,-2.4z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M27.599999999999998,38.5h3.000000000000001a2.4,2.4 0 0,1 2.4,2.4v3.2a2.4,2.4 0 0,1 -2.4,2.4h-3.000000000000001a2.4,2.4 0 0,1 -2.4,-2.4v-3.2a2.4,2.4 0 0,1 2.4,-2.4z" />
+</vector>

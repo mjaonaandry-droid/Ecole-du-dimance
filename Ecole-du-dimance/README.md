@@ -9,6 +9,25 @@ Elle fonctionne **sans aucune connexion Internet**, y compris après un redémar
 
 ---
 
+## Nouveautés de cette version
+
+1. **Onglet « Exporter »** — crée un fichier **CSV** (séparateur `;`, UTF-8 avec BOM : s'ouvre directement dans Excel,
+   LibreOffice ou Google Sheets) avec, par enfant, **uniquement** : nom, prénom, sexe, date de naissance, âge, statut (actif /
+   archivé), sa présence à **chaque dimanche** (Présent / En retard / Absent) et les totaux (présences, retards, absences,
+   assiduité). Parents, adresse, fratrie et photo ne sont **pas** exportés. L'utilisateur choisit l'emplacement avec le
+   sélecteur de fichiers du système (aucune permission de stockage, rien n'est envoyé par Internet). Un interrupteur permet
+   d'inclure ou non les enfants archivés.
+2. **Photo facultative, silhouette grisée** — « Ajouter » ouvre **tout de suite le formulaire** ; la photo n'est plus
+   obligatoire. Tant qu'elle n'est pas prise, une **silhouette grise de garçon ou de fille** (selon le sexe choisi) la remplace
+   partout (grille Dimanche, liste, fiche, historique). « Prendre la photo » reprend le parcours caméra habituel (aperçu
+   « Reprendre » / « Utiliser cette photo ») ; on peut aussi la prendre plus tard depuis la fiche (« Prendre la photo »).
+3. **Pointage toujours possible, enregistré au dimanche à venir** — le pointage n'est plus bloqué avant le jour J : un clic le
+   vendredi 09/10/2026 est enregistré **au dimanche 11/10/2026** (la date est rappelée dans le panneau). Le sélecteur de
+   dimanches propose **toutes les dates** (une année avant et après) ; au-delà du dimanche à venir, la date reste consultable mais
+   le pointage reste désactivé, avec un bouton qui ramène au dimanche à venir.
+
+---
+
 ## 1. État de la livraison — ce qui est fait, et ce qui ne l'est pas
 
 Les lignes « exécuté » ont été **réellement exécutées** par l'intégration continue GitHub Actions (workflow
@@ -88,7 +107,7 @@ appellent les repositories. Aucun accès disque ou base sur le thread principal.
 
 | Table | Contenu | Clé / contraintes |
 |---|---|---|
-| `enfants` | identité, parents (appartenance **nullable** : « non renseigné » ≠ « Non »), fratrie, `photoPath` **relatif**, `dateArriveeEglise`, `dateDebutSuivi`, `dateFinSuivi` (borne incluse), `isArchived`, `archivedAt`, `createdAt`, `updatedAt` | `id` auto-incrémenté (deux homonymes = deux identifiants) |
+| `enfants` | identité, parents (appartenance **nullable** : « non renseigné » ≠ « Non »), fratrie, `photoPath` **relatif** (vide tant que la photo n'est pas prise), `dateArriveeEglise`, `dateDebutSuivi`, `dateFinSuivi` (borne incluse), `isArchived`, `archivedAt`, `createdAt`, `updatedAt` | `id` auto-incrémenté (deux homonymes = deux identifiants) |
 | `seances` | `dateDimanche`, `zoneId`, `cloturePrevueAt` (10 h dans ce fuseau, figée à la création), `cloturee`, `clotureeAt` | `dateDimanche` clé primaire |
 | `presences` | `enfantId`, `dateDimanche`, `statut` (`NON_ENREGISTRE`, `PRESENT`, `EN_RETARD`, `ABSENT`), horodatages | **clé primaire composite** `(enfantId, dateDimanche)` ; clés étrangères vers les deux tables en **RESTRICT** (jamais de suppression en cascade) ; index sur `dateDimanche` et `(enfantId, statut)` |
 
@@ -97,22 +116,27 @@ Pas d'âge stocké, pas de photo en BLOB. Export du schéma Room activé ; aucun
 
 ### Écrans
 
-Barre basse à quatre accès : **Dimanche**, **Enfants**, **Ajouter** (action centrale, démarre le parcours caméra ;
-pas d'onglet vide), **Assiduité**. Plus : caméra, aperçu de la photo, formulaire, fiche, historique, panneau de
+Barre basse à cinq accès : **Dimanche**, **Enfants**, **Ajouter** (action centrale, ouvre le formulaire ; pas d'onglet
+vide), **Assiduité**, **Exporter** (fichier CSV). Plus : caméra, aperçu de la photo, formulaire, fiche, historique, panneau de
 choix du statut, confirmation d'archivage.
 
-### Parcours « photo en premier »
+### Ajout d'un enfant : photo facultative
 
-1. « Ajouter un enfant » → 2. permission `CAMERA` **seulement si nécessaire** → 3. caméra CameraX intégrée →
-4. capture → 5. aperçu **Reprendre / Utiliser cette photo** → 6. formulaire → 7. « ENREGISTRER L'ENFANT ».
+1. « Ajouter » → 2. **formulaire** (la photo y est représentée par une silhouette grise garçon / fille / neutre, selon le sexe
+choisi) → 3. facultatif : « Prendre la photo » → permission `CAMERA` **seulement si nécessaire** → caméra CameraX intégrée →
+capture → aperçu **Reprendre / Utiliser cette photo** → retour au formulaire → 4. « ENREGISTRER L'ENFANT ».
 
-Rien n'est créé en base avant l'étape 7. Annulation, refus de permission, caméra indisponible ou erreur : message
-clair en français, retour possible, **aucune fiche incomplète**. Refus simple → « Réessayer » ; refus définitif →
-« Ouvrir les paramètres » ; toujours « Annuler l'ajout ». Le reste de l'application reste accessible.
+Rien n'est créé en base avant l'étape 4. Annuler la caméra ou refuser la permission ramène au formulaire (saisie conservée) ;
+on peut alors enregistrer l'enfant **sans photo** et la prendre plus tard (Fiche ▸ « Prendre la photo »). Message clair en
+français dans tous les cas ; refus simple → « Réessayer » ; refus définitif → « Ouvrir les paramètres » ; le reste de
+l'application reste accessible. « Retirer la photo » revient à la silhouette.
 La photo (côté max. 1 280 px, orientation corrigée, JPEG) reste temporaire (`photos_tmp/`) jusqu'à l'enregistrement,
 puis est **copiée** dans `photos/`, et la temporaire n'est supprimée **qu'après** le succès en base : si l'écriture
 échoue, on peut réessayer sans reprendre la photo. Le formulaire et la photo temporaire survivent à une rotation et,
 quand Android le permet, à la recréation du processus.
+
+**Sans photo** : `photoPath` vaut une chaîne vide (`PHOTO_NON_PRISE`) plutôt que `NULL` : le schéma Room ne change pas
+(pas de migration, les données existantes restent valides). `EnfantEntity.aUnePhoto` le dit en un mot.
 
 ### Présences, clôture et absences automatiques
 
@@ -124,9 +148,15 @@ quand Android le permet, à la recréation du processus.
   (rouge), plus « Annuler le pointage » (retour à *Non enregistré*). L'écriture est immédiate dans Room ; la carte ne
   change **qu'après** la réussite (sinon un message d'erreur s'affiche). Les couleurs ne sont jamais seules : chaque
   statut a aussi une icône et un libellé.
-- **Dimanche futur** : le pointage est **désactivé** (« Séance à venir ») et aucune présence ni absence n'est écrite pour
-  une séance qui n'a pas commencé. Pour essayer le pointage réel, il faut un dimanche réel : ajouter un enfant un dimanche
-  **avant 10 h**, ou attendre le dimanche suivant l'inscription.
+- **Dimanche à venir** : c'est le plus proche dimanche **non encore clôturé** (aujourd'hui si l'on est dimanche avant
+  10 h, sinon le prochain dimanche : `RegleSeance.dimancheAVenir`). Il est **ouvert au pointage dès maintenant** : un clic le
+  vendredi 09/10/2026 écrit la présence à la date du **11/10/2026** (séance créée à ce moment-là, **jamais** clôturée ni
+  marquée absente avant 10 h le jour J). Le dimanche affiché est celui où le pointage est enregistré, rappelé dans le panneau
+  (« Enregistré pour le dimanche 11/10/2026 »). Un dimanche **au-delà** du dimanche à venir reste consultable mais le pointage y
+  est désactivé (« Séance à venir »), avec un bouton « Aller au 11/10/2026 ». Après la clôture d'un dimanche, le dimanche
+  suivant devient le dimanche à venir et peut être pointé tout de suite ; le dimanche clôturé reste corrigeable.
+  Un enfant **archivé** après un pointage anticipé voit ses présences des dimanches suivants retirées (il n'y est plus suivi),
+  pour ne pas fausser l'assiduité.
 - **À 10 h 00** : *Présent* et *En retard* sont conservés ; *Non enregistré* devient *Absent* ; une ligne manquante est
   créée en *Absent*. À 09 h 59 un enfant non pointé est encore *Non enregistré*. La clôture se fait dans **une transaction Room**
   par séance, et elle est **idempotente** (jamais de doublon, jamais d'écrasement).
@@ -266,8 +296,9 @@ Choisissez donc la clé définitive **avant** d'enregistrer de vraies données.
   les conserve. **Archiver** un enfant conserve fiche, photo et historique.
 - Aucune sauvegarde cloud : `android:allowBackup="false"`, `fullBackupContent` (Android ≤ 11) et `dataExtractionRules`
   (Android 12+, **sauvegarde cloud et transfert d'appareil à appareil**) excluent base, photos et préférences.
-- La V1 n'a pas d'import/export ; les accès à la base et aux photos sont centralisés (`AppDatabase`, `StockagePhotosPrive`)
-  pour permettre plus tard une sauvegarde **locale** complète, sans service cloud.
+- **Export** : l'onglet « Exporter » produit un CSV des informations de base et des présences (voir « Nouveautés »). Ce n'est **pas**
+  une sauvegarde : ni photos ni informations complètes, et il n'y a pas d'import. Les accès à la base et aux photos sont centralisés
+  (`AppDatabase`, `StockagePhotosPrive`) pour permettre plus tard une sauvegarde **locale** complète, sans service cloud.
 - **Schéma Room** : l'export est activé (`room.schemaLocation` → `app/schemas/`). Le fichier `.../1.json` est **généré par
   la première compilation** : le versionner ensuite avec le code. À chaque évolution : incrémenter `version`, ajouter une
   `Migration` explicite dans `AppDatabase.MIGRATIONS` (jamais de migration destructive) et un test dans `MigrationRoomTest`.
@@ -336,8 +367,10 @@ primaire composite, clés étrangères RESTRICT, conservation après fermeture /
 
 ## 11. Limites connues et choix simples
 
-- Pas de suppression définitive ni de réactivation d'un enfant, pas d'import / export, pas de saisie rétroactive (V1).
-- Les dimanches futurs ne sont proposés que sur 8 semaines dans le sélecteur.
+- Pas de suppression définitive ni de réactivation d'un enfant, pas d'import, pas de saisie rétroactive (V1).
+- Le sélecteur de dimanches couvre une année avant et une année après le dimanche affiché par défaut (`SEMAINES_PASSEES` / `SEMAINES_A_VENIR` dans `DimancheViewModel`).
+- « Absent » n'est toujours attribué qu'à la clôture (10 h) : avant, le pointage se limite à Présent, En retard et « Annuler le pointage ».
+- L'export CSV exporte tous les dimanches depuis le premier suivi : un fichier de plusieurs années aura beaucoup de colonnes.
 - L'interface impose la langue française, même sur un téléphone réglé dans une autre langue.
 - Pas de minification (R8) en release par défaut ; elle peut être activée (`isMinifyEnabled`) après essais.
 - La planification WorkManager n'est pas exacte (voir §3). Sur certains téléphones aux économies d'énergie agressives, elle peut

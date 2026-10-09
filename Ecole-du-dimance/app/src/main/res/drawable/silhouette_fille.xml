@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Silhouette de fille (couettes et robe). Affichée tant que la photo n'a pas été prise ; teintée en gris par
+    l'application (voir ui/components/PhotoEnfant.kt). Dessin sur une grille de 48 × 48.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M16.8,10.8a7.2,7.2 0 1,0 14.4,0a7.2,7.2 0 1,0 -14.4,0z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M10.9,13.8a3.5,3.5 0 1,0 7.0,0a3.5,3.5 0 1,0 -7.0,0z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M30.1,13.8a3.5,3.5 0 1,0 7.0,0a3.5,3.5 0 1,0 -7.0,0z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M18.2,20h11.6a2.5,2.5 0 0,1 2.4,1.8l6.3,16.7h-29l6.3,-16.7a2.5,2.5 0 0,1 2.4,-1.8z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M14.0,21.5h8.881784197001252e-16a2.6,2.6 0 0,1 2.6,2.6v6.8a2.6,2.6 0 0,1 -2.6,2.6h-8.881784197001252e-16a2.6,2.6 0 0,1 -2.6,-2.6v-6.8a2.6,2.6 0 0,1 2.6,-2.6z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M34.0,21.5h2.6645352591003757e-15a2.6,2.6 0 0,1 2.6,2.6v6.8a2.6,2.6 0 0,1 -2.6,2.6h-2.6645352591003757e-15a2.6,2.6 0 0,1 -2.6,-2.6v-6.8a2.6,2.6 0 0,1 2.6,-2.6z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M20.5,38h0.09999999999999964a2.3,2.3 0 0,1 2.3,2.3v3.9000000000000004a2.3,2.3 0 0,1 -2.3,2.3h-0.09999999999999964a2.3,2.3 0 0,1 -2.3,-2.3v-3.9000000000000004a2.3,2.3 0 0,1 2.3,-2.3z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M27.400000000000002,38h0.09999999999999964a2.3,2.3 0 0,1 2.3,2.3v3.9000000000000004a2.3,2.3 0 0,1 -2.3,2.3h-0.09999999999999964a2.3,2.3 0 0,1 -2.3,-2.3v-3.9000000000000004a2.3,2.3 0 0,1 2.3,-2.3z" />
+</vector>

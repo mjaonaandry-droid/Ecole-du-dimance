@@ -15,10 +15,14 @@ object ConfigurationSeance {
 
 /** Situation d'une séance par rapport à l'horloge. */
 enum class PhaseSeance {
-    /** Dimanche futur : prévu, pointage désactivé, aucune absence. */
+    /** Dimanche au-delà du dimanche à venir : prévu, pointage désactivé, aucune absence. */
     A_VENIR,
 
-    /** Dimanche du jour avant la clôture : pointage ouvert. */
+    /**
+     * Séance ouverte au pointage, avant la clôture : le dimanche du jour, mais aussi le dimanche à
+     * venir (voir [RegleSeance.dimancheAVenir]) dès maintenant — un pointage fait le vendredi est
+     * enregistré à la date du dimanche suivant.
+     */
     EN_COURS,
 
     /** Clôture atteinte (ou déjà matérialisée) : les non pointés sont absents. */
@@ -67,12 +71,26 @@ object RegleSeance {
         dimanche.atTime(ConfigurationSeance.HEURE_CLOTURE).atZone(zone).toInstant()
 
     /**
+     * Dimanche « à venir » : le plus proche dimanche dont la clôture n'est pas encore atteinte,
+     * c'est-à-dire aujourd'hui si l'on est dimanche avant 10 h, sinon le prochain dimanche.
+     * C'est la date à laquelle sont enregistrés les pointages faits avant le jour J
+     * (exemple : vendredi 09/10/2026 → dimanche 11/10/2026).
+     */
+    fun dimancheAVenir(maintenant: Instant, zone: ZoneId): LocalDate {
+        val aujourdhui = maintenant.atZone(zone).toLocalDate()
+        val candidat = Dimanches.courantOuSuivant(aujourdhui)
+        return if (instantCloture(candidat, zone).isAfter(maintenant)) candidat else Dimanches.suivantStrict(aujourdhui)
+    }
+
+    /**
      * Phase d'une séance.
      *
      * - Une séance déjà marquée clôturée le reste : ni un changement de fuseau ni un retour
      *   en arrière de l'horloge ne la rouvrent.
      * - L'échéance utilisée est celle enregistrée à la création de la séance ; à défaut, celle
      *   calculée avec le fuseau actuel.
+     * - Le dimanche à venir est ouvert au pointage ([PhaseSeance.EN_COURS]) même avant le jour J ;
+     *   seuls les dimanches suivants restent [PhaseSeance.A_VENIR].
      */
     fun phase(
         dimanche: LocalDate,
@@ -83,19 +101,15 @@ object RegleSeance {
         if (seance?.cloturee == true) return PhaseSeance.CLOTUREE
         val echeance = seance?.cloturePrevueAt ?: instantCloture(dimanche, zone)
         if (!maintenant.isBefore(echeance)) return PhaseSeance.CLOTUREE
-        val aujourdhui = maintenant.atZone(zone).toLocalDate()
-        return if (dimanche.isAfter(aujourdhui)) PhaseSeance.A_VENIR else PhaseSeance.EN_COURS
+        return if (dimanche.isAfter(dimancheAVenir(maintenant, zone))) PhaseSeance.A_VENIR else PhaseSeance.EN_COURS
     }
 
     /**
      * Prochain instant de clôture strictement postérieur à [maintenant] : le dimanche du jour s'il
      * n'est pas encore 10 h, sinon le dimanche suivant. Sert à planifier le travail d'arrière-plan.
      */
-    fun prochaineCloture(maintenant: Instant, zone: ZoneId): Instant {
-        val aujourdhui = maintenant.atZone(zone).toLocalDate()
-        val candidat = instantCloture(Dimanches.courantOuSuivant(aujourdhui), zone)
-        return if (candidat.isAfter(maintenant)) candidat else instantCloture(Dimanches.suivantStrict(aujourdhui), zone)
-    }
+    fun prochaineCloture(maintenant: Instant, zone: ZoneId): Instant =
+        instantCloture(dimancheAVenir(maintenant, zone), zone)
 }
 
 /** Instants auxquels un écran affiché doit se réactualiser tout seul (sans action de l'utilisateur). */

@@ -30,6 +30,7 @@
     <string name="nav_enfants">Enfants</string>
     <string name="nav_ajouter">Ajouter</string>
     <string name="nav_assiduite">Assiduité</string>
+    <string name="nav_exporter">Exporter</string>
 
     <!-- Statuts -->
     <string name="statut_non_enregistre">Non enregistré</string>
@@ -40,7 +41,11 @@
     <!-- Écran Dimanche -->
     <string name="phase_a_venir">Séance à venir</string>
     <string name="phase_en_cours">Pointage en cours — clôture à %1$s</string>
+    <string name="phase_ouverte_avant">Pointage ouvert — clôture dimanche à %1$s</string>
     <string name="phase_cloturee">Séance clôturée</string>
+    <string name="dimanche_a_venir_info">Le pointage se fait sur le dimanche à venir : %1$s.</string>
+    <string name="dimanche_aller_a_venir">Aller au %1$s</string>
+    <string name="dimanche_badge_a_venir">À venir</string>
     <string name="dimanche_precedent">Dimanche précédent</string>
     <string name="dimanche_suivant">Dimanche suivant</string>
     <string name="dimanche_choisir">Choisir un dimanche</string>
@@ -51,6 +56,7 @@
     <string name="carte_description">%1$s %2$s : %3$s</string>
 
     <!-- Panneau de pointage et de correction -->
+    <string name="panneau_date_enregistrement">Enregistré pour le dimanche %1$s</string>
     <string name="panneau_statut_actuel">Statut actuel :</string>
     <string name="panneau_correction_titre">Corriger le statut</string>
     <string name="bouton_present">PRÉSENT</string>
@@ -58,7 +64,7 @@
     <string name="bouton_absent">ABSENT</string>
     <string name="action_annuler_pointage">Annuler le pointage</string>
     <string name="erreur_pointage_ecriture">L’enregistrement a échoué : le statut n’a pas été modifié. Réessayez.</string>
-    <string name="erreur_pointage_a_venir">Cette séance n’a pas encore commencé : le pointage est désactivé.</string>
+    <string name="erreur_pointage_a_venir">Le pointage n’est pas encore ouvert pour ce dimanche : il se fait sur le dimanche à venir.</string>
     <string name="erreur_pointage_non_admissible">Cet enfant ne participe pas à ce dimanche.</string>
     <string name="erreur_pointage_absent_interdit">« Absent » est attribué à la clôture. Utilisez « Annuler le pointage » pour revenir à « Non enregistré ».</string>
     <string name="erreur_pointage_annulation">La séance est clôturée : choisissez Présent, En retard ou Absent.</string>
@@ -79,6 +85,8 @@
     <string name="fiche_titre">Fiche de l’enfant</string>
     <string name="fiche_modifier">Modifier</string>
     <string name="fiche_changer_photo">Changer la photo</string>
+    <string name="fiche_prendre_photo">Prendre la photo</string>
+    <string name="fiche_photo_non_prise">La photo n’a pas encore été prise.</string>
     <string name="fiche_historique">Voir l’historique</string>
     <string name="fiche_archiver">Archiver l’enfant</string>
     <string name="fiche_archive_badge">Archivé</string>
@@ -120,7 +128,11 @@
     <string name="formulaire_titre_modif">Modifier l’enfant</string>
     <string name="formulaire_enregistrer">ENREGISTRER L’ENFANT</string>
     <string name="formulaire_photo_description">Photo validée de l’enfant</string>
+    <string name="formulaire_photo_non_prise">Photo non prise : silhouette affichée</string>
+    <string name="formulaire_prendre_photo">Prendre la photo</string>
+    <string name="formulaire_photo_facultative">Facultatif : vous pourrez prendre la photo plus tard depuis la fiche de l’enfant.</string>
     <string name="formulaire_reprendre_photo">Reprendre la photo</string>
+    <string name="formulaire_retirer_photo">Retirer la photo</string>
     <string name="date_placeholder">JJ/MM/AAAA</string>
     <string name="date_choisir">Choisir une date</string>
     <string name="date_effacer">Effacer la date</string>
@@ -131,9 +143,8 @@
     <string name="erreur_membres_superieur">Le nombre de membres ne peut pas dépasser le nombre total de frères et sœurs.</string>
     <string name="erreur_trop_long">Texte trop long.</string>
     <string name="erreur_formulaire_ecriture">L’enregistrement a échoué. Vos informations sont conservées : réessayez.</string>
-    <string name="erreur_photo_absente">Aucune photo validée : reprenez la photo.</string>
     <string name="abandon_titre">Abandonner l’ajout ?</string>
-    <string name="abandon_message">La photo et les informations saisies seront perdues. Aucune fiche ne sera créée.</string>
+    <string name="abandon_message">Les informations saisies (et la photo, s’il y en a une) seront perdues. Aucune fiche ne sera créée.</string>
     <string name="abandon_confirmer">Abandonner</string>
     <string name="abandon_continuer">Continuer la saisie</string>
     <string name="photo_temporaire_perdue">La photo temporaire n’est plus disponible. Reprenez la photo.</string>
@@ -145,18 +156,37 @@
     <string name="camera_changer">Changer de caméra</string>
     <string name="camera_fermer">Fermer la caméra</string>
     <string name="camera_indisponible">La caméra est indisponible</string>
-    <string name="camera_indisponible_aide">Aucune fiche n’a été créée. Vérifiez qu’aucune autre application n’utilise la caméra, puis réessayez.</string>
+    <string name="camera_indisponible_aide">Vérifiez qu’aucune autre application n’utilise la caméra, puis réessayez. Vous pouvez aussi enregistrer l’enfant sans photo et la prendre plus tard.</string>
     <string name="camera_erreur_capture">La photo n’a pas pu être enregistrée. Réessayez.</string>
     <string name="permission_titre">Autorisation de la caméra</string>
     <string name="permission_refus_temporaire">L’application a besoin de la caméra pour photographier l’enfant. Les photos restent uniquement sur ce téléphone. Les autres fonctions restent disponibles.</string>
     <string name="permission_refus_definitif">L’autorisation de la caméra a été refusée de façon définitive. Ouvrez les paramètres de l’application pour l’accorder. Les autres fonctions restent disponibles.</string>
     <string name="permission_autoriser">Autoriser la caméra</string>
     <string name="permission_parametres">Ouvrir les paramètres</string>
-    <string name="permission_annuler">Annuler l’ajout</string>
+    <string name="permission_annuler">Annuler</string>
     <string name="apercu_titre">Vérifiez la photo</string>
     <string name="apercu_description">Aperçu de la photo prise</string>
     <string name="apercu_reprendre">Reprendre</string>
     <string name="apercu_utiliser">Utiliser cette photo</string>
+
+    <!-- Export CSV -->
+    <string name="export_titre">Exporter en CSV</string>
+    <string name="export_explication">Crée un fichier CSV que vous pouvez ouvrir dans Excel, LibreOffice ou Google Sheets. Vous choisissez où l’enregistrer : rien n’est envoyé par Internet.</string>
+    <string name="export_contenu_titre">Contenu du fichier</string>
+    <string name="export_contenu_infos">Un enfant par ligne : nom, prénom, sexe, date de naissance, âge et statut (actif ou archivé).</string>
+    <string name="export_contenu_presences">Sa présence à chaque dimanche (Présent, En retard, Absent), puis le total des présences, retards, absences et l’assiduité.</string>
+    <string name="export_contenu_exclus">Les autres informations (parents, adresse, fratrie, photo…) ne sont pas exportées.</string>
+    <string name="export_inclure_archives">Inclure les enfants archivés</string>
+    <string name="export_aucun_enfant">Aucun enfant à exporter.</string>
+    <string name="export_apercu">%1$s · %2$s</string>
+    <string name="export_enfant">%1$d enfant</string>
+    <string name="export_enfants">%1$d enfants</string>
+    <string name="export_dimanche">%1$d dimanche</string>
+    <string name="export_dimanches">%1$d dimanches</string>
+    <string name="export_bouton">Exporter en CSV</string>
+    <string name="export_reussi">Fichier enregistré : %1$s, %2$s.</string>
+    <string name="export_echec">Le fichier n’a pas pu être enregistré. Réessayez, ou choisissez un autre emplacement.</string>
+    <string name="export_erreur_apercu">Impossible de préparer l’export.</string>
 
     <!-- Assiduité et historique -->
     <string name="assiduite_titre">Assiduité</string>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Silhouette neutre (sexe non encore choisi). Affichée tant que la photo n'a pas été prise ; teintée en gris par
+    l'application (voir ui/components/PhotoEnfant.kt). Dessin sur une grille de 48 × 48.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M15.5,15a8.5,8.5 0 1,0 17.0,0a8.5,8.5 0 1,0 -17.0,0z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M7.5,45c0,-10.5 7,-17 16.5,-17s16.5,6.5 16.5,17z" />
+</vector>

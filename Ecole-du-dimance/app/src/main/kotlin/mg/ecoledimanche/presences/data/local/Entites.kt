@@ -14,6 +14,10 @@ import mg.ecoledimanche.presences.domain.StatutPresence
  * Table ENFANTS. L'âge n'est pas stocké (calculé depuis [dateNaissance]) et la photo n'est pas
  * un BLOB : [photoPath] est un chemin RELATIF au répertoire privé de l'application.
  *
+ * La photo est facultative : tant qu'elle n'a pas été prise, [photoPath] vaut [PHOTO_NON_PRISE] (chaîne
+ * vide) et l'application affiche une silhouette grisée selon le [sexe]. Une chaîne vide plutôt qu'une
+ * colonne nullable évite une migration du schéma Room (les données existantes restent valides).
+ *
  * [dateDebutSuivi] et [dateFinSuivi] sont des données techniques, distinctes de
  * [dateArriveeEglise] (information de la fiche). [dateFinSuivi] est une borne inclusive.
  */
@@ -48,6 +52,12 @@ data class EnfantEntity(
     val createdAt: Instant,
     val updatedAt: Instant,
 )
+
+/** Valeur de [EnfantEntity.photoPath] tant que la photo n'a pas été prise. */
+const val PHOTO_NON_PRISE = ""
+
+/** Vrai si une photo a été prise pour cet enfant (le fichier peut néanmoins avoir disparu). */
+val EnfantEntity.aUnePhoto: Boolean get() = photoPath.isNotBlank()
 
 /**
  * Table SEANCES : une ligne par dimanche matérialisé. La date civile est la clé primaire ;

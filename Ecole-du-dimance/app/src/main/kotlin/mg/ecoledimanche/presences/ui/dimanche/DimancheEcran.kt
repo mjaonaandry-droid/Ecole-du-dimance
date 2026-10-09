@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -38,6 +39,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -104,7 +106,10 @@ fun DimancheEcran(
             EtatEcranDimanche.Chargement -> EcranChargement(stringResource(R.string.chargement))
             EtatEcranDimanche.Erreur -> EcranErreur(stringResource(R.string.dimanche_erreur))
             is EtatEcranDimanche.Pret -> {
-                EnteteDimanche(etat, actions)
+                EnteteDimanche(etat, aujourdhui, actions)
+                if (etat.phase == PhaseSeance.A_VENIR) {
+                    BandeauDimancheAVenir(etat.dimancheAVenir) { actions.onChoisirDimanche(etat.dimancheAVenir) }
+                }
                 if (etat.elements.isEmpty()) {
                     EtatVide(
                         icone = Icons.Filled.Groups,
@@ -123,7 +128,7 @@ fun DimancheEcran(
                 }
                 val selection = etat.elements.firstOrNull { it.enfant.id == panneau.enfantId }
                 if (selection != null) {
-                    PanneauStatut(selection, etat.phase, panneau, actions.onPointer, actions.onFermerPanneau)
+                    PanneauStatut(selection, etat.phase, etat.dimanche, panneau, actions.onPointer, actions.onFermerPanneau)
                 }
             }
         }
@@ -131,7 +136,7 @@ fun DimancheEcran(
 }
 
 @Composable
-private fun EnteteDimanche(pret: EtatEcranDimanche.Pret, actions: ActionsDimanche) {
+private fun EnteteDimanche(pret: EtatEcranDimanche.Pret, aujourdhui: LocalDate, actions: ActionsDimanche) {
     var selecteurOuvert by rememberSaveable { mutableStateOf(false) }
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -153,7 +158,7 @@ private fun EnteteDimanche(pret: EtatEcranDimanche.Pret, actions: ActionsDimanch
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
             )
-            LignePhase(pret.phase)
+            LignePhase(pret.phase, pret.dimanche, aujourdhui)
         }
         IconButton(onClick = actions.onSuivant, enabled = pret.peutAvancer) {
             Icon(Icons.Filled.ChevronRight, contentDescription = stringResource(R.string.dimanche_suivant))
@@ -163,6 +168,7 @@ private fun EnteteDimanche(pret: EtatEcranDimanche.Pret, actions: ActionsDimanch
         SelecteurDimanche(
             dimanches = pret.dimanchesProposes,
             selection = pret.dimanche,
+            dimancheAVenir = pret.dimancheAVenir,
             onChoisir = { selecteurOuvert = false; actions.onChoisirDimanche(it) },
             onRevenirAuDefaut = { selecteurOuvert = false; actions.onRevenirAuDefaut() },
             onFermer = { selecteurOuvert = false },
@@ -170,18 +176,42 @@ private fun EnteteDimanche(pret: EtatEcranDimanche.Pret, actions: ActionsDimanch
     }
 }
 
-/** « Séance à venir » / « Pointage en cours — clôture à 10 h » / « Séance clôturée ». */
+/**
+ * « Séance à venir » / « Pointage ouvert — clôture dimanche à 10 h » (avant le jour J) /
+ * « Pointage en cours — clôture à 10 h » / « Séance clôturée ».
+ */
 @Composable
-private fun LignePhase(phase: PhaseSeance) {
+private fun LignePhase(phase: PhaseSeance, dimanche: LocalDate, aujourdhui: LocalDate) {
+    val heure = FormatsFr.heure(ConfigurationSeance.HEURE_CLOTURE)
     val (icone, texte) = when (phase) {
         PhaseSeance.A_VENIR -> Icons.Filled.EventAvailable to stringResource(R.string.phase_a_venir)
         PhaseSeance.EN_COURS -> Icons.Filled.Schedule to
-            stringResource(R.string.phase_en_cours, FormatsFr.heure(ConfigurationSeance.HEURE_CLOTURE))
+            if (dimanche.isAfter(aujourdhui)) stringResource(R.string.phase_ouverte_avant, heure) else stringResource(R.string.phase_en_cours, heure)
         PhaseSeance.CLOTUREE -> Icons.Filled.Lock to stringResource(R.string.phase_cloturee)
     }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Icon(icone, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
         Text(text = texte, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+    }
+}
+
+/**
+ * Affiché sur un dimanche au-delà du dimanche à venir : les dates sont consultables, mais le pointage
+ * se fait toujours sur le dimanche à venir, vers lequel un bouton ramène.
+ */
+@Composable
+private fun BandeauDimancheAVenir(dimancheAVenir: LocalDate, onAller: () -> Unit) {
+    val date = FormatsFr.dateCourte(dimancheAVenir)
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(12.dp)) {
+            Text(text = stringResource(R.string.dimanche_a_venir_info, date), style = MaterialTheme.typography.bodyMedium)
+            FilledTonalButton(onClick = onAller, modifier = Modifier.heightIn(min = 48.dp)) {
+                Text(stringResource(R.string.dimanche_aller_a_venir, date))
+            }
+        }
     }
 }
 
@@ -242,6 +272,7 @@ private fun CarteEnfant(
             Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
                 PhotoEnfant(
                     chemin = enfant.photoPath,
+                    sexe = enfant.sexe,
                     description = null,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -279,6 +310,7 @@ private fun CarteEnfant(
 private fun PanneauStatut(
     element: ElementDimanche,
     phase: PhaseSeance,
+    dimanche: LocalDate,
     panneau: PanneauStatutUi,
     onPointer: (StatutPresence) -> Unit,
     onFermer: () -> Unit,
@@ -298,6 +330,7 @@ private fun PanneauStatut(
         ) {
             PhotoEnfant(
                 chemin = enfant.photoPath,
+                sexe = enfant.sexe,
                 description = stringResource(R.string.photo_de, enfant.prenom, enfant.nom),
                 coteMaxPx = 720,
                 forme = RoundedCornerShape(20.dp),
@@ -308,6 +341,12 @@ private fun PanneauStatut(
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
+            )
+            // La date à laquelle le pointage sera enregistré : le dimanche affiché, jamais le jour du clic.
+            Text(
+                text = stringResource(R.string.panneau_date_enregistrement, FormatsFr.dateCourte(dimanche)),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.panneau_statut_actuel), style = MaterialTheme.typography.bodyLarge)
@@ -390,6 +429,7 @@ private fun libelleErreurPointage(erreur: ErreurPointage): String = stringResour
 private fun SelecteurDimanche(
     dimanches: List<LocalDate>,
     selection: LocalDate,
+    dimancheAVenir: LocalDate,
     onChoisir: (LocalDate) -> Unit,
     onRevenirAuDefaut: () -> Unit,
     onFermer: () -> Unit,
@@ -398,7 +438,9 @@ private fun SelecteurDimanche(
         onDismissRequest = onFermer,
         title = { Text(stringResource(R.string.dimanche_choisir)) },
         text = {
-            LazyColumn(modifier = Modifier.heightIn(max = 360.dp)) {
+            // La liste couvre toute l'année : elle s'ouvre directement sur le dimanche affiché.
+            val liste = rememberLazyListState(initialFirstVisibleItemIndex = (dimanches.indexOf(selection) - 2).coerceAtLeast(0))
+            LazyColumn(state = liste, modifier = Modifier.heightIn(max = 360.dp)) {
                 items(dimanches, key = { it.toEpochDay() }) { dimanche ->
                     val choisi = dimanche == selection
                     Row(
@@ -415,6 +457,14 @@ private fun SelecteurDimanche(
                             fontWeight = if (choisi) FontWeight.Bold else FontWeight.Normal,
                             modifier = Modifier.weight(1f),
                         )
+                        if (dimanche == dimancheAVenir) {
+                            Text(
+                                text = stringResource(R.string.dimanche_badge_a_venir),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 8.dp),
+                            )
+                        }
                         if (choisi) Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     }
                     HorizontalDivider()

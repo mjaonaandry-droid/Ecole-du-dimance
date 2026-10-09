@@ -93,6 +93,7 @@ fun EnfantsEcran(
                             leadingContent = {
                                 PhotoEnfant(
                                     chemin = enfant.photoPath,
+                                    sexe = enfant.sexe,
                                     description = stringResource(R.string.photo_de, enfant.prenom, enfant.nom),
                                     coteMaxPx = 240,
                                     forme = CircleShape,

@@ -54,6 +54,10 @@ interface EnfantDao {
     @Query("SELECT * FROM enfants WHERE isArchived = :archive")
     fun observerSelonArchivage(archive: Boolean): Flow<List<EnfantEntity>>
 
+    /** Tous les enfants, actifs et archivés (export). */
+    @Query("SELECT * FROM enfants")
+    suspend fun tous(): List<EnfantEntity>
+
     @Query("SELECT dateDebutSuivi, dateFinSuivi FROM enfants")
     suspend fun plagesDeSuivi(): List<PlageSuivi>
 
@@ -83,6 +87,14 @@ interface EnfantDao {
             "updatedAt = :maintenant WHERE id = :id AND isArchived = 0",
     )
     suspend fun archiver(id: Long, finSuivi: LocalDate, maintenant: Instant): Int
+
+    /**
+     * Retire les présences enregistrées d'avance pour des dimanches postérieurs à la fin de suivi
+     * (pointage anticipé, puis archivage avant le jour J) : l'enfant n'est plus admissible à ces
+     * dimanches, une ligne restante fausserait l'assiduité.
+     */
+    @Query("DELETE FROM presences WHERE enfantId = :id AND dateDimanche > :finSuivi")
+    suspend fun retirerPresencesApres(id: Long, finSuivi: LocalDate): Int
 
     @Query("UPDATE enfants SET photoPath = :chemin, updatedAt = :maintenant WHERE id = :id")
     suspend fun changerPhoto(id: Long, chemin: String, maintenant: Instant): Int
@@ -146,6 +158,10 @@ interface PresenceDao {
 
     @Query("SELECT * FROM presences WHERE dateDimanche = :dimanche")
     suspend fun duDimanche(dimanche: LocalDate): List<PresenceEntity>
+
+    /** Toutes les présences enregistrées (export). */
+    @Query("SELECT * FROM presences")
+    suspend fun toutes(): List<PresenceEntity>
 
     @Query("SELECT * FROM presences WHERE enfantId = :enfantId AND dateDimanche = :dimanche")
     suspend fun trouver(enfantId: Long, dimanche: LocalDate): PresenceEntity?

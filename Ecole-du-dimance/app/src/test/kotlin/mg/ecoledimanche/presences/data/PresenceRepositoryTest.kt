@@ -103,16 +103,89 @@ class PresenceRepositoryTest {
     }
 
     @Test
-    fun uneSeanceAVenir_refuseLePointage_etNeCreeRien() = runTest {
+    fun unDimancheAuDelaDuDimancheAVenir_refuseLePointage_etNeCreeRien() = runTest {
         val env = Environnement(instantLocal("2026-10-06", 14))
         val (sarah, _, _) = troisEnfants(env)
-        env.allerA("2026-10-07", 9, 0) // mercredi : le dimanche 11/10 est à venir
-        assertEquals(PhaseSeance.A_VENIR, env.presences.observerDimanche(dimanche).first().phase)
-        assertEquals(3, env.presences.observerDimanche(dimanche).first().elements.size) // enfants prévus visibles
-        assertEquals(ResultatPointage.Refuse(MotifRefus.SEANCE_A_VENIR), env.presences.pointer(sarah, dimanche, StatutPresence.PRESENT))
+        env.allerA("2026-10-07", 9, 0) // mercredi : le dimanche à venir est le 11/10, celui du 18/10 est « à venir » plus tard
+        val suivant = LocalDate.parse("2026-10-18")
+        assertEquals(PhaseSeance.A_VENIR, env.presences.observerDimanche(suivant).first().phase)
+        assertEquals(3, env.presences.observerDimanche(suivant).first().elements.size) // enfants prévus visibles
+        assertEquals(ResultatPointage.Refuse(MotifRefus.SEANCE_A_VENIR), env.presences.pointer(sarah, suivant, StatutPresence.PRESENT))
         assertEquals(0, env.presences.rattraper())
         assertTrue(env.magasin.presences.isEmpty())
         assertTrue(env.magasin.seances.isEmpty())
+    }
+
+    @Test
+    fun pointageFaitLeVendredi_estEnregistrePourLeDimancheAVenir_etLaSeanceResteOuverte() = runTest {
+        val env = Environnement(instantLocal("2026-10-06", 14))
+        val (sarah, david, nathan) = troisEnfants(env)
+        env.allerA("2026-10-09", 14, 0) // vendredi : « si je clique aujourd'hui, la sauvegarde est pour le 11/10 »
+        assertEquals(PhaseSeance.EN_COURS, env.presences.observerDimanche(dimanche).first().phase)
+        assertEquals(enregistre(StatutPresence.PRESENT), env.presences.pointer(sarah, dimanche, StatutPresence.PRESENT))
+        assertEquals(enregistre(StatutPresence.EN_RETARD), env.presences.pointer(david, dimanche, StatutPresence.EN_RETARD))
+
+        // Les lignes portent la date du dimanche à venir ; rien n'est clôturé et aucune absence n'est créée avant le jour J.
+        assertEquals(setOf(sarah to dimanche, david to dimanche), env.magasin.presences.keys)
+        assertFalse(env.magasin.seances.getValue(dimanche).cloturee)
+        assertEquals(0, env.presences.rattraper())
+        assertEquals(StatutPresence.PRESENT, statutAffiche(env, sarah))
+        assertEquals(StatutPresence.NON_ENREGISTRE, statutAffiche(env, nathan))
+
+        // Le dimanche à 10 h : les pointages faits d'avance sont conservés, le non-pointé devient absent.
+        env.allerA("2026-10-11", 10, 0)
+        assertEquals(1, env.presences.rattraper())
+        assertEquals(StatutPresence.PRESENT, statutAffiche(env, sarah))
+        assertEquals(StatutPresence.EN_RETARD, statutAffiche(env, david))
+        assertEquals(StatutPresence.ABSENT, statutAffiche(env, nathan))
+    }
+
+    @Test
+    fun pointageAnticipe_peutEtreAnnule_maisAbsentResteInterditAvantLaCloture() = runTest {
+        val env = Environnement(instantLocal("2026-10-06", 14))
+        val (sarah, _, _) = troisEnfants(env)
+        env.allerA("2026-10-10", 20, 0) // samedi soir
+        assertEquals(enregistre(StatutPresence.PRESENT), env.presences.pointer(sarah, dimanche, StatutPresence.PRESENT))
+        assertEquals(enregistre(StatutPresence.NON_ENREGISTRE), env.presences.pointer(sarah, dimanche, StatutPresence.NON_ENREGISTRE))
+        assertEquals(
+            ResultatPointage.Refuse(MotifRefus.ABSENT_INTERDIT_AVANT_CLOTURE),
+            env.presences.pointer(sarah, dimanche, StatutPresence.ABSENT),
+        )
+        assertEquals(StatutPresence.NON_ENREGISTRE, statutAffiche(env, sarah))
+    }
+
+    @Test
+    fun apresLaClotureDuDimanche_lePointageDuDimancheSuivantEstOuvert_maisPasCeluiDApres() = runTest {
+        val env = Environnement(instantLocal("2026-10-06", 14))
+        val (sarah, _, _) = troisEnfants(env)
+        env.allerA("2026-10-11", 10, 30) // dimanche après la clôture : le dimanche à venir est le 18/10
+        val suivant = LocalDate.parse("2026-10-18")
+        assertEquals(enregistre(StatutPresence.PRESENT), env.presences.pointer(sarah, suivant, StatutPresence.PRESENT))
+        assertEquals(StatutPresence.PRESENT, env.magasin.presences.getValue(sarah to suivant).statut)
+        assertEquals(
+            ResultatPointage.Refuse(MotifRefus.SEANCE_A_VENIR),
+            env.presences.pointer(sarah, suivant.plusWeeks(1), StatutPresence.PRESENT),
+        )
+        // Le dimanche du jour, clôturé, reste corrigeable comme avant.
+        assertEquals(enregistre(StatutPresence.EN_RETARD), env.presences.pointer(sarah, dimanche, StatutPresence.EN_RETARD))
+    }
+
+    @Test
+    fun enfantArchiveApresUnPointageAnticipe_nEstPasCompteDansUneSeanceQuIlNeSuitPlus() = runTest {
+        val env = Environnement(instantLocal("2026-10-06", 14))
+        val (sarah, david, _) = troisEnfants(env)
+        env.allerA("2026-10-09", 14, 0)
+        env.presences.pointer(sarah, dimanche, StatutPresence.PRESENT)
+        env.presences.pointer(david, dimanche, StatutPresence.PRESENT)
+        env.allerA("2026-10-10", 9, 0) // samedi : Sarah est archivée avant le dimanche
+        assertTrue(env.enfants.archiver(sarah))
+        assertNull(env.magasin.presences[sarah to dimanche]) // la ligne d'avance est retirée
+        assertNotNull(env.magasin.presences[david to dimanche]) // les autres sont intactes
+
+        env.allerA("2026-10-11", 10, 0)
+        env.presences.rattraper()
+        assertEquals(CompteursAssiduite.VIDE, compteurs(env, sarah, archives = true)) // jamais comptée présente
+        assertEquals(1, compteurs(env, david).presences)
     }
 
     @Test
@@ -555,5 +628,81 @@ class PresenceRepositoryTest {
         env.allerA("2026-10-11", 9, 0)
         env.presences.pointer(a, dimanche, StatutPresence.PRESENT)
         assertEquals(StatutPresence.NON_ENREGISTRE, statutAffiche(env, b))
+    }
+
+    // ----------------------------------------------------------------------------------------
+    // Export CSV : tableau des enfants et de leurs présences
+    // ----------------------------------------------------------------------------------------
+
+    @Test
+    fun tableauExport_sansEnfant_estVide() = runTest {
+        val env = Environnement(instantLocal("2026-10-06", 14))
+        val tableau = env.presences.tableauExport(inclureArchives = true)
+        assertTrue(tableau.dimanches.isEmpty())
+        assertTrue(tableau.lignes.isEmpty())
+    }
+
+    @Test
+    fun tableauExport_statutsParDimanche_etComptesSurLesSeancesCloturees() = runTest {
+        val env = Environnement(instantLocal("2026-10-06", 14))
+        val (sarah, david, _) = troisEnfants(env)
+        env.allerA("2026-10-11", 8, 30)
+        env.presences.pointer(sarah, dimanche, StatutPresence.PRESENT)
+        env.presences.pointer(david, dimanche, StatutPresence.EN_RETARD)
+        env.allerA("2026-10-14", 9, 0)
+        env.inscrire("Rabe", "Zoé") // suivi dès le 18/10
+        env.allerA("2026-10-18", 8, 30)
+        env.presences.pointer(sarah, LocalDate.parse("2026-10-18"), StatutPresence.PRESENT)
+        env.allerA("2026-10-19", 8, 0)
+
+        val tableau = env.presences.tableauExport(inclureArchives = true)
+        assertEquals(listOf("2026-10-11", "2026-10-18").map(LocalDate::parse), tableau.dimanches)
+        // Tri comme dans l'application : prénom puis nom.
+        assertEquals(listOf("David", "Nathan", "Sarah", "Zoé"), tableau.lignes.map { it.prenom })
+        val parId = tableau.lignes.associateBy { it.prenom }
+        val d1 = dimanche
+        val d2 = LocalDate.parse("2026-10-18")
+
+        assertEquals(mapOf(d1 to StatutPresence.PRESENT, d2 to StatutPresence.PRESENT), parId.getValue("Sarah").statuts)
+        assertEquals(CompteursAssiduite(2, 0, 0), parId.getValue("Sarah").compteurs)
+        assertEquals(mapOf(d1 to StatutPresence.EN_RETARD, d2 to StatutPresence.ABSENT), parId.getValue("David").statuts)
+        assertEquals(CompteursAssiduite(0, 1, 1), parId.getValue("David").compteurs)
+        assertEquals(mapOf(d1 to StatutPresence.ABSENT, d2 to StatutPresence.ABSENT), parId.getValue("Nathan").statuts)
+        // Zoé n'était pas suivie le 11/10 : pas de cellule ce jour-là.
+        assertEquals(mapOf(d2 to StatutPresence.ABSENT), parId.getValue("Zoé").statuts)
+        assertEquals(CompteursAssiduite(0, 0, 1), parId.getValue("Zoé").compteurs)
+    }
+
+    @Test
+    fun tableauExport_lesArchivesSontInclusesOuNonSelonLeChoix_etGardentLeurHistorique() = runTest {
+        val env = Environnement(instantLocal("2026-10-06", 14))
+        val (sarah, _, nathan) = troisEnfants(env)
+        env.allerA("2026-10-11", 8, 30)
+        env.presences.pointer(sarah, dimanche, StatutPresence.PRESENT)
+        env.allerA("2026-10-12", 9, 0)
+        env.enfants.archiver(nathan)
+
+        val avecArchives = env.presences.tableauExport(inclureArchives = true)
+        assertEquals(3, avecArchives.lignes.size)
+        val archive = avecArchives.lignes.single { it.prenom == "Nathan" }
+        assertTrue(archive.archive)
+        assertEquals(mapOf(dimanche to StatutPresence.ABSENT), archive.statuts) // son dimanche reste dans l'historique
+        assertEquals(listOf("David", "Sarah"), env.presences.tableauExport(inclureArchives = false).lignes.map { it.prenom })
+    }
+
+    @Test
+    fun tableauExport_dimancheAVenirDejaPointe_apparaitCommeColonne_sansAbsenceInventee() = runTest {
+        val env = Environnement(instantLocal("2026-10-06", 14))
+        val (sarah, _, _) = troisEnfants(env)
+        env.allerA("2026-10-09", 14, 0)
+        assertTrue(env.presences.tableauExport(true).dimanches.isEmpty()) // rien d'échu ni de pointé : aucune colonne
+
+        env.presences.pointer(sarah, dimanche, StatutPresence.PRESENT)
+        val tableau = env.presences.tableauExport(true)
+        assertEquals(listOf(dimanche), tableau.dimanches)
+        val lignes = tableau.lignes.associateBy { it.prenom }
+        assertEquals(StatutPresence.PRESENT, lignes.getValue("Sarah").statuts.getValue(dimanche))
+        assertEquals(StatutPresence.NON_ENREGISTRE, lignes.getValue("Nathan").statuts.getValue(dimanche)) // pas encore absent
+        assertEquals(CompteursAssiduite.VIDE, lignes.getValue("Sarah").compteurs) // séance ouverte : exclue des comptes
     }
 }

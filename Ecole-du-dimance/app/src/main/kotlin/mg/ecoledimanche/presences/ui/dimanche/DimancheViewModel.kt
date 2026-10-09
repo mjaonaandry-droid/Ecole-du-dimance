@@ -25,6 +25,7 @@ import mg.ecoledimanche.presences.data.repository.ResultatPointage
 import mg.ecoledimanche.presences.domain.AppClock
 import mg.ecoledimanche.presences.domain.Dimanches
 import mg.ecoledimanche.presences.domain.PhaseSeance
+import mg.ecoledimanche.presences.domain.RegleSeance
 import mg.ecoledimanche.presences.domain.StatutPresence
 import mg.ecoledimanche.presences.domain.aujourdhui
 
@@ -41,6 +42,11 @@ sealed interface EtatEcranDimanche {
         /** Dimanches proposés par le sélecteur, du plus récent au plus ancien. */
         val dimanchesProposes: List<LocalDate>,
         val estDimancheParDefaut: Boolean,
+        /**
+         * Dimanche qui reçoit les pointages d'aujourd'hui : le plus proche dimanche non clôturé
+         * (exemple : un clic le vendredi 09/10/2026 est enregistré au dimanche 11/10/2026).
+         */
+        val dimancheAVenir: LocalDate,
     ) : EtatEcranDimanche
 }
 
@@ -90,20 +96,25 @@ class DimancheViewModel(
         // Rattrapage AVANT d'afficher : après 10 h, l'écran montre toujours un résultat cohérent.
         presences.rattraper()
         val parDefaut = Dimanches.parDefaut(horloge.aujourdhui())
+        val aVenir = RegleSeance.dimancheAVenir(horloge.instant(), horloge.zone())
         val dimanche = choisi ?: parDefaut
+        // Toutes les dates sont proposées : une année avant et une année après le dimanche affiché
+        // par défaut (et davantage si l'utilisateur est déjà allé plus loin ou si le suivi est plus ancien).
         val premier = presences.premierDimancheSuivi()
-        val dernier = parDefaut.plusWeeks(SEMAINES_A_VENIR)
-        val proposes = if (premier == null) listOf(parDefaut) else Dimanches.entre(minOf(premier, dimanche), dernier).asReversed()
+        val debut = minOf(parDefaut.minusWeeks(SEMAINES_PASSEES), premier ?: parDefaut, dimanche)
+        val fin = maxOf(parDefaut.plusWeeks(SEMAINES_A_VENIR), dimanche)
+        val proposes = Dimanches.entre(debut, fin).asReversed()
         emitAll(
             presences.observerDimanche(dimanche).map { contenu ->
                 EtatEcranDimanche.Pret(
                     dimanche = dimanche,
                     phase = contenu.phase,
                     elements = contenu.elements,
-                    peutReculer = premier != null && dimanche.isAfter(premier),
-                    peutAvancer = dimanche.isBefore(dernier),
+                    peutReculer = dimanche.isAfter(debut),
+                    peutAvancer = dimanche.isBefore(fin),
                     dimanchesProposes = proposes,
                     estDimancheParDefaut = dimanche == parDefaut,
+                    dimancheAVenir = aVenir,
                 )
             },
         )
@@ -133,7 +144,8 @@ class DimancheViewModel(
 
     fun ouvrirPanneau(enfantId: Long) {
         val pret = etat.value as? EtatEcranDimanche.Pret ?: return
-        if (pret.phase == PhaseSeance.A_VENIR) return // pointage désactivé pour un dimanche futur
+        // Pointage désactivé au-delà du dimanche à venir ; le dimanche à venir lui-même est ouvert dès maintenant.
+        if (pret.phase == PhaseSeance.A_VENIR) return
         _panneau.value = PanneauStatutUi(enfantId = enfantId)
     }
 
@@ -167,7 +179,8 @@ class DimancheViewModel(
     }
 
     private companion object {
-        /** Combien de dimanches à venir le sélecteur propose. */
-        const val SEMAINES_A_VENIR = 8L
+        /** Combien de dimanches passés et à venir le sélecteur propose, autour du dimanche par défaut. */
+        const val SEMAINES_PASSEES = 52L
+        const val SEMAINES_A_VENIR = 52L
     }
 }

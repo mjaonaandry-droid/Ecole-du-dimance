@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import mg.ecoledimanche.presences.data.local.EnfantEntity
+import mg.ecoledimanche.presences.data.local.aUnePhoto
 import mg.ecoledimanche.presences.data.repository.EnfantRepository
 import mg.ecoledimanche.presences.data.repository.StockagePhotos
 import mg.ecoledimanche.presences.domain.Age
@@ -27,7 +28,10 @@ sealed interface EtatEcranFiche {
         val enfant: EnfantEntity,
         /** Âge calculé à l'affichage depuis la date de naissance, jamais stocké. */
         val age: Int,
-        /** Faux si le fichier photo est absent ou illisible : l'écran propose alors de la remplacer. */
+        /**
+         * Faux si le fichier photo est absent ou illisible : l'écran propose alors de la remplacer.
+         * Toujours vrai tant que la photo n'a pas été prise (une silhouette est alors affichée).
+         */
         val photoDisponible: Boolean,
     ) : EtatEcranFiche
 }
@@ -52,7 +56,7 @@ class FicheViewModel(
                 EtatEcranFiche.Pret(
                     enfant = enfant,
                     age = Age.enAnnees(enfant.dateNaissance, horloge.aujourdhui()),
-                    photoDisponible = photos.existe(enfant.photoPath),
+                    photoDisponible = !enfant.aUnePhoto || photos.existe(enfant.photoPath),
                 )
             }
         }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Today
@@ -65,6 +66,9 @@ fun NavigationApp(conteneur: ConteneurApp) {
             composable(Routes.ASSIDUITE) {
                 AssiduiteRoute(conteneur, onOuvrirHistorique = { navigation.navigate(Routes.historique(it)) })
             }
+            composable(Routes.EXPORTER) {
+                ExporterRoute(conteneur)
+            }
             composable(Routes.AJOUTER) {
                 AjoutRoute(
                     conteneur,
@@ -102,8 +106,8 @@ fun NavigationApp(conteneur: ConteneurApp) {
 }
 
 /**
- * Quatre accès : Dimanche, Enfants, Ajouter, Assiduité. « Ajouter » est une action centrale
- * (jamais sélectionnée) qui démarre le parcours caméra puis formulaire : pas d'onglet vide.
+ * Cinq accès : Dimanche, Enfants, Ajouter, Assiduité, Exporter. « Ajouter » est une action centrale
+ * (jamais sélectionnée) qui ouvre le formulaire d'ajout : pas d'onglet vide.
  */
 @Composable
 private fun BarreNavigation(routeCourante: String?, navigation: NavHostController) {
@@ -125,6 +129,7 @@ private fun BarreNavigation(routeCourante: String?, navigation: NavHostControlle
             colors = NavigationBarItemDefaults.colors(unselectedTextColor = MaterialTheme.colorScheme.primary),
         )
         ElementOnglet(Routes.ASSIDUITE, R.string.nav_assiduite, Icons.Filled.Insights, routeCourante, navigation)
+        ElementOnglet(Routes.EXPORTER, R.string.nav_exporter, Icons.Filled.FileDownload, routeCourante, navigation)
     }
 }
 

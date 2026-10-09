@@ -1,6 +1,8 @@
 package mg.ecoledimanche.presences.ui.navigation
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -10,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -25,6 +28,9 @@ import mg.ecoledimanche.presences.ui.dimanche.DimancheEcran
 import mg.ecoledimanche.presences.ui.dimanche.DimancheViewModel
 import mg.ecoledimanche.presences.ui.enfants.EnfantsEcran
 import mg.ecoledimanche.presences.ui.enfants.EnfantsViewModel
+import mg.ecoledimanche.presences.ui.exporter.ExporterEcran
+import mg.ecoledimanche.presences.ui.exporter.ExporterViewModel
+import mg.ecoledimanche.presences.ui.exporter.ecrireFichier
 import mg.ecoledimanche.presences.ui.fabrique
 import mg.ecoledimanche.presences.ui.fiche.ActionsFiche
 import mg.ecoledimanche.presences.ui.fiche.ChangerPhotoViewModel
@@ -85,6 +91,29 @@ fun AssiduiteRoute(conteneur: ConteneurApp, onOuvrirHistorique: (Long) -> Unit) 
     AssiduiteEcran(etat = etat, onVoirArchives = vm::voirArchives, onOuvrirHistorique = onOuvrirHistorique)
 }
 
+/**
+ * Export CSV : le sélecteur de fichiers du système (« Enregistrer sous ») choisit la destination, sans
+ * permission de stockage ; le fichier n'est écrit qu'une fois la destination choisie.
+ */
+@Composable
+fun ExporterRoute(conteneur: ConteneurApp) {
+    val vm: ExporterViewModel = viewModel(
+        factory = fabrique { ExporterViewModel(conteneur.presenceRepository, conteneur.horloge, conteneur.actualisation.flux) },
+    )
+    val etat by vm.etat.collectAsStateWithLifecycle()
+    val contexte = LocalContext.current
+    val choisirDestination = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { destination ->
+        // Destination nulle : l'utilisateur a annulé le sélecteur, rien n'est écrit.
+        if (destination != null) vm.exporter { texte -> ecrireFichier(contexte, destination, texte) }
+    }
+    ExporterEcran(
+        etat = etat,
+        onInclureArchives = vm::inclureArchives,
+        onExporter = { choisirDestination.launch(vm.nomFichierSuggere()) },
+        onAcquitter = vm::acquitter,
+    )
+}
+
 @Composable
 fun HistoriqueRoute(conteneur: ConteneurApp, enfantId: Long, onRetour: () -> Unit) {
     val vm: HistoriqueViewModel = viewModel(
@@ -124,8 +153,10 @@ fun FicheRoute(
 }
 
 /**
- * Ajout d'un enfant, photo en premier : caméra, aperçu (« Reprendre » / « Utiliser cette photo »),
- * puis formulaire. Aucune fiche n'existe tant que « ENREGISTRER L'ENFANT » n'a pas réussi.
+ * Ajout d'un enfant : le formulaire s'affiche tout de suite, la photo est facultative. Tant qu'elle n'est
+ * pas prise, une silhouette grisée (garçon ou fille) est affichée ; « Prendre la photo » ouvre le même
+ * parcours qu'avant (caméra, aperçu « Reprendre » / « Utiliser cette photo »). Aucune fiche n'existe tant
+ * que « ENREGISTRER L'ENFANT » n'a pas réussi.
  */
 @Composable
 fun AjoutRoute(conteneur: ConteneurApp, onTermine: (Long) -> Unit, onAbandon: () -> Unit) {
@@ -136,20 +167,22 @@ fun AjoutRoute(conteneur: ConteneurApp, onTermine: (Long) -> Unit, onAbandon: ()
     )
     val etat by vm.etat.collectAsStateWithLifecycle()
     var confirmerAbandon by rememberSaveable { mutableStateOf(false) }
+    var priseDePhoto by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(etat.enfantEnregistre) {
         etat.enfantEnregistre?.let(onTermine)
     }
 
-    if (etat.photo == null) {
+    if (priseDePhoto) {
+        // « Retour » ou « Annuler » ramènent au formulaire : la saisie et l'éventuelle photo précédente sont conservées.
+        BackHandler { priseDePhoto = false }
         ParcoursPhoto(
             stockage = conteneur.stockagePhotos,
-            onValidee = vm::definirPhoto,
-            onAnnuler = {
-                vm.abandonner()
-                onAbandon()
+            onValidee = { chemin ->
+                vm.definirPhoto(chemin)
+                priseDePhoto = false
             },
-            messageInitial = if (etat.photoTemporairePerdue) stringResource(R.string.photo_temporaire_perdue) else null,
+            onAnnuler = { priseDePhoto = false },
         )
     } else {
         BackHandler { confirmerAbandon = true }
@@ -159,7 +192,8 @@ fun AjoutRoute(conteneur: ConteneurApp, onTermine: (Long) -> Unit, onAbandon: ()
             actions = ActionsFormulaire(
                 onRetour = { confirmerAbandon = true },
                 onChamps = vm::modifierChamps,
-                onReprendrePhoto = vm::reprendrePhoto,
+                onPrendrePhoto = { priseDePhoto = true },
+                onRetirerPhoto = vm::retirerPhoto,
                 onEnregistrer = vm::enregistrer,
             ),
         )
@@ -200,7 +234,8 @@ fun ModifierRoute(conteneur: ConteneurApp, enfantId: Long, onTermine: () -> Unit
         actions = ActionsFormulaire(
             onRetour = onRetour,
             onChamps = vm::modifierChamps,
-            onReprendrePhoto = {},
+            onPrendrePhoto = {},
+            onRetirerPhoto = {},
             onEnregistrer = vm::enregistrer,
         ),
     )
