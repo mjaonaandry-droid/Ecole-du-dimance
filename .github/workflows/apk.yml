@@ -158,7 +158,7 @@ jobs:
           echo "--- Sauvegarde / réseau dans le manifeste de l'APK :"
           "$BT/aapt2" dump xmltree --file AndroidManifest.xml "$APK" | grep -E "allowBackup|dataExtractionRules|fullBackupContent|usesCleartextTraffic|debuggable|android:name\(0x01010003\)=\"mg" || true
           echo "--- Signature de l'APK (clé de débogage Android) :"
-          "$BT/apksigner" verify --print-certs "$APK" 2>&1 | grep -E "^(Verifies|Signer #1 certificate (DN|SHA-256 digest))" || true
+          "$BT/apksigner" verify --verbose --print-certs "$APK" 2>&1 | grep -E "^(Verifies|Signer #1 certificate (DN|SHA-256 digest))" || true
           echo "(Si cette empreinte change d'un build à l'autre, Android refuse d'installer le nouvel APK par-dessus l'ancien.)"
           echo
           echo "################ SCHÉMA ROOM ################"

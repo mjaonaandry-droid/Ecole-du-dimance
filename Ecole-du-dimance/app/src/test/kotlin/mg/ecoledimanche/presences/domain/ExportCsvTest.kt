@@ -11,6 +11,9 @@ class ExportCsvTest {
     private val d1 = LocalDate.parse("2026-10-11")
     private val d2 = LocalDate.parse("2026-10-18")
 
+    /** Marque UTF-8 attendue en tête du fichier (voir ExportCsv). */
+    private val BOM: String = 0xFEFF.toChar().toString()
+
     private fun ligne(
         nom: String = "Rakoto",
         prenom: String = "Sarah",
@@ -23,9 +26,9 @@ class ExportCsvTest {
 
     /** Lignes du fichier, sans le BOM, en vérifiant que le séparateur de ligne est bien CRLF. */
     private fun lignes(csv: String): List<String> {
-        assertTrue("BOM UTF-8 attendu pour Excel", csv.startsWith("﻿"))
+        assertTrue("BOM UTF-8 attendu pour Excel", csv.startsWith(BOM))
         assertTrue("fin de ligne CRLF attendue", csv.endsWith("\r\n"))
-        return csv.removePrefix("﻿").removeSuffix("\r\n").split("\r\n")
+        return csv.removePrefix(BOM).removeSuffix("\r\n").split("\r\n")
     }
 
     @Test
@@ -98,6 +101,14 @@ class ExportCsvTest {
         }
         val csv = ExportCsv.construire(TableauExport(emptyList(), listOf(ligne(nom = "=CMD()"))), aujourdhui)
         assertTrue(lignes(csv)[1].startsWith("'=CMD();Sarah;"))
+    }
+
+    @Test
+    fun leFichierCommenceParLesOctetsUtf8DuBom_EF_BB_BF_etLesAccentsSontEncodesEnUtf8() {
+        val csv = ExportCsv.construire(TableauExport(emptyList(), listOf(ligne(prenom = "Éloïse"))), aujourdhui)
+        val octets = csv.toByteArray(Charsets.UTF_8)
+        assertEquals(listOf(0xEF, 0xBB, 0xBF), octets.take(3).map { it.toInt() and 0xFF })
+        assertTrue(String(octets, Charsets.UTF_8).contains("Éloïse"))
     }
 
     @Test

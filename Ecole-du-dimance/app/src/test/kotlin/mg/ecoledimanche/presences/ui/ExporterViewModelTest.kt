@@ -23,6 +23,9 @@ import org.junit.Test
 class ExporterViewModelTest : TestAvecMain() {
     private val dimanche = LocalDate.parse("2026-10-11")
 
+    /** Marque UTF-8 attendue en tête du fichier (voir ExportCsv). */
+    private val BOM: String = 0xFEFF.toChar().toString()
+
     /** Trois enfants inscrits le 06/10 ; Sarah présente et David en retard le 11/10 ; on est le lundi 12/10. */
     private suspend fun prepare(): Environnement {
         val env = Environnement(instantLocal("2026-10-06", 14))
@@ -71,7 +74,7 @@ class ExporterViewModelTest : TestAvecMain() {
         advanceUntilIdle()
 
         assertEquals(ActionExport.Reussie(enfants = 3, dimanches = 1), modele.etat.value.action)
-        val lignes = ecrit!!.removePrefix("﻿").trimEnd().split("\r\n")
+        val lignes = ecrit!!.removePrefix(BOM).trimEnd().split("\r\n")
         assertEquals("Nom;Prénom;Sexe;Date de naissance;Âge;Statut;11/10/2026;Présences;Retards;Absences;Assiduité", lignes[0])
         assertEquals(4, lignes.size) // en-tête + 3 enfants
         assertEquals("Rakoto;David;Fille;15/03/2017;9;Actif;En retard;0;1;0;100 %", lignes[1])

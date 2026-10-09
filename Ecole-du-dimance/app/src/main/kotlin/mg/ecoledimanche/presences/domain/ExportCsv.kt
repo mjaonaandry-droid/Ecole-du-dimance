@@ -32,7 +32,11 @@ data class TableauExport(
 object ExportCsv {
     private const val SEPARATEUR = ";"
     private const val FIN_DE_LIGNE = "\r\n"
-    private const val BOM = "﻿"
+    /**
+     * Marque d'ordre des octets (U+FEFF) : Excel s'en sert pour reconnaître l'UTF-8. Construite par son
+     * code plutôt qu'écrite en toutes lettres, car le lint refuse un BOM littéral dans une source.
+     */
+    private val BOM: String = 0xFEFF.toChar().toString()
 
     /** Caractères qui feraient interpréter la cellule comme une formule dans un tableur. */
     private const val DEBUTS_DE_FORMULE = "=+-@\t\r"
