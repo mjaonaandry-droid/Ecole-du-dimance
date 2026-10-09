@@ -36,17 +36,18 @@ Les chiffres ci-dessous sont lus dans le journal de ce workflow (étape « Résu
 
 | Étape | État | Preuve |
 |---|---|---|
-| Code créé | ✅ fait | Projet Android complet (≈ 5 500 lignes Kotlin), dossier `Ecole-du-dimance/`. |
+| Code créé | ✅ fait | Projet Android complet (≈ 6 150 lignes Kotlin), dossier `Ecole-du-dimance/`. |
 | **Compilation Android** (Gradle + AGP + KSP + Compose) | ✅ **exécutée** | `:app:assembleDebug` : *BUILD SUCCESSFUL* ; la tâche `verifierSansInternetDebug` (garde-fou INTERNET) est exécutée. |
-| **Tests unitaires JVM** | ✅ **exécutés** | **129 tests** dans 12 classes : 0 échec, 0 erreur, 0 ignoré (comptés dans les rapports JUnit XML). |
-| **Lint** | ✅ **exécuté** | `:app:lintDebug` : *BUILD SUCCESSFUL*, **0 erreur**, 30 avertissements (§11). |
-| **APK de débogage produit** | ✅ **produit** | `app-debug.apk`, 21 971 501 octets (≈ 22 Mo), `mg.ecoledimanche.presences` 1.0.0, minSdk 26, targetSdk 36, libellé « École du Dimanche », signé (schéma v2) avec la clé de débogage Android. |
+| **Tests unitaires JVM** | ✅ **exécutés** | **168 tests** dans 14 classes : 0 échec, 0 erreur, 0 ignoré (comptés dans les rapports JUnit XML du run du 09/10/2026, commit `91c4d0a`). |
+| **Lint** | ✅ **exécuté** | `:app:lintDebug` : *BUILD SUCCESSFUL*, **0 erreur**, 33 avertissements (versions de dépendances plus récentes, pluriels écrits en deux libellés, `ExifInterface`, etc. : §11). |
+| **APK de débogage produit** | ✅ **produit** | `app-debug.apk`, 22 035 348 octets (≈ 22 Mo), `mg.ecoledimanche.presences` 1.0.0, minSdk 26, targetSdk 36, libellé « École du Dimanche », signé (schéma v2) avec la clé de débogage Android. |
 | Permission `INTERNET` | ✅ **absente** de l'APK | `aapt2 dump permissions` : `CAMERA`, `WAKE_LOCK`, `ACCESS_NETWORK_STATE`, `RECEIVE_BOOT_COMPLETED`, `FOREGROUND_SERVICE` (ces quatre dernières viennent de WorkManager). |
 | Sauvegarde cloud / transfert | ✅ **désactivés** dans l'APK | Manifeste de l'APK : `allowBackup=false`, `fullBackupContent` et `dataExtractionRules` présents. |
 | Schéma Room | ✅ versionné | `app/schemas/.../1.json`, identique octet pour octet (SHA-256) au fichier généré par la compilation. |
 | Variante *release* | ✅ compile | `:app:assembleRelease` réussit mais reste **non signée** donc non installable (§6). |
 | Tests instrumentés Room / parcours sur **émulateur** | ❌ **non exécutés** | Les tests instrumentés **compilent** (`assembleDebugAndroidTest`) mais n'ont jamais tourné. Un essai de CI sur émulateur Android n'a jamais démarré (dépendances de l'émulateur sur le runner) ; il a été **abandonné** à la demande de l'utilisateur (« si l'APK est vert, c'est bon ») et retiré du workflow. |
 | Vérification sur un **vrai téléphone** | 🟡 **retour de l'utilisateur** | Après installation de l'APK de débogage : « test sur mon téléphone ok ». C'est un retour déclaré : je ne sais pas précisément ce qui a été essayé (caméra, mode avion, redémarrage, clôture à 10 h…) et je ne l'ai pas reproduit. Les points non essayés restent à dérouler avec la liste du §9. |
+| **Nouveautés** (export CSV, photo facultative / silhouettes, pointage au dimanche à venir) sur un **vrai téléphone** | ❌ **non essayées** | Compilées, testées en JVM (168 tests) et vérifiées par la CI ; l'interface n'a **jamais été affichée** ni touchée sur un appareil ou un émulateur. À dérouler avec les points « Nouveautés » du §9. |
 | APK *release* signé | ❌ non produit | Il faut **votre** clé de signature (§6) : je n'en ai ni créé ni utilisé. |
 
 ### Où récupérer l'APK
@@ -334,6 +335,9 @@ Elles demandent un appareil ou un émulateur. À dérouler après l'installation
 10. **Permissions** : `aapt2 dump permissions` (§5) ne montre pas `INTERNET`.
 11. **Sauvegarde** : `adb shell bmgr` / paramètres de sauvegarde Google ne proposent pas cette application.
 12. **Tests instrumentés Room** (appareil/émulateur) : `./gradlew :app:connectedDebugAndroidTest`.
+13. **Export CSV** : onglet « Exporter » ▸ « Exporter en CSV » ▸ choisir un emplacement (ou annuler le sélecteur : aucun fichier). Ouvrir le fichier dans Excel / Google Sheets : accents corrects, colonnes séparées, une colonne par dimanche, aucune information de parents ni d'adresse. Basculer « Inclure les enfants archivés » et vérifier le nombre de lignes. Essayer un emplacement refusé (message d'échec).
+14. **Photo facultative** : « Ajouter » ouvre le formulaire (pas la caméra). Choisir « Fille » puis « Garçon » : la silhouette change (neutre avant le choix). Enregistrer **sans** photo : silhouette dans la grille Dimanche, la liste, la fiche, l'historique ; aucun message « photo introuvable ». Fiche ▸ « Prendre la photo » : la photo remplace la silhouette. Dans le formulaire : « Prendre la photo », annuler la caméra (retour au formulaire, saisie conservée), « Reprendre », « Retirer la photo ». Mode sombre : silhouette lisible.
+15. **Dimanche à venir** : un jour de semaine, ouvrir Dimanche : la date affichée est le prochain dimanche, « Pointage ouvert — clôture dimanche à 10 h » ; toucher un enfant ▸ PRÉSENT : le panneau annonce « Enregistré pour le dimanche JJ/MM/AAAA » ; la carte devient verte. Aller au dimanche d'après : bandeau « Le pointage se fait sur le dimanche à venir » et cartes désactivées ; le bouton ramène au dimanche à venir. Le sélecteur de dates s'ouvre sur le dimanche affiché et liste toute l'année. Le dimanche à 10 h pile : les enfants pointés d'avance restent présents, les autres deviennent absents ; le dimanche suivant devient pointable.
 
 ---
 
@@ -344,14 +348,14 @@ Elles demandent un appareil ou un émulateur. À dérouler après l'installation
 ./gradlew :app:connectedDebugAndroidTest  # tests Room sur appareil / émulateur
 ```
 
-**Tests JVM (`app/src/test`)** — 129 tests : âge (avant / le jour / après l'anniversaire, 29 février, changement d'année),
+**Tests JVM (`app/src/test`)** — 168 tests (129 d'origine, dont 3 réécrits pour la règle du dimanche à venir, et 39 ajoutés pour l'export CSV, la photo facultative, le dimanche à venir et l'archivage après pointage anticipé) : âge (avant / le jour / après l'anniversaire, 29 février, changement d'année),
 calendrier des dimanches, frontière exacte **09 h 59 / 10 h 00**, début de suivi (dimanche avant / après 10 h, semaine),
 admissibilité, assiduité (exemples 90 %, 87,5 %, 100 %, dénominateur nul), validations du formulaire, recherche sans accents,
 scénario principal (Sarah présente, David en retard, Nathan absent), rattrapage de plusieurs dimanches sans séance
 existante, idempotence, correction conservée, archivage (avec et avant le premier dimanche), séance à venir, fuseau figé,
 horloge qui recule, atomicité de la clôture, unicité d'une présence, photo (échec de fichier, échec de base, remplacement),
 et les ViewModels (double clic, échec puis réessai, restauration après rotation, photo temporaire perdue).
-**Résultat réel en CI : 129 tests, 0 échec** (voir §1). Lors de la rédaction initiale du code, 21 défauts avaient été injectés
+**Résultat réel en CI : 168 tests, 0 échec** (voir §1). Lors de la rédaction initiale du code, 21 défauts avaient été injectés
 volontairement pour éprouver ces tests (heure de clôture décalée, frontière 09 h 59 / 10 h, retards non comptés, arrondi tronqué,
 absences non créées, garde anti-double-clic retirée…) ; cette vérification n'a **pas** été rejouée dans la CI.
 Les repositories sont testés sur une base **en mémoire** qui reproduit clés primaires, `INSERT OR IGNORE`, clés
