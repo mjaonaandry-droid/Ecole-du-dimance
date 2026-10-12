@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="mg.ecoledimanche.presences.domain.FormatsEtFrontieresTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-12T06:10:31.450Z" hostname="runnervmmprz5" time="0.074">
+  <properties/>
+  <testcase name="dateCourte_jjMmAaaa" classname="mg.ecoledimanche.presences.domain.FormatsEtFrontieresTest" time="0.0"/>
+  <testcase name="frontiere_neDortJamaisPlusDeQuinzeMinutes_etSurveilleMinuit" classname="mg.ecoledimanche.presences.domain.FormatsEtFrontieresTest" time="0.001"/>
+  <testcase name="heure_sansMinutesInutiles" classname="mg.ecoledimanche.presences.domain.FormatsEtFrontieresTest" time="0.002"/>
+  <testcase name="prochaineCloture_avant10hLeDimanche_estAujourdhui_sinonLeDimancheSuivant" classname="mg.ecoledimanche.presences.domain.FormatsEtFrontieresTest" time="0.0"/>
+  <testcase name="frontiere_laCloture_estAtteinteAvantLaReactualisation" classname="mg.ecoledimanche.presences.domain.FormatsEtFrontieresTest" time="0.0"/>
+  <testcase name="dateLongue_exempleDuCahierDesCharges" classname="mg.ecoledimanche.presences.domain.FormatsEtFrontieresTest" time="0.07"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

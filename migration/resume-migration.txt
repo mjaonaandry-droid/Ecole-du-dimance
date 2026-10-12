@@ -1,0 +1,49 @@
+Appareil : 14 / API 34
+OK      ancien APK identique à celui de l'utilisateur (SHA-256 ac0a9a327b18afe5052fe02885dca8cc10021e6d35b1647569574c1bb8f5bafd)
+Nouvel APK vérifié : SHA-256 ee7d49d1881b44f3971329f9918aa961f333179121d96963bc7674276cf679e6
+Base créée : 9 enfants, 16 présences, 3 photos ; s1=2026-10-04 s0=2026-10-11
+OK      écran : « Sarah » visible
+Dimanche à venir : 2026-10-18
+OK      script de transfert terminé sans erreur
+OK      clé différente détectée : sauvegarde / restauration utilisées
+OK      version installée : 1.1.0
+   9 enfants, 17 présences, 3 photos vérifiées après transfert
+   adresse et parents conservés : 'Lot 1 Antananarivo', 'Père Rakoto'
+OK      données identiques après transfert : enfants, fiches complètes, présences, pointage récent, photos (octet pour octet)
+OK      écran : « Sarah » visible
+David Rabe : Non enregistré
+Hanta Rasoa : Non enregistré
+Hery Razafy : Non enregistré
+Lova Andry : Non enregistré
+Nathan Randria : Non enregistré
+Tiana Ranaivo : Non enregistré
+Zo Rafidy : Non enregistré
+Sarah Rakoto : Présent
+OK      grille : l'enfant pointé est en bas, les non pointés en haut
+OK      écran : « Séance clôturée » visible
+OK      écran : « Non inscrit » visible
+OK      écran : « pas encore inscrit » visible
+OK      écran : « Zo Rafidy : Présent » visible
+OK      écran : « Importer » visible
+OK      écran : « Mamy » visible
+OK      écran : « Aucun enfant archivé » visible
+OK      écran : « Mamy » visible
+OK      écran : « Choisir un fichier CSV » visible
+OK      écran : « 2 enfants prêts à être ajoutés » visible
+OK      écran : « Déjà inscrit » visible
+OK      écran : « 2 enfants ajoutés » visible
+OK      écran : « Fanja Ravelo » visible
+OK      écran : « Supprimer définitivement » visible
+OK      écran : « Choisir dans la galerie » visible
+OK      écran : Hery n'apparaît plus
+OK      mise à jour suivante (même clé) : installation directe, sans sauvegarde
+   ok : Hery supprimé avec son historique
+   ok : Mamy désarchivé
+   ok : suivi de Zo avancé au 2026-10-11
+   ok : Zo présent le 2026-10-11
+   ok : Fanja et Tojo importés depuis le CSV
+   ok : Sarah n'a pas été importée en double
+   ok : une seule Sarah
+OK      base finale cohérente (suppression, désarchivage, saisie avant inscription, import CSV)
+
+Échecs données : 0 ; échecs écran : 0

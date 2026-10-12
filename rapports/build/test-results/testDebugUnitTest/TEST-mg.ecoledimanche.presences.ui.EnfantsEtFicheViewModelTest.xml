@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="mg.ecoledimanche.presences.ui.EnfantsEtFicheViewModelTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-12T06:10:31.644Z" hostname="runnervmmprz5" time="0.018">
+  <properties/>
+  <testcase name="fiche_calculeLAge_et_signaleUnePhotoManquante" classname="mg.ecoledimanche.presences.ui.EnfantsEtFicheViewModelTest" time="0.004"/>
+  <testcase name="ficheSansPhoto_neSignalePasUnePhotoManquante_etLEnfantEstSansPhoto" classname="mg.ecoledimanche.presences.ui.EnfantsEtFicheViewModelTest" time="0.002"/>
+  <testcase name="archives_sontSeparees_desActifs_etRestentConsultables" classname="mg.ecoledimanche.presences.ui.EnfantsEtFicheViewModelTest" time="0.005"/>
+  <testcase name="fiche_inexistante_estSignalee" classname="mg.ecoledimanche.presences.ui.EnfantsEtFicheViewModelTest" time="0.001"/>
+  <testcase name="recherche_ignoreCasseEtAccents_surNomEtPrenom" classname="mg.ecoledimanche.presences.ui.EnfantsEtFicheViewModelTest" time="0.004"/>
+  <testcase name="archivage_demandeConfirmationPuisArchiveEtConserveLaFiche" classname="mg.ecoledimanche.presences.ui.EnfantsEtFicheViewModelTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

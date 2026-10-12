@@ -1,0 +1,308 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "6075f81292002dfa99535550b62cf6da",
+    "entities": [
+      {
+        "tableName": "enfants",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `nom` TEXT NOT NULL, `prenom` TEXT NOT NULL, `dateNaissance` TEXT NOT NULL, `sexe` TEXT NOT NULL, `adresse` TEXT, `nomPere` TEXT, `pereMembre` INTEGER, `nomMere` TEXT, `mereMembre` INTEGER, `nombreFreresSoeurs` INTEGER NOT NULL, `nombreFreresSoeursMembres` INTEGER NOT NULL, `photoPath` TEXT NOT NULL, `dateArriveeEglise` TEXT, `dateDebutSuivi` TEXT NOT NULL, `dateFinSuivi` TEXT, `isArchived` INTEGER NOT NULL, `archivedAt` INTEGER, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nom",
+            "columnName": "nom",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "prenom",
+            "columnName": "prenom",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dateNaissance",
+            "columnName": "dateNaissance",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sexe",
+            "columnName": "sexe",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "adresse",
+            "columnName": "adresse",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "nomPere",
+            "columnName": "nomPere",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "pereMembre",
+            "columnName": "pereMembre",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "nomMere",
+            "columnName": "nomMere",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "mereMembre",
+            "columnName": "mereMembre",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "nombreFreresSoeurs",
+            "columnName": "nombreFreresSoeurs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombreFreresSoeursMembres",
+            "columnName": "nombreFreresSoeursMembres",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "photoPath",
+            "columnName": "photoPath",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dateArriveeEglise",
+            "columnName": "dateArriveeEglise",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "dateDebutSuivi",
+            "columnName": "dateDebutSuivi",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dateFinSuivi",
+            "columnName": "dateFinSuivi",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isArchived",
+            "columnName": "isArchived",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "archivedAt",
+            "columnName": "archivedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_enfants_isArchived",
+            "unique": false,
+            "columnNames": [
+              "isArchived"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_enfants_isArchived` ON `${TABLE_NAME}` (`isArchived`)"
+          },
+          {
+            "name": "index_enfants_dateDebutSuivi",
+            "unique": false,
+            "columnNames": [
+              "dateDebutSuivi"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_enfants_dateDebutSuivi` ON `${TABLE_NAME}` (`dateDebutSuivi`)"
+          },
+          {
+            "name": "index_enfants_nom_prenom",
+            "unique": false,
+            "columnNames": [
+              "nom",
+              "prenom"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_enfants_nom_prenom` ON `${TABLE_NAME}` (`nom`, `prenom`)"
+          }
+        ]
+      },
+      {
+        "tableName": "seances",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`dateDimanche` TEXT NOT NULL, `zoneId` TEXT NOT NULL, `cloturePrevueAt` INTEGER NOT NULL, `cloturee` INTEGER NOT NULL, `clotureeAt` INTEGER, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`dateDimanche`))",
+        "fields": [
+          {
+            "fieldPath": "dateDimanche",
+            "columnName": "dateDimanche",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "zoneId",
+            "columnName": "zoneId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cloturePrevueAt",
+            "columnName": "cloturePrevueAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cloturee",
+            "columnName": "cloturee",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clotureeAt",
+            "columnName": "clotureeAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "dateDimanche"
+          ]
+        }
+      },
+      {
+        "tableName": "presences",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`enfantId` INTEGER NOT NULL, `dateDimanche` TEXT NOT NULL, `statut` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`enfantId`, `dateDimanche`), FOREIGN KEY(`enfantId`) REFERENCES `enfants`(`id`) ON UPDATE RESTRICT ON DELETE RESTRICT , FOREIGN KEY(`dateDimanche`) REFERENCES `seances`(`dateDimanche`) ON UPDATE RESTRICT ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "enfantId",
+            "columnName": "enfantId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dateDimanche",
+            "columnName": "dateDimanche",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "statut",
+            "columnName": "statut",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "enfantId",
+            "dateDimanche"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_presences_dateDimanche",
+            "unique": false,
+            "columnNames": [
+              "dateDimanche"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_presences_dateDimanche` ON `${TABLE_NAME}` (`dateDimanche`)"
+          },
+          {
+            "name": "index_presences_enfantId_statut",
+            "unique": false,
+            "columnNames": [
+              "enfantId",
+              "statut"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_presences_enfantId_statut` ON `${TABLE_NAME}` (`enfantId`, `statut`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "enfants",
+            "onDelete": "RESTRICT",
+            "onUpdate": "RESTRICT",
+            "columns": [
+              "enfantId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "seances",
+            "onDelete": "RESTRICT",
+            "onUpdate": "RESTRICT",
+            "columns": [
+              "dateDimanche"
+            ],
+            "referencedColumns": [
+              "dateDimanche"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6075f81292002dfa99535550b62cf6da')"
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="mg.ecoledimanche.presences.PhotosPuresTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-12T06:10:31.011Z" hostname="runnervmmprz5" time="0.021">
+  <properties/>
+  <testcase name="nettoyage_ne_supprime_jamais_un_fichier_reference" classname="mg.ecoledimanche.presences.PhotosPuresTest" time="0.013"/>
+  <testcase name="echantillonnage_garde_au_moins_1280_sur_le_grand_cote" classname="mg.ecoledimanche.presences.PhotosPuresTest" time="0.0"/>
+  <testcase name="nettoyage_epargne_un_fichier_recent_meme_non_reference" classname="mg.ecoledimanche.presences.PhotosPuresTest" time="0.0"/>
+  <testcase name="echantillonnage_apres_decodage_donne_toujours_assez_de_pixels" classname="mg.ecoledimanche.presences.PhotosPuresTest" time="0.006"/>
+  <testcase name="dimensionsCibles_cote_max_1280_ratio_conserve_sans_agrandissement" classname="mg.ecoledimanche.presences.PhotosPuresTest" time="0.001"/>
+  <testcase name="nettoyage_des_temporaires_epargne_les_brouillons_de_moins_de_24h" classname="mg.ecoledimanche.presences.PhotosPuresTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

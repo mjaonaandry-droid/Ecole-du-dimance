@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="mg.ecoledimanche.presences.domain.ImportCsvTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-12T06:10:31.526Z" hostname="runnervmmprz5" time="0.018">
+  <properties/>
+  <testcase name="separateur_detecteSurLEnTete" classname="mg.ecoledimanche.presences.domain.ImportCsvTest" time="0.002"/>
+  <testcase name="relitLeFichierProduitParLExport_sansLesArchives" classname="mg.ecoledimanche.presences.domain.ImportCsvTest" time="0.008"/>
+  <testcase name="fichierVide_ouEnTeteSeul" classname="mg.ecoledimanche.presences.domain.ImportCsvTest" time="0.001"/>
+  <testcase name="encodages_utf8AvecBom_etWindows1252DExcel" classname="mg.ecoledimanche.presences.domain.ImportCsvTest" time="0.002"/>
+  <testcase name="lignesInvalides_motifEtNumeroDeLigne_lesLignesVidesComptent" classname="mg.ecoledimanche.presences.domain.ImportCsvTest" time="0.001"/>
+  <testcase name="apostropheDeProtection_retireeSeulementDevantUnCaractereDeFormule" classname="mg.ecoledimanche.presences.domain.ImportCsvTest" time="0.0"/>
+  <testcase name="colonnesManquantes_sontNommees" classname="mg.ecoledimanche.presences.domain.ImportCsvTest" time="0.001"/>
+  <testcase name="formatsDeDate" classname="mg.ecoledimanche.presences.domain.ImportCsvTest" time="0.002"/>
+  <testcase name="fichierMinimal_enTetesSansAccentsNiCasse_virguleEtFinsDeLigneUnix" classname="mg.ecoledimanche.presences.domain.ImportCsvTest" time="0.0"/>
+  <testcase name="doublons_dejaInscrits_etDansLeFichier_casseEtAccentsIgnores" classname="mg.ecoledimanche.presences.domain.ImportCsvTest" time="0.001"/>
+  <testcase name="colonnesDansUnAutreOrdre_etColonnesInconnuesIgnorees" classname="mg.ecoledimanche.presences.domain.ImportCsvTest" time="0.0"/>
+  <testcase name="guillemets_separateurEtSautDeLigneDansUnChamp" classname="mg.ecoledimanche.presences.domain.ImportCsvTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

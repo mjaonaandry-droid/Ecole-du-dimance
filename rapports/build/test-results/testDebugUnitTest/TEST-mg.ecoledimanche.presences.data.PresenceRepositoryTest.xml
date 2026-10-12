@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="mg.ecoledimanche.presences.data.PresenceRepositoryTest" tests="38" skipped="0" failures="0" errors="0" timestamp="2026-10-12T06:10:31.359Z" hostname="runnervmmprz5" time="0.078">
+  <properties/>
+  <testcase name="deuxEnfantsDeMemeNomEtPrenom_ontDesIdentifiantsDistincts" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.002"/>
+  <testcase name="tableauExport_statutsParDimanche_etComptesSurLesSeancesCloturees" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.003"/>
+  <testcase name="pointageFaitLeVendredi_estEnregistrePourLeDimancheAVenir_etLaSeanceResteOuverte" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.005"/>
+  <testcase name="ajoutEnSemaine_leMardi_debutLeDimancheSuivant_etAucuneAbsenceAvant" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.001"/>
+  <testcase name="changementDeFuseau_neDeplaceNiNeRouvreUneSeanceExistante" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.003"/>
+  <testcase name="archivageAvantLePremierDimancheAdmissible_neCreeAucuneAbsence" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.003"/>
+  <testcase name="grilleDUnDimancheSansEnfantAdmissible_estVide" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.002"/>
+  <testcase name="rattrapageRepete_estIdempotent_sansDoublonNiEcrasement" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.001"/>
+  <testcase name="tableauExport_sansEnfant_estVide" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.0"/>
+  <testcase name="grilleDUneSeanceCloturee_neMontreJamaisNonEnregistre_memeAvantLEcriture" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.002"/>
+  <testcase name="rattrapage_statutsEtAbsencesSurPlusieursDimanches" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.003"/>
+  <testcase name="uneCorrectionApresCloture_estConserveeParLesRattrapagesSuivants" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.003"/>
+  <testcase name="apresLaClotureDuDimanche_lePointageDuDimancheSuivantEstOuvert_maisPasCeluiDApres" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.001"/>
+  <testcase name="scenarioPrincipal_Sarah_David_Nathan" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.008"/>
+  <testcase name="avantCloture_changementsEntrePresentEtEnRetard_etAnnulationDuPointage" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.003"/>
+  <testcase name="historique_dunEnfantInexistant_estNul" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.001"/>
+  <testcase name="ajoutLeDimancheAPartirDe10h_debuteLeDimancheSuivant_etNEstPasDansLaGrilleDuJour" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.001"/>
+  <testcase name="unDimancheAuDelaDuDimancheAVenir_refuseLePointage_etNeCreeRien" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.002"/>
+  <testcase name="cliqueApresLHeureDeCloture_surUnePanneauOuvertAvant10h_estUneCorrection_etCloture" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.001"/>
+  <testcase name="archivageLeDimanche_avant10h_conserveCeDimanche_puisExclutLeSuivant" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.001"/>
+  <testcase name="rattrapageDeTroisDimanches_sansOuvertureDeLApplication_etSansSeanceExistante" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.002"/>
+  <testcase name="pointage_dUnEnfantNonAdmissible_ouUnJourQuiNEstPasUnDimanche_estRefuse" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.001"/>
+  <testcase name="historique_dimanchesAdmissibles_duPlusRecentAuPlusAncien_sansDimancheFutur" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.002"/>
+  <testcase name="avant10h_rattrapageNeCloturePasLeDimancheDuJour_etNeCreeAucuneAbsence" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.001"/>
+  <testcase name="avantCloture_ABSENTEstRefuse" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.001"/>
+  <testcase name="horlogeQuiRecule_neRouvrePasUneSeanceCloturee" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.002"/>
+  <testcase name="apresCloture_correctionVersPresentEnRetardAbsent_maisJamaisNonEnregistre" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.002"/>
+  <testcase name="ajoutUnDimancheOuLaSeanceEstDejaCloturee_debuteLeSuivant_memeSiLHorlogeRecule" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.001"/>
+  <testcase name="uneSeulePresenceParEnfantEtParDimanche_memeAvecDesClicsRapproches" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.004"/>
+  <testcase name="tableauExport_lesArchivesSontInclusesOuNonSelonLeChoix_etGardentLeurHistorique" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.002"/>
+  <testcase name="archivage_conserveFicheEtHistorique_etExclutLesProchainsDimanches" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.003"/>
+  <testcase name="historique_nIncluraJamaisUneSeanceOuverteDansLesCompteurs_memeAvecUneLignePointee" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.001"/>
+  <testcase name="tableauExport_dimancheAVenirDejaPointe_apparaitCommeColonne_sansAbsenceInventee" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.001"/>
+  <testcase name="enfantArchiveApresUnPointageAnticipe_nEstPasCompteDansUneSeanceQuIlNeSuitPlus" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.002"/>
+  <testcase name="ajoutLeDimancheAvant10h_apparaitDansLaGrilleEnCours_NON_ENREGISTRE" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.001"/>
+  <testcase name="uneSeanceOuverteNeComptePasDansLesStatistiques_memeAvecDesPresencesPointees" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.002"/>
+  <testcase name="pointageAnticipe_peutEtreAnnule_maisAbsentResteInterditAvantLaCloture" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.001"/>
+  <testcase name="clotureAtomique_uneErreurEnCoursDeRouteNeLaisseAucuneEcritureEtLaReprendreFonctionne" classname="mg.ecoledimanche.presences.data.PresenceRepositoryTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

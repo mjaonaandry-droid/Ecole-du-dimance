@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="mg.ecoledimanche.presences.domain.RechercheTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-12T06:10:31.545Z" hostname="runnervmmprz5" time="0.002">
+  <properties/>
+  <testcase name="comparateur_triSansDistinctionDeCasseNiDAccents" classname="mg.ecoledimanche.presences.domain.RechercheTest" time="0.001"/>
+  <testcase name="requeteVide_correspondATout" classname="mg.ecoledimanche.presences.domain.RechercheTest" time="0.0"/>
+  <testcase name="correspond_ignoreCasseEtAccents_surNomEtPrenom" classname="mg.ecoledimanche.presences.domain.RechercheTest" time="0.001"/>
+  <testcase name="normaliser_retireAccentsCasseEtEspaces" classname="mg.ecoledimanche.presences.domain.RechercheTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,167 @@
+{
+ "enfants": [
+  {
+   "id": 1,
+   "nom": "Rakoto",
+   "prenom": "Sarah",
+   "photoPath": "photos/photo-test-1.jpg",
+   "dateDebutSuivi": "2026-10-04",
+   "isArchived": false
+  },
+  {
+   "id": 2,
+   "nom": "Rabe",
+   "prenom": "David",
+   "photoPath": "photos/photo-test-2.jpg",
+   "dateDebutSuivi": "2026-10-04",
+   "isArchived": false
+  },
+  {
+   "id": 3,
+   "nom": "Randria",
+   "prenom": "Nathan",
+   "photoPath": "photos/photo-test-3.jpg",
+   "dateDebutSuivi": "2026-10-04",
+   "isArchived": false
+  },
+  {
+   "id": 4,
+   "nom": "Rasoa",
+   "prenom": "Hanta",
+   "photoPath": "",
+   "dateDebutSuivi": "2026-10-04",
+   "isArchived": false
+  },
+  {
+   "id": 5,
+   "nom": "Andry",
+   "prenom": "Lova",
+   "photoPath": "",
+   "dateDebutSuivi": "2026-10-04",
+   "isArchived": false
+  },
+  {
+   "id": 6,
+   "nom": "Razafy",
+   "prenom": "Hery",
+   "photoPath": "",
+   "dateDebutSuivi": "2026-10-04",
+   "isArchived": false
+  },
+  {
+   "id": 7,
+   "nom": "Ranaivo",
+   "prenom": "Tiana",
+   "photoPath": "",
+   "dateDebutSuivi": "2026-10-04",
+   "isArchived": false
+  },
+  {
+   "id": 8,
+   "nom": "Rajao",
+   "prenom": "Mamy",
+   "photoPath": "",
+   "dateDebutSuivi": "2026-10-04",
+   "isArchived": true
+  },
+  {
+   "id": 9,
+   "nom": "Rafidy",
+   "prenom": "Zo",
+   "photoPath": "",
+   "dateDebutSuivi": "2026-10-18",
+   "isArchived": false
+  }
+ ],
+ "presences": [
+  [
+   1,
+   "2026-10-04",
+   "PRESENT"
+  ],
+  [
+   1,
+   "2026-10-11",
+   "PRESENT"
+  ],
+  [
+   2,
+   "2026-10-04",
+   "PRESENT"
+  ],
+  [
+   2,
+   "2026-10-11",
+   "EN_RETARD"
+  ],
+  [
+   3,
+   "2026-10-04",
+   "EN_RETARD"
+  ],
+  [
+   3,
+   "2026-10-11",
+   "PRESENT"
+  ],
+  [
+   4,
+   "2026-10-04",
+   "ABSENT"
+  ],
+  [
+   4,
+   "2026-10-11",
+   "PRESENT"
+  ],
+  [
+   5,
+   "2026-10-04",
+   "PRESENT"
+  ],
+  [
+   5,
+   "2026-10-11",
+   "ABSENT"
+  ],
+  [
+   6,
+   "2026-10-04",
+   "PRESENT"
+  ],
+  [
+   6,
+   "2026-10-11",
+   "PRESENT"
+  ],
+  [
+   7,
+   "2026-10-04",
+   "ABSENT"
+  ],
+  [
+   7,
+   "2026-10-11",
+   "PRESENT"
+  ],
+  [
+   8,
+   "2026-10-04",
+   "PRESENT"
+  ],
+  [
+   8,
+   "2026-10-11",
+   "ABSENT"
+  ]
+ ],
+ "photos": {
+  "photos/photo-test-1.jpg": 15516,
+  "photos/photo-test-2.jpg": 14533,
+  "photos/photo-test-3.jpg": 14889
+ },
+ "dimanches": {
+  "s0": "2026-10-11",
+  "s1": "2026-10-04"
+ }
+}

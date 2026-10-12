@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="mg.ecoledimanche.presences.ui.FormulaireViewModelTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-10-12T06:10:31.692Z" hostname="runnervmmprz5" time="0.019">
+  <properties/>
+  <testcase name="uneValeurNonRenseignee_resteNonRenseigneeApresRestauration" classname="mg.ecoledimanche.presences.ui.FormulaireViewModelTest" time="0.004"/>
+  <testcase name="cliquesRapides_neCreentQuUneSeuleFiche" classname="mg.ecoledimanche.presences.ui.FormulaireViewModelTest" time="0.001"/>
+  <testcase name="champsInvalides_afficheLesErreursPresDesChamps_sansRienEcrire" classname="mg.ecoledimanche.presences.ui.FormulaireViewModelTest" time="0.001"/>
+  <testcase name="ajoutSansPhoto_creeLaFiche_avecUneSilhouetteEtSansFichierPhoto" classname="mg.ecoledimanche.presences.ui.FormulaireViewModelTest" time="0.001"/>
+  <testcase name="enregistrementReussi_creeLaFiche_etFournitLIdentifiantPourLaNavigation" classname="mg.ecoledimanche.presences.ui.FormulaireViewModelTest" time="0.0"/>
+  <testcase name="ajoutAvecPhoto_puisSansSaisieDePhoto_lesDeuxChemins_donnentUneFicheValide" classname="mg.ecoledimanche.presences.ui.FormulaireViewModelTest" time="0.001"/>
+  <testcase name="modification_chargeLaFiche_puisEnregistreSansToucherAuSuivi" classname="mg.ecoledimanche.presences.ui.FormulaireViewModelTest" time="0.002"/>
+  <testcase name="photoTemporaireDisparue_revientALaSilhouette_etLeSignale_sansPlanter" classname="mg.ecoledimanche.presences.ui.FormulaireViewModelTest" time="0.001"/>
+  <testcase name="echecDeLaBase_conserveSaisieEtPhoto_puisLeReessaiReussit" classname="mg.ecoledimanche.presences.ui.FormulaireViewModelTest" time="0.001"/>
+  <testcase name="ageCalculeEnLectureSeule_suitLaDateDeNaissance" classname="mg.ecoledimanche.presences.ui.FormulaireViewModelTest" time="0.001"/>
+  <testcase name="reprendreLaPhoto_remplaceLaTemporairePrecedente_sansRienLaisserTraîner" classname="mg.ecoledimanche.presences.ui.FormulaireViewModelTest" time="0.001"/>
+  <testcase name="retirerLaPhoto_supprimeLaTemporaire_etRevientALaSilhouette" classname="mg.ecoledimanche.presences.ui.FormulaireViewModelTest" time="0.0"/>
+  <testcase name="rotationOuRecreationDuProcessus_restaureLaSaisieEtLaPhoto" classname="mg.ecoledimanche.presences.ui.FormulaireViewModelTest" time="0.0"/>
+  <testcase name="modification_dUneFicheInexistante_signaleUneErreur" classname="mg.ecoledimanche.presences.ui.FormulaireViewModelTest" time="0.0"/>
+  <testcase name="abandonDeLAjout_supprimeLaPhotoTemporaire_etNeCreeAucuneFiche" classname="mg.ecoledimanche.presences.ui.FormulaireViewModelTest" time="0.001"/>
+  <testcase name="apresUnePremiereTentative_lesErreursSuiventLaSaisieEnDirect" classname="mg.ecoledimanche.presences.ui.FormulaireViewModelTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

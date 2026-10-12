@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="mg.ecoledimanche.presences.domain.ReglesSeanceTest" tests="21" skipped="0" failures="0" errors="0" timestamp="2026-10-12T06:10:31.548Z" hostname="runnervmmprz5" time="0.006">
+  <properties/>
+  <testcase name="auDelaDuDimancheAVenir_laSeanceResteAVenir_pointageDesactive" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.0"/>
+  <testcase name="leFuseauFigeALaCreation_prevautSurLeFuseauActuel" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.0"/>
+  <testcase name="frontiereExacte_09h59_estEnCours_10h00_estCloturee" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.0"/>
+  <testcase name="admissibilite_bornesDeDebutEtDeFinIncluses" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.0"/>
+  <testcase name="archivageLeDimanche_conserveCeDimanche_puisExclutLesSuivants" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.0"/>
+  <testcase name="dimanchesEntre_inclutLesBornesDimanche_etIgnoreLesAutresJours" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.0"/>
+  <testcase name="dimanchePasse_estCloture" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.0"/>
+  <testcase name="ajoutLeDimancheAvant10h_debuteCeDimanche" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.001"/>
+  <testcase name="ajoutLeDimancheAPartirDe10h_debuteLeDimancheSuivant" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.0"/>
+  <testcase name="dimancheAVenir_leProchainDimancheEstOuvertAuPointageDesMaintenant_laVeilleAu23h59_commeLeJourJ" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.0"/>
+  <testcase name="dimancheParDefaut_dimancheDuJourMemeApresCloture_sinonLeProchain" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.0"/>
+  <testcase name="uneSeanceDejaCloturee_nEstJamaisRouverte_parUnRetourEnArriereDeLHorloge" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.0"/>
+  <testcase name="ajoutEnSemaine_debuteLeDimancheSuivant_exempleDuMardi" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.0"/>
+  <testcase name="apresLaClotureDuDimanche_leDimancheSuivantDevientLeDimancheAVenir" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.0"/>
+  <testcase name="ajoutUnDimancheOuLaSeanceEstDejaCloturee_debuteLeDimancheSuivant_memeSiLHorlogeRecule" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.0"/>
+  <testcase name="instantCloture_estDixHeuresDansLeFuseauDonne" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.003"/>
+  <testcase name="heureDeClotureParDefaut_10h00" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.0"/>
+  <testcase name="dimancheAVenir_dureLaSemaine_etBasculeExactementALaCloture" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.001"/>
+  <testcase name="le11Octobre2026EstUnDimanche_exempleDuCahierDesCharges" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.0"/>
+  <testcase name="archivageAvantLePremierDimanche_neDonneAucunDimancheAdmissible" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.0"/>
+  <testcase name="prochaineCloture_estToujoursLaClotureDuDimancheAVenir" classname="mg.ecoledimanche.presences.domain.ReglesSeanceTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

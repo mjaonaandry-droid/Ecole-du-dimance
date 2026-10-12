@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="mg.ecoledimanche.presences.ui.DimancheViewModelTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-12T06:10:31.561Z" hostname="runnervmmprz5" time="0.082">
+  <properties/>
+  <testcase name="selecteurDeDimanche_precedentSuivant_et_retourAuDimancheParDefaut" classname="mg.ecoledimanche.presences.ui.DimancheViewModelTest" time="0.036"/>
+  <testcase name="leDimancheApres10h_leDimancheAVenirEstLeSuivant_etLeDimancheDuJourResteCorrigeable" classname="mg.ecoledimanche.presences.ui.DimancheViewModelTest" time="0.006"/>
+  <testcase name="correctionApresCloture_estUneCorrection_etLaSeanceResteCloturee" classname="mg.ecoledimanche.presences.ui.DimancheViewModelTest" time="0.004"/>
+  <testcase name="dimancheAuDelaDuDimancheAVenir_estAffiche_maisLePointageResteDesactive" classname="mg.ecoledimanche.presences.ui.DimancheViewModelTest" time="0.005"/>
+  <testcase name="avant10h_laGrilleMontreLesEnfantsAdmissibles_enCours" classname="mg.ecoledimanche.presences.ui.DimancheViewModelTest" time="0.003"/>
+  <testcase name="rattrapageAvantAffichage_apres10h_lesNonPointesSontDejaAbsents" classname="mg.ecoledimanche.presences.ui.DimancheViewModelTest" time="0.004"/>
+  <testcase name="refusMetier_garde_le_panneau_ouvert_avec_un_message" classname="mg.ecoledimanche.presences.ui.DimancheViewModelTest" time="0.004"/>
+  <testcase name="pointage_ferme_le_panneau_apresLEcritureReussie_et_metLaCarteAJour" classname="mg.ecoledimanche.presences.ui.DimancheViewModelTest" time="0.004"/>
+  <testcase name="erreurDEcriture_estAffichee_et_aucunStatutNEstMontreCommeEnregistre" classname="mg.ecoledimanche.presences.ui.DimancheViewModelTest" time="0.003"/>
+  <testcase name="duLundiAuSamedi_ledimancheParDefautEstLeProchain_etLePointageEstDejaOuvert" classname="mg.ecoledimanche.presences.ui.DimancheViewModelTest" time="0.002"/>
+  <testcase name="lesBornesDuSelecteur_sontLesExtremitesDeLaListe" classname="mg.ecoledimanche.presences.ui.DimancheViewModelTest" time="0.004"/>
+  <testcase name="leVendredi_unClicSurUnEnfant_estEnregistrePourLeDimancheAVenir_le11_10" classname="mg.ecoledimanche.presences.ui.DimancheViewModelTest" time="0.004"/>
+  <testcase name="toutesLesDatesSontProposees_chaqueDimancheUneAnneeAvantEtApres_sansTrou" classname="mg.ecoledimanche.presences.ui.DimancheViewModelTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

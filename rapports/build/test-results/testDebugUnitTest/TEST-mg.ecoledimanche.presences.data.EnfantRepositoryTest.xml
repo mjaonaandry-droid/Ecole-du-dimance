@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="mg.ecoledimanche.presences.data.EnfantRepositoryTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-10-12T06:10:31.332Z" hostname="runnervmmprz5" time="0.024">
+  <properties/>
+  <testcase name="modification_neChangeNiLeDebutNiLaFinDeSuivi_niLaPhoto_niLHistorique" classname="mg.ecoledimanche.presences.data.EnfantRepositoryTest" time="0.002"/>
+  <testcase name="photoPrisePlusTard_lapremierePhotoEstEnregistree_sansAncienFichierASupprimer" classname="mg.ecoledimanche.presences.data.EnfantRepositoryTest" time="0.002"/>
+  <testcase name="deuxHomonymes_sontDeuxFichesDistinctes" classname="mg.ecoledimanche.presences.data.EnfantRepositoryTest" time="0.002"/>
+  <testcase name="ajout_sansPhotoLisible_neCreeAucuneFicheIncomplete" classname="mg.ecoledimanche.presences.data.EnfantRepositoryTest" time="0.004"/>
+  <testcase name="ajout_sansPhoto_siLaBaseEchoue_rienNEstCree_etRienNEstSupprime" classname="mg.ecoledimanche.presences.data.EnfantRepositoryTest" time="0.002"/>
+  <testcase name="modification_dUnEnfantArchive_neLeReactivePas" classname="mg.ecoledimanche.presences.data.EnfantRepositoryTest" time="0.001"/>
+  <testcase name="ajout_enregistreLaPhotoDefinitive_etLaFicheLaReference" classname="mg.ecoledimanche.presences.data.EnfantRepositoryTest" time="0.001"/>
+  <testcase name="remplacementDePhoto_dUnEnfantInexistant_neLaisseAucunFichierOrphelin" classname="mg.ecoledimanche.presences.data.EnfantRepositoryTest" time="0.001"/>
+  <testcase name="remplacementDePhoto_siLaBaseEchoue_conserveLAncienneEtRetireLaNouvelleCopie" classname="mg.ecoledimanche.presences.data.EnfantRepositoryTest" time="0.002"/>
+  <testcase name="listeDesEnfants_triee_sansDistinctionDeCasseNiDAccents" classname="mg.ecoledimanche.presences.data.EnfantRepositoryTest" time="0.001"/>
+  <testcase name="ajout_siLaBaseEchoue_laCopieDefinitiveEstRetiree_laTemporaireReste_etOnPeutReessayer" classname="mg.ecoledimanche.presences.data.EnfantRepositoryTest" time="0.001"/>
+  <testcase name="ajout_sansPhoto_creeLaFicheAvecUneSilhouette_etAucunFichierOrphelin" classname="mg.ecoledimanche.presences.data.EnfantRepositoryTest" time="0.001"/>
+  <testcase name="remplacementDePhoto_nouveauFichier_puisReference_puisSuppressionDeLAncien" classname="mg.ecoledimanche.presences.data.EnfantRepositoryTest" time="0.001"/>
+  <testcase name="remplacementDePhoto_enCasDEchecDeFichier_conserveLAncienne" classname="mg.ecoledimanche.presences.data.EnfantRepositoryTest" time="0.001"/>
+  <testcase name="archivage_nEffacePasLaPhoto" classname="mg.ecoledimanche.presences.data.EnfantRepositoryTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

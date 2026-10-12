@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="mg.ecoledimanche.presences.data.AmeliorationsV11Test" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-12T06:10:31.036Z" hostname="runnervmmprz5" time="0.294">
+  <properties/>
+  <testcase name="pointerAvantInscription_avanceLeSuivi_etLesDimanchesIntermediairesSontAbsents" classname="mg.ecoledimanche.presences.data.AmeliorationsV11Test" time="0.224"/>
+  <testcase name="pointerAvantInscription_surUneSeanceDejaClotureeParUnAutreEnfant" classname="mg.ecoledimanche.presences.data.AmeliorationsV11Test" time="0.003"/>
+  <testcase name="ajoutGroupe_enCasDePanne_aucunEnfantNEstAjoute" classname="mg.ecoledimanche.presences.data.AmeliorationsV11Test" time="0.004"/>
+  <testcase name="suppressionDefinitive_dUnEnfantArchiveSansPhoto" classname="mg.ecoledimanche.presences.data.AmeliorationsV11Test" time="0.003"/>
+  <testcase name="ajoutGroupe_toutLeMondeSansPhoto_suiviAuProchainDimanche" classname="mg.ecoledimanche.presences.data.AmeliorationsV11Test" time="0.001"/>
+  <testcase name="pointerAvantInscription_refuse_archive_seanceOuverte_etAnnulation" classname="mg.ecoledimanche.presences.data.AmeliorationsV11Test" time="0.005"/>
+  <testcase name="grille_nonPointesEnHaut_pointesEnBas_alphabetiqueDansChaqueGroupe" classname="mg.ecoledimanche.presences.data.AmeliorationsV11Test" time="0.012"/>
+  <testcase name="grille_seanceCloturee_lesAbsentsRestentEnHaut" classname="mg.ecoledimanche.presences.data.AmeliorationsV11Test" time="0.006"/>
+  <testcase name="desarchivage_leJourMeme_neCreeAucuneAbsence" classname="mg.ecoledimanche.presences.data.AmeliorationsV11Test" time="0.003"/>
+  <testcase name="desarchivage_redevientActif_lesDimanchesClotures_pendantLArchivageSontAbsents" classname="mg.ecoledimanche.presences.data.AmeliorationsV11Test" time="0.008"/>
+  <testcase name="suppressionDefinitive_retireFicheHistoriqueEtPhoto_sansToucherAuxAutres" classname="mg.ecoledimanche.presences.data.AmeliorationsV11Test" time="0.011"/>
+  <testcase name="dimanchePasseAvantInscription_lesEnfantsActifsSontProposes_nonInscrits" classname="mg.ecoledimanche.presences.data.AmeliorationsV11Test" time="0.007"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="mg.ecoledimanche.presences.domain.ExportCsvTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-12T06:10:31.442Z" hostname="runnervmmprz5" time="0.007">
+  <properties/>
+  <testcase name="champsAvecSeparateurGuillemetOuSautDeLigne_sontProteges" classname="mg.ecoledimanche.presences.domain.ExportCsvTest" time="0.003"/>
+  <testcase name="sansDimanche_seulesLesInfosDeBaseEtLesComptesSontExportes" classname="mg.ecoledimanche.presences.domain.ExportCsvTest" time="0.001"/>
+  <testcase name="leFichierNeContientQueLesInfosDeBase_pasDeParentsNiDAdresseNiDePhoto" classname="mg.ecoledimanche.presences.domain.ExportCsvTest" time="0.001"/>
+  <testcase name="valeurQuiRessembleAUneFormule_estNeutralisee" classname="mg.ecoledimanche.presences.domain.ExportCsvTest" time="0.0"/>
+  <testcase name="uneLigne_infosDeBaseStatutsEtAssiduite" classname="mg.ecoledimanche.presences.domain.ExportCsvTest" time="0.0"/>
+  <testcase name="nomDeFichier_contientLaDateIso" classname="mg.ecoledimanche.presences.domain.ExportCsvTest" time="0.001"/>
+  <testcase name="cellulesVides_enfantNonSuiviCeJourLa_seanceOuverteNonPointee_etAucuneSeanceCloturee" classname="mg.ecoledimanche.presences.domain.ExportCsvTest" time="0.0"/>
+  <testcase name="entete_infosDeBase_puisUneColonneParDimanche_puisLesComptes" classname="mg.ecoledimanche.presences.domain.ExportCsvTest" time="0.0"/>
+  <testcase name="leFichierCommenceParLesOctetsUtf8DuBom_EF_BB_BF_etLesAccentsSontEncodesEnUtf8" classname="mg.ecoledimanche.presences.domain.ExportCsvTest" time="0.001"/>
+  <testcase name="garcon_archive_absent_etAssiduiteDecimaleAvecVirgule" classname="mg.ecoledimanche.presences.domain.ExportCsvTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

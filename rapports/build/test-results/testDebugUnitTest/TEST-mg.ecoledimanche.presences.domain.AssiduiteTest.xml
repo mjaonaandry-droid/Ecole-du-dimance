@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="mg.ecoledimanche.presences.domain.AssiduiteTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-12T06:10:31.441Z" hostname="runnervmmprz5" time="0.0">
+  <properties/>
+  <testcase name="pasDeDecimaleInutile" classname="mg.ecoledimanche.presences.domain.AssiduiteTest" time="0.0"/>
+  <testcase name="sansSeanceCloturee_pasDeTauxEtPasDeDivisionParZero" classname="mg.ecoledimanche.presences.domain.AssiduiteTest" time="0.0"/>
+  <testcase name="uneSeuleDecimaleMaximum_etArrondiALaDemieSuperieure" classname="mg.ecoledimanche.presences.domain.AssiduiteTest" time="0.0"/>
+  <testcase name="scenarioPrincipal_Sarah_David_Nathan" classname="mg.ecoledimanche.presences.domain.AssiduiteTest" time="0.0"/>
+  <testcase name="grandsNombres_sansDepassement" classname="mg.ecoledimanche.presences.domain.AssiduiteTest" time="0.0"/>
+  <testcase name="exemple_uniquementUnRetard_100pourcent" classname="mg.ecoledimanche.presences.domain.AssiduiteTest" time="0.0"/>
+  <testcase name="exemple_8Presences_1Retard_1Absence_90pourcent" classname="mg.ecoledimanche.presences.domain.AssiduiteTest" time="0.0"/>
+  <testcase name="exemple_32Presences_3Retards_5Absences_87virgule5pourcent" classname="mg.ecoledimanche.presences.domain.AssiduiteTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

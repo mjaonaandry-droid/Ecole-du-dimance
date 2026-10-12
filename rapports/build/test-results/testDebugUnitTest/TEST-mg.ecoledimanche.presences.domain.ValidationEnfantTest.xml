@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="mg.ecoledimanche.presences.domain.ValidationEnfantTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-12T06:10:31.555Z" hostname="runnervmmprz5" time="0.002">
+  <properties/>
+  <testcase name="espacesSuperfluxRetires_accentsConserves" classname="mg.ecoledimanche.presences.domain.ValidationEnfantTest" time="0.001"/>
+  <testcase name="nomFaitSeulementDEspaces_estRefuse" classname="mg.ecoledimanche.presences.domain.ValidationEnfantTest" time="0.0"/>
+  <testcase name="saisieMinimale_estValide_etLesInformationsFacultativesSontNulles" classname="mg.ecoledimanche.presences.domain.ValidationEnfantTest" time="0.0"/>
+  <testcase name="membresNePeutPasDepasserLeTotal" classname="mg.ecoledimanche.presences.domain.ValidationEnfantTest" time="0.0"/>
+  <testcase name="appartenanceDesParents_oui_non_nonRenseigne_sontConserves" classname="mg.ecoledimanche.presences.domain.ValidationEnfantTest" time="0.0"/>
+  <testcase name="dateDeNaissanceFuture_estRefusee_maisAujourdhuiEstAcceptee" classname="mg.ecoledimanche.presences.domain.ValidationEnfantTest" time="0.0"/>
+  <testcase name="deuxEnfantsDeMemeNomEtPrenom_sontAcceptes" classname="mg.ecoledimanche.presences.domain.ValidationEnfantTest" time="0.0"/>
+  <testcase name="nombresDeFreresEtSoeurs_entiersPositifsOuNuls" classname="mg.ecoledimanche.presences.domain.ValidationEnfantTest" time="0.0"/>
+  <testcase name="lesQuatreChampsObligatoires_sontRequis" classname="mg.ecoledimanche.presences.domain.ValidationEnfantTest" time="0.001"/>
+  <testcase name="textesTropLongs_sontRefuses" classname="mg.ecoledimanche.presences.domain.ValidationEnfantTest" time="0.0"/>
+  <testcase name="dateDArrivee_nePeutEtreNiFuture_niAvantLaNaissance" classname="mg.ecoledimanche.presences.domain.ValidationEnfantTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

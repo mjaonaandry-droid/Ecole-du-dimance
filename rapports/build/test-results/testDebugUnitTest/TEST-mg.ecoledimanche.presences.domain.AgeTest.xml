@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="mg.ecoledimanche.presences.domain.AgeTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-12T06:10:31.438Z" hostname="runnervmmprz5" time="0.002">
+  <properties/>
+  <testcase name="nourrissonDeMoinsDUnAn_et_jourDeNaissance" classname="mg.ecoledimanche.presences.domain.AgeTest" time="0.001"/>
+  <testcase name="naissanceLe29Fevrier_anneeBissextile" classname="mg.ecoledimanche.presences.domain.AgeTest" time="0.0"/>
+  <testcase name="naissanceLe29Fevrier_anneeNonBissextile_anniversaireLe1erMars" classname="mg.ecoledimanche.presences.domain.AgeTest" time="0.0"/>
+  <testcase name="naissanceFuture_neDonneJamaisUnAgeNegatif" classname="mg.ecoledimanche.presences.domain.AgeTest" time="0.0"/>
+  <testcase name="veilleDeLAnniversaire_puisLeJour_puisLeLendemain" classname="mg.ecoledimanche.presences.domain.AgeTest" time="0.0"/>
+  <testcase name="exempleDuCahierDesCharges_9AnsLe6Octobre2026" classname="mg.ecoledimanche.presences.domain.AgeTest" time="0.0"/>
+  <testcase name="changementDAnnee_31Decembre_puis_1erJanvier" classname="mg.ecoledimanche.presences.domain.AgeTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

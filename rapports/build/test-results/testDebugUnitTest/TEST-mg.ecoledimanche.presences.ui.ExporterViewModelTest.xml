@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="mg.ecoledimanche.presences.ui.ExporterViewModelTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-12T06:10:31.664Z" hostname="runnervmmprz5" time="0.026">
+  <properties/>
+  <testcase name="exporterSansLesArchives_neContientPasLesEnfantsArchives" classname="mg.ecoledimanche.presences.ui.ExporterViewModelTest" time="0.006"/>
+  <testcase name="exporter_confieLeCsvAAecrire_puisAnnonceLeSucces" classname="mg.ecoledimanche.presences.ui.ExporterViewModelTest" time="0.004"/>
+  <testcase name="apercu_annonceLeNombreDEnfantsEtDeDimanches_archivesIncluesParDefaut" classname="mg.ecoledimanche.presences.ui.ExporterViewModelTest" time="0.003"/>
+  <testcase name="nomDeFichierSuggere_contientLaDateDuJour" classname="mg.ecoledimanche.presences.ui.ExporterViewModelTest" time="0.001"/>
+  <testcase name="cliquesRapproches_unSeulExportALaFois" classname="mg.ecoledimanche.presences.ui.ExporterViewModelTest" time="0.005"/>
+  <testcase name="sansEnfant_apercuVide_etRienAExporter" classname="mg.ecoledimanche.presences.ui.ExporterViewModelTest" time="0.002"/>
+  <testcase name="uneEcritureQuiEchoue_estAnnoncee_etOnPeutReessayer" classname="mg.ecoledimanche.presences.ui.ExporterViewModelTest" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

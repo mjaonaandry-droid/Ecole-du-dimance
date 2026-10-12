@@ -1,0 +1,15 @@
+=== Transfert 2026-10-12 06:25:28 ===
+APK : final/app.apk
+Etat du telephone : device
+Essai de mise a jour directe...
+Performing Streamed Install
+adb: failed to install final/app.apk: Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: Existing package mg.ecoledimanche.presences signatures do not match newer version; ignoring!]
+Cle differente : sauvegarde des donnees avant remplacement.
+Sauvegarde : /home/runner/work/Ecole-du-dimance/Ecole-du-dimance/transfert-donnees/sauvegardes/sauvegarde-20261012-062530.tar (176128 octets, 3 photo(s))
+Sauvegarde verifiee.
+Success
+Performing Streamed Install
+Success
+Donnees restaurees.
+
+TERMINE : la nouvelle version est installee avec vos donnees. Verifiez la liste des enfants.
