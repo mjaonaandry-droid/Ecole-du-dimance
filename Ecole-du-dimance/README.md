@@ -9,7 +9,34 @@ Elle fonctionne **sans aucune connexion Internet**, y compris après un redémar
 
 ---
 
-## Nouveautés de cette version
+## Version 1.1.0 (versionCode 2)
+
+1. **Onglet Dimanche** — les enfants **non pointés** sont en haut, les **pointés** (Présent, En retard) en bas, chaque groupe
+   par ordre alphabétique (prénom puis nom). « Absent » (après la clôture) compte comme non pointé. La grille a **3 colonnes**
+   fixes : cartes et photos réduites, statut en petite pastille (icône) sur la photo et en toutes lettres sous le prénom.
+2. **Dimanches antérieurs à l'inscription** (saisie d'un registre papier) — sur un dimanche **clôturé**, les enfants actifs pas
+   encore inscrits ce jour-là apparaissent **grisés** (« Non inscrit »). En toucher un ouvre le panneau Présent / En retard /
+   Absent : le **début de suivi** de l'enfant est avancé à ce dimanche, et les dimanches entre cette date et son ancienne date
+   de début reçoivent « Absent » (comme l'aurait fait la clôture), corrigeables ensuite. Une ligne rappelle sur chaque séance
+   clôturée qu'on corrige un statut en touchant la photo. (`PresenceRepository.pointerAvantInscription`)
+3. **Enfants ▸ Archivés ▸ Désarchiver** (aussi depuis la fiche) — l'enfant redevient actif, sans fin de suivi ; les dimanches
+   déjà clôturés pendant l'archivage comptent « Absent » (corrigeables).
+4. **Supprimer définitivement** (fiche de l'enfant) — fiche, photo et **tout** l'historique, après confirmation avec case à
+   cocher. Irréversible, contrairement à l'archivage.
+5. **Import CSV** (Enfants ▸ Importer) — même format que l'export : `Nom;Prénom;Sexe;Date de naissance` obligatoires, les autres
+   colonnes de l'export acceptées et ignorées (âge recalculé, historique non importé, lignes « Archivé » ignorées). Aperçu avant
+   enregistrement, motif et numéro de ligne pour chaque ligne écartée, doublons (même nom, prénom, date de naissance) refusés,
+   ajout en **une transaction**. Tolère `;` `,` ou tabulation, UTF-8 (avec ou sans BOM) et Windows-1252 (CSV d'Excel), dates
+   `JJ/MM/AAAA`, `J/M/AAAA`, `AAAA-MM-JJ`, `JJ/MM/AA`. (`domain/ImportCsv.kt`)
+6. **Photo depuis la galerie** — formulaire (« Galerie »), fiche (choix « Prendre une photo » / « Choisir dans la galerie »),
+   bouton galerie dans l'écran caméra et quand la caméra est refusée ou indisponible. Sélecteur de photos du système : **aucune
+   permission** ajoutée ; la photo est copiée et traitée comme une capture (orientation, 1 280 px max., JPEG).
+7. **Clé de signature permanente** — voir §6. La 1.0.0 avait été signée par GitHub Actions avec une clé de débogage jetable :
+   le passage à la 1.1.0 se fait avec `transfert-donnees/` (sauvegarde → remplacement → restauration, sans perte).
+
+Schéma Room **inchangé** (version 1) : aucune migration, les données existantes restent valides.
+
+## Nouveautés de la version 1.0.0 (export, photo facultative)
 
 1. **Onglet « Exporter »** — crée un fichier **CSV** (séparateur `;`, UTF-8 avec BOM : s'ouvre directement dans Excel,
    LibreOffice ou Google Sheets) avec, par enfant, **uniquement** : nom, prénom, sexe, date de naissance, âge, statut (actif /
@@ -73,8 +100,9 @@ Sur votre poste (Android Studio + Internet pour le développement), la commande 
 - **Clôture à 10 h 00**, heure locale du téléphone — une seule valeur dans le code :
   `ConfigurationSeance.HEURE_CLOTURE = LocalTime.of(10, 0)` (`domain/ReglesSeance.kt`). Aucun écran de réglage.
 - **Tous les dimanches** sont des séances prévues, y compris ceux où l'application n'a jamais été ouverte.
-- Le **suivi d'un enfant commence à son inscription dans l'application** (jamais antidaté). La date d'arrivée dans
-  l'église est une simple information de la fiche.
+- Le **suivi d'un enfant commence à son inscription dans l'application**. Depuis la 1.1.0, il peut être **avancé**
+  explicitement en saisissant un dimanche passé antérieur à l'inscription (onglet Dimanche, enfant grisé). La date
+  d'arrivée dans l'église reste une simple information de la fiche.
 - Un enfant **archivé** garde fiche, photo et historique ; il n'apparaît plus dans les dimanches **après** sa fin de suivi.
 - L'**assiduité** n'utilise que les séances **clôturées**.
 - **« En retard »** est toujours choisi à la main : jamais déduit de l'heure du clic.
@@ -281,6 +309,17 @@ Une release **non signée n'est pas installable**. Pour en produire une signée 
 
 **Ne jamais** versionner la clé ni ses mots de passe, ne pas en afficher, et ne pas présenter une release signée avec
 la clé de *débogage* comme une version de production.
+
+### Clé permanente (depuis la 1.1.0)
+
+L'APK installé sur le téléphone est la variante *debug* signée avec la **clé permanente** `ecole-dimanche.keystore`
+(alias `ecoledimanche`), remise au propriétaire de l'application et **jamais versionnée**. Gradle l'utilise quand ces
+variables d'environnement sont définies : `SIGNATURE_KEYSTORE_FILE` (chemin du fichier), `SIGNATURE_PASSWORD`,
+`SIGNATURE_ALIAS` (facultatif). En CI, ajouter dans *Settings ▸ Secrets and variables ▸ Actions* les secrets
+`SIGNATURE_KEYSTORE_B64` (le fichier en base64) et `SIGNATURE_PASSWORD` ; sans eux, le workflow l'annonce par un
+avertissement et l'APK produit **ne peut pas** mettre à jour l'application installée (il faut alors le re-signer :
+`apksigner sign --ks ecole-dimanche.keystore --ks-key-alias ecoledimanche app-debug.apk`).
+Pensez à **augmenter `versionCode`** à chaque version.
 
 **Mises à jour et données.** Une mise à jour ne conserve les données locales que si l'**identifiant d'application** et la
 **signature** sont les mêmes. Passer d'un APK signé en débogage à un APK signé avec une autre clé empêche la mise à jour directe ;

@@ -1,0 +1,70 @@
+﻿ÉCOLE DU DIMANCHE — INSTALLER LA VERSION 1.1.0 SANS PERDRE VOS DONNÉES
+=======================================================================
+
+Pourquoi cette procédure ?
+--------------------------
+Android n'accepte de mettre à jour une application que si la nouvelle version est « signée »
+avec la même clé que l'ancienne. La version 1.0.0 installée sur votre téléphone a été signée par
+GitHub avec une clé temporaire qui n'existe plus. La version 1.1.0 ne peut donc pas s'installer
+« par-dessus » : il faut la remplacer. Ce dossier fait ce remplacement EN GARDANT TOUTES VOS
+DONNÉES (enfants, fiches complètes, photos, historique des présences).
+
+À partir de la 1.1.0, l'application a une clé PERMANENTE : les versions suivantes s'installeront
+directement par-dessus, sans cette procédure.
+
+Ce qu'il vous faut (une seule fois, environ 10 minutes)
+-------------------------------------------------------
+- Un ordinateur Windows et le câble USB du téléphone.
+- Les « Platform-Tools » d'Android (outil gratuit de Google, contient adb) :
+    https://developer.android.com/tools/releases/platform-tools
+  → « Télécharger SDK Platform-Tools pour Windows », puis décompresser le fichier .zip
+    DANS CE DOSSIER. Vous devez obtenir un sous-dossier nommé « platform-tools »
+    (avec adb.exe dedans), à côté de TRANSFERER-LES-DONNEES.bat.
+- Le fichier de la nouvelle version : ecole-du-dimance-1.1.0.apk (déjà dans ce dossier).
+  Ne laissez qu'UN seul fichier .apk dans ce dossier.
+
+Étape 1 — Activer le « Débogage USB » sur le téléphone
+------------------------------------------------------
+1. Paramètres → « À propos du téléphone » → touchez 7 fois « Numéro de build »
+   (sur Xiaomi : « Version MIUI » / « Version de l'OS » ; sur Samsung : « Informations sur
+   le logiciel » → « Numéro de version »). Le message « Vous êtes développeur » apparaît.
+2. Paramètres → « Système » → « Options pour les développeurs » (ou « Paramètres
+   supplémentaires » sur Xiaomi) → activez « Débogage USB ».
+   Sur Xiaomi, activez aussi « Installer via USB ».
+3. Branchez le téléphone à l'ordinateur, déverrouillez-le. Une fenêtre « Autoriser le débogage
+   USB ? » apparaît : cochez « Toujours autoriser » puis « Autoriser ».
+
+Étape 2 — Lancer le transfert
+-----------------------------
+Double-cliquez sur TRANSFERER-LES-DONNEES.bat et suivez les messages. Le script :
+1. sauvegarde la base de données et les photos du téléphone sur cet ordinateur
+   (dossier « sauvegardes ») et VÉRIFIE la sauvegarde ;
+2. seulement ensuite, désinstalle l'ancienne version ;
+3. installe la version 1.1.0 ;
+4. remet vos données dans la nouvelle version, puis ouvre l'application.
+
+Si quelque chose ne va pas, le script s'arrête AVANT de désinstaller quoi que ce soit, et
+affiche la raison. Si l'installation ou la restauration est interrompue (câble débranché…),
+relancez simplement TRANSFERER-LES-DONNEES.bat : il reprend avec la dernière sauvegarde.
+
+Gardez le dossier « sauvegardes » : c'est une copie complète de vos données à cette date.
+
+Étape 3 — Vérifier
+------------------
+Dans l'application : onglet Enfants (tous les enfants sont là, avec leur photo), un enfant
+→ « Voir l'historique » (ses présences passées sont là). Vous pouvez ensuite désactiver le
+« Débogage USB ».
+
+Mac ou Linux
+------------
+Même procédure avec transferer-les-donnees.sh (dans un terminal : ./transferer-les-donnees.sh).
+
+Clé de signature (pour la personne qui compile l'application)
+--------------------------------------------------------------
+La clé permanente vous a été remise à part (fichier ecole-dimanche.keystore et son mot de passe).
+CONSERVEZ-LA PRÉCIEUSEMENT (clé USB + copie en ligne privée) : sans elle, une future version
+ne pourra pas s'installer par-dessus celle-ci. Ne la publiez jamais dans le dépôt GitHub.
+Pour que GitHub Actions signe automatiquement les prochaines versions avec cette clé :
+dépôt GitHub → Settings → Secrets and variables → Actions → New repository secret :
+  SIGNATURE_KEYSTORE_B64 = contenu du fichier ecole-dimanche.keystore.b64.txt
+  SIGNATURE_PASSWORD     = le mot de passe de la clé

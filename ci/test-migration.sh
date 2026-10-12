@@ -179,12 +179,13 @@ adb push "$SORTIES/enfants-import.csv" /sdcard/Download/enfants-import.csv > /de
 toucher "Choisir un fichier CSV"
 sleep 3
 capture "11-selecteur-fichiers"
-if ! $UI toucher "enfants-import" >> "$SORTIES/ui.log" 2>&1; then
+# Toucher le NOM du fichier (texte exact), pas l'icône « Preview the file … ».
+if ! $UI toucher-exact "enfants-import.csv" >> "$SORTIES/ui.log" 2>&1; then
     $UI toucher "Show roots" >> "$SORTIES/ui.log" 2>&1 || $UI toucher "Afficher les racines" >> "$SORTIES/ui.log" 2>&1
     sleep 1
-    $UI toucher "Downloads" >> "$SORTIES/ui.log" 2>&1 || $UI toucher "Download" >> "$SORTIES/ui.log" 2>&1
+    $UI toucher-exact "Downloads" >> "$SORTIES/ui.log" 2>&1 || $UI toucher-exact "Download" >> "$SORTIES/ui.log" 2>&1
     sleep 2
-    toucher "enfants-import"
+    toucher_exact "enfants-import.csv"
 fi
 sleep 3
 verifier_ecran "2 enfants prêts à être ajoutés"
@@ -198,6 +199,8 @@ toucher "Voir la liste des enfants"
 sleep 2
 verifier_ecran "Fanja Ravelo"
 
+# Si une étape précédente a échoué, revenir à la liste des enfants.
+$UI attendre "Hery Razafy" 3 > /dev/null 2>&1 || { adb shell input keyevent 4; sleep 1; adb shell input keyevent 4; sleep 1; toucher_exact "Enfants"; sleep 2; }
 toucher "Hery Razafy"
 sleep 2
 verifier_ecran "Supprimer définitivement"
