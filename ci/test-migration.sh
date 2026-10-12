@@ -51,6 +51,8 @@ else
     ko_donnees "l'ancien APK n'est pas celui de l'utilisateur"
 fi
 
+echo "Nouvel APK vérifié : SHA-256 $(sha256sum "$NOUVEAU" | cut -d' ' -f1)" | tee -a "$RESUME"
+
 # --- 1. Ancienne version avec des données réalistes ------------------------------------------
 adb install "$ANCIEN" | tee -a "$SORTIES/adb.log"
 python3 "$ICI/creer_base_test.py" "$RACINE/Ecole-du-dimance/app/schemas/mg.ecoledimanche.presences.data.local.AppDatabase/1.json" "$SORTIES/base-test" | tee -a "$RESUME"
