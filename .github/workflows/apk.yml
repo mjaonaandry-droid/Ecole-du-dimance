@@ -236,6 +236,19 @@ jobs:
           repository: ${{ github.repository }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      # Si l'APK final (re-signé avec la clé permanente) a été publié sur la branche livraison-apk,
+      # c'est CE fichier qui est vérifié : exactement celui que l'utilisateur installera.
+      - name: APK final signé (branche livraison-apk), sinon celui de ce build
+        run: |
+          if git fetch -q --depth 1 origin livraison-apk 2>/dev/null; then
+            mkdir -p final
+            git show FETCH_HEAD:ecole-du-dimance-1.1.0.apk > final/app.apk
+            echo "APK vérifié : branche livraison-apk ($(sha256sum final/app.apk | cut -c1-16)…)"
+          else
+            mkdir -p final && cp nouveau/app-debug.apk final/app.apk
+            echo "APK vérifié : celui de ce build"
+          fi
+
       - name: Émulateur Android 14 et vérification
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -245,7 +258,7 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
-          script: bash ci/test-migration.sh ancien/app-debug.apk nouveau/app-debug.apk
+          script: bash ci/test-migration.sh ancien/app-debug.apk final/app.apk
 
       - name: Enregistrer les sorties de la vérification
         if: ${{ !cancelled() }}
