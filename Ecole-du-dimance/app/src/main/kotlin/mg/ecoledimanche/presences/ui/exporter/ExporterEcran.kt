@@ -96,6 +96,12 @@ fun ExporterEcran(
         }
 
         ResultatExport(etat.action, onAcquitter)
+
+        Text(
+            text = stringResource(R.string.export_astuce_import),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

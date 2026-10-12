@@ -8,7 +8,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write   # publication des sorties (APK, captures) sur la branche ci-sorties/<branche>
+  actions: read     # téléchargement de l'APK 1.0.0 d'origine (test de migration)
 
 concurrency:
   group: verification-${{ github.ref }}
@@ -51,6 +52,21 @@ jobs:
             || sudo env "PATH=$PATH" "JAVA_HOME=$JAVA_HOME" "$SDKM" "platforms;android-36" "build-tools;36.0.0"
           ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools"
 
+      # Clé de signature PERMANENTE (secrets du dépôt SIGNATURE_KEYSTORE_B64 et SIGNATURE_PASSWORD) :
+      # sans elle, l'APK porte une clé de débogage jetable et ne pourra pas mettre à jour l'application
+      # installée sur le téléphone. Voir transfert-donnees/LISEZMOI.txt, « Clé de signature ».
+      - name: Clé de signature permanente
+        env:
+          SIGNATURE_KEYSTORE_B64: ${{ secrets.SIGNATURE_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$SIGNATURE_KEYSTORE_B64" ]; then
+            echo "$SIGNATURE_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/ecole-dimanche.keystore"
+            echo "SIGNATURE_KEYSTORE_FILE=$RUNNER_TEMP/ecole-dimanche.keystore" >> "$GITHUB_ENV"
+            echo "Clé permanente trouvée : l'APK pourra mettre à jour l'application installée."
+          else
+            echo "::warning::Secret SIGNATURE_KEYSTORE_B64 absent : APK signé avec une clé de débogage JETABLE (il devra être re-signé avant d'être installé)."
+          fi
+
       - name: Préparer gradlew
         run: |
           sed -i 's/\r$//' gradlew
@@ -58,6 +74,8 @@ jobs:
           ./gradlew --version
 
       - name: Compiler l'APK de débogage
+        env:
+          SIGNATURE_PASSWORD: ${{ secrets.SIGNATURE_PASSWORD }}
         run: ./gradlew :app:assembleDebug --stacktrace --console=plain
 
       - name: Tests unitaires
@@ -177,3 +195,103 @@ jobs:
           else
             echo "ATTENTION : le schéma généré diffère du schéma versionné :"; git diff --stat -- app/schemas
           fi
+
+  # -------------------------------------------------------------------------------------------
+  # Passage 1.0.0 -> 1.1.0 sur émulateur avec l'APK EXACT installé chez l'utilisateur (clé
+  # différente) : sauvegarde / désinstallation / installation / restauration par le script fourni,
+  # comparaison des données octet pour octet, puis tour des nouveautés avec captures d'écran.
+  # -------------------------------------------------------------------------------------------
+  migration:
+    needs: apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Activer KVM (émulateur accéléré)
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install pillow
+
+      - name: Nouvel APK (ce build)
+        uses: actions/download-artifact@v4
+        with:
+          name: app-debug-apk
+          path: nouveau
+
+      # APK 1.0.0 installé chez l'utilisateur : build du 09/10/2026 (exécution 37922545226).
+      - name: Ancien APK (1.0.0, celui du téléphone)
+        uses: actions/download-artifact@v4
+        with:
+          name: app-debug-apk
+          path: ancien
+          run-id: 37922545226
+          repository: ${{ github.repository }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Émulateur Android 14 et vérification
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          script: bash ci/test-migration.sh ancien/app-debug.apk nouveau/app-debug.apk
+
+      - name: Enregistrer les sorties de la vérification
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration
+          path: ci-sorties
+          if-no-files-found: warn
+
+  # Le script Windows (.bat) que l'utilisateur lancera : syntaxe cmd et enchaînement vérifiés avec un faux adb.
+  script-windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Archive factice
+        run: python ci/creer_fixture_windows.py ci-fixture
+      - name: Scénarios du script .bat
+        shell: pwsh
+        run: ./ci/test-bat-windows.ps1
+
+  # Les sorties sont aussi poussées sur une branche (ci-sorties/<branche>) pour être relues sans
+  # passer par l'interface des artefacts.
+  publier:
+    needs: [apk, migration, script-windows]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: sorties
+      - name: Pousser les sorties sur la branche ci-sorties
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd sorties
+          {
+            echo "Branche : ${{ github.ref_name }}"
+            echo "Commit : ${{ github.sha }}"
+            echo "Exécution : ${{ github.run_id }}"
+            echo "apk : ${{ needs.apk.result }} ; migration : ${{ needs.migration.result }} ; script-windows : ${{ needs.script-windows.result }}"
+          } > ETAT.txt
+          git init -q
+          git checkout -q -b sorties
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Sorties CI ${{ github.sha }}"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" "sorties:refs/heads/ci-sorties/${{ github.ref_name }}"

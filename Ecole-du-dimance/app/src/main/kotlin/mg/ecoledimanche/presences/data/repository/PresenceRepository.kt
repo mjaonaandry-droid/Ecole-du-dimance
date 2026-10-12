@@ -29,12 +29,29 @@ import mg.ecoledimanche.presences.domain.aujourdhui
 data class ElementDimanche(
     val enfant: EnfantEntity,
     val statut: StatutPresence,
-)
+    /**
+     * Faux pour un enfant actif qui n'était pas encore inscrit à ce dimanche passé : il est proposé pour
+     * une saisie « avant inscription » (voir [PresenceRepository.pointerAvantInscription]).
+     */
+    val inscrit: Boolean = true,
+) {
+    /** « Pointé » : Présent ou En retard. Non enregistré et Absent restent « à pointer ». */
+    val pointe: Boolean get() = statut == StatutPresence.PRESENT || statut == StatutPresence.EN_RETARD
+}
 
 data class EtatDimanche(
     val dimanche: LocalDate,
     val phase: PhaseSeance,
+    /**
+     * Enfants admissibles à ce dimanche : d'abord les non pointés, puis les pointés (Présent, En retard),
+     * chaque groupe par ordre alphabétique (prénom puis nom).
+     */
     val elements: List<ElementDimanche>,
+    /**
+     * Séance clôturée uniquement : enfants actifs inscrits APRÈS ce dimanche, par ordre alphabétique.
+     * Les pointer avance leur début de suivi à ce dimanche (saisie d'un registre papier).
+     */
+    val nonInscrits: List<ElementDimanche> = emptyList(),
 )
 
 data class LigneAssiduite(
@@ -184,34 +201,88 @@ class PresenceRepository(
      * sont sérialisés par la transaction et ne peuvent pas créer de doublon.
      */
     suspend fun pointer(enfantId: Long, dimanche: LocalDate, statut: StatutPresence): ResultatPointage =
+        transaction.executer { pointerDansTransaction(enfantId, dimanche, statut) }
+
+    /** Corps de [pointer], à appeler dans une transaction. */
+    private suspend fun pointerDansTransaction(enfantId: Long, dimanche: LocalDate, statut: StatutPresence): ResultatPointage {
+        if (!Dimanches.estDimanche(dimanche)) {
+            return ResultatPointage.Refuse(MotifRefus.PAS_UN_DIMANCHE)
+        }
+        val maintenant = clock.instant()
+        val zone = clock.zone()
+        val seance = seanceDao.trouver(dimanche)
+        val phase = RegleSeance.phase(dimanche, seance?.versEtat(), maintenant, zone)
+        if (phase == PhaseSeance.A_VENIR) {
+            return ResultatPointage.Refuse(MotifRefus.SEANCE_A_VENIR)
+        }
+        if (enfantDao.compterAdmissible(enfantId, dimanche) == 0) {
+            return ResultatPointage.Refuse(MotifRefus.ENFANT_NON_ADMISSIBLE)
+        }
+
+        if (phase == PhaseSeance.EN_COURS) {
+            if (statut == StatutPresence.ABSENT) {
+                return ResultatPointage.Refuse(MotifRefus.ABSENT_INTERDIT_AVANT_CLOTURE)
+            }
+            assurerSeance(dimanche, maintenant, zone)
+        } else {
+            // La clôture est échue : on la matérialise d'abord, la saisie est une correction.
+            if (seance?.cloturee != true) appliquerCloture(dimanche, maintenant, zone)
+            if (statut == StatutPresence.NON_ENREGISTRE) {
+                return ResultatPointage.Refuse(MotifRefus.ANNULATION_INTERDITE_APRES_CLOTURE)
+            }
+        }
+
+        presenceDao.insererSiAbsente(PresenceEntity(enfantId, dimanche, statut, maintenant, maintenant))
+        presenceDao.changerStatut(enfantId, dimanche, statut, maintenant)
+        return ResultatPointage.Enregistre(statut)
+    }
+
+    /**
+     * Saisie d'un dimanche PASSÉ (séance clôturée) pour un enfant actif qui n'était pas encore inscrit
+     * dans l'application ce jour-là (rattrapage d'un registre papier).
+     *
+     * Dans une seule transaction :
+     * 1. son début de suivi est avancé à [dimanche] ;
+     * 2. chaque dimanche clôturé entre [dimanche] et son ancien début de suivi reçoit une ligne ABSENT
+     *    (comme l'aurait fait la clôture), corrigeable ensuite comme n'importe quel dimanche clôturé ;
+     * 3. [statut] (PRESENT, EN_RETARD ou ABSENT) est enregistré pour [dimanche].
+     *
+     * Un enfant déjà admissible à [dimanche] est traité par [pointer] (correction ordinaire).
+     */
+    suspend fun pointerAvantInscription(enfantId: Long, dimanche: LocalDate, statut: StatutPresence): ResultatPointage =
         transaction.executer {
             if (!Dimanches.estDimanche(dimanche)) {
                 return@executer ResultatPointage.Refuse(MotifRefus.PAS_UN_DIMANCHE)
             }
-            val maintenant = clock.instant()
-            val zone = clock.zone()
-            val seance = seanceDao.trouver(dimanche)
-            val phase = RegleSeance.phase(dimanche, seance?.versEtat(), maintenant, zone)
-            if (phase == PhaseSeance.A_VENIR) {
-                return@executer ResultatPointage.Refuse(MotifRefus.SEANCE_A_VENIR)
+            val enfant = enfantDao.trouver(enfantId)
+                ?: return@executer ResultatPointage.Refuse(MotifRefus.ENFANT_NON_ADMISSIBLE)
+            if (!enfant.dateDebutSuivi.isAfter(dimanche)) {
+                // Déjà inscrit à cette date : correction ordinaire (même transaction).
+                return@executer pointerDansTransaction(enfantId, dimanche, statut)
             }
-            if (enfantDao.compterAdmissible(enfantId, dimanche) == 0) {
+            if (enfant.isArchived) {
                 return@executer ResultatPointage.Refuse(MotifRefus.ENFANT_NON_ADMISSIBLE)
             }
-
-            if (phase == PhaseSeance.EN_COURS) {
-                if (statut == StatutPresence.ABSENT) {
-                    return@executer ResultatPointage.Refuse(MotifRefus.ABSENT_INTERDIT_AVANT_CLOTURE)
-                }
-                assurerSeance(dimanche, maintenant, zone)
-            } else {
-                // La clôture est échue : on la matérialise d'abord, la saisie est une correction.
-                if (seance?.cloturee != true) appliquerCloture(dimanche, maintenant, zone)
-                if (statut == StatutPresence.NON_ENREGISTRE) {
-                    return@executer ResultatPointage.Refuse(MotifRefus.ANNULATION_INTERDITE_APRES_CLOTURE)
-                }
+            val maintenant = clock.instant()
+            val zone = clock.zone()
+            if (RegleSeance.phase(dimanche, seanceDao.trouver(dimanche)?.versEtat(), maintenant, zone) != PhaseSeance.CLOTUREE) {
+                return@executer ResultatPointage.Refuse(MotifRefus.ENFANT_NON_ADMISSIBLE)
+            }
+            if (statut == StatutPresence.NON_ENREGISTRE) {
+                return@executer ResultatPointage.Refuse(MotifRefus.ANNULATION_INTERDITE_APRES_CLOTURE)
             }
 
+            enfantDao.changerDebutSuivi(enfantId, dimanche, maintenant)
+            // Dimanches désormais couverts par le suivi : [dimanche, ancien début[.
+            for (jour in Dimanches.entre(dimanche, enfant.dateDebutSuivi.minusDays(1))) {
+                val seance = seanceDao.trouver(jour)
+                if (RegleSeance.phase(jour, seance?.versEtat(), maintenant, zone) != PhaseSeance.CLOTUREE) continue
+                if (seance?.cloturee == true) {
+                    presenceDao.insererSiAbsente(PresenceEntity(enfantId, jour, StatutPresence.ABSENT, maintenant, maintenant))
+                } else {
+                    appliquerCloture(jour, maintenant, zone) // crée la séance et l'absence de l'enfant
+                }
+            }
             presenceDao.insererSiAbsente(PresenceEntity(enfantId, dimanche, statut, maintenant, maintenant))
             presenceDao.changerStatut(enfantId, dimanche, statut, maintenant)
             ResultatPointage.Enregistre(statut)
@@ -231,12 +302,25 @@ class PresenceRepository(
      * l'écriture n'a pas encore eu lieu.
      */
     fun observerDimanche(dimanche: LocalDate): Flow<EtatDimanche> =
-        combine(enfantDao.observerAdmissiblesAvecStatut(dimanche), seanceDao.observer(dimanche)) { lignes, seance ->
+        combine(
+            enfantDao.observerAdmissiblesAvecStatut(dimanche),
+            seanceDao.observer(dimanche),
+            enfantDao.observerNonInscritsA(dimanche),
+        ) { lignes, seance, nonInscrits ->
             val phase = RegleSeance.phase(dimanche, seance?.versEtat(), clock.instant(), clock.zone())
+            val parNom = Comparator<ElementDimanche> { a, b ->
+                comparateur.compare(a.enfant.prenom to a.enfant.nom, b.enfant.prenom to b.enfant.nom)
+            }
+            // Non pointés en haut, pointés en bas ; ordre alphabétique conservé dans chaque groupe.
             val elements = lignes
                 .map { ElementDimanche(it.enfant, statutAffiche(it.statut, phase)) }
-                .sortedWith { a, b -> comparateur.compare(a.enfant.prenom to a.enfant.nom, b.enfant.prenom to b.enfant.nom) }
-            EtatDimanche(dimanche, phase, elements)
+                .sortedWith(compareBy<ElementDimanche> { it.pointe }.then(parNom))
+            val candidats = if (phase == PhaseSeance.CLOTUREE) {
+                nonInscrits.map { ElementDimanche(it, StatutPresence.NON_ENREGISTRE, inscrit = false) }.sortedWith(parNom)
+            } else {
+                emptyList()
+            }
+            EtatDimanche(dimanche, phase, elements, candidats)
         }
 
     /** Enfants (actifs ou archivés) avec leurs compteurs sur les séances clôturées uniquement. */

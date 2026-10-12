@@ -42,6 +42,13 @@ data class ArchivageUi(
     val erreur: Boolean = false,
 )
 
+/** Désarchivage et suppression définitive : même cycle confirmation → en cours → erreur éventuelle. */
+data class ConfirmationUi(
+    val confirmation: Boolean = false,
+    val enCours: Boolean = false,
+    val erreur: Boolean = false,
+)
+
 class FicheViewModel(
     private val enfants: EnfantRepository,
     private val photos: StockagePhotos,
@@ -76,6 +83,63 @@ class FicheViewModel(
     fun annulerArchivage() {
         if (_archivage.value.enCours) return
         _archivage.value = ArchivageUi()
+    }
+
+    private val _desarchivage = MutableStateFlow(ConfirmationUi())
+    val desarchivage: StateFlow<ConfirmationUi> = _desarchivage
+
+    private val _suppression = MutableStateFlow(ConfirmationUi())
+    val suppression: StateFlow<ConfirmationUi> = _suppression
+
+    /** Vrai une fois la fiche supprimée : l'écran se ferme. */
+    private val _supprime = MutableStateFlow(false)
+    val supprime: StateFlow<Boolean> = _supprime
+
+    fun demanderDesarchivage() {
+        _desarchivage.value = ConfirmationUi(confirmation = true)
+    }
+
+    fun annulerDesarchivage() {
+        if (!_desarchivage.value.enCours) _desarchivage.value = ConfirmationUi()
+    }
+
+    fun confirmerDesarchivage() {
+        if (_desarchivage.value.enCours) return
+        _desarchivage.update { it.copy(enCours = true, erreur = false) }
+        viewModelScope.launch {
+            try {
+                enfants.desarchiver(enfantId)
+                _desarchivage.value = ConfirmationUi()
+            } catch (erreur: CancellationException) {
+                throw erreur
+            } catch (erreur: Exception) {
+                _desarchivage.value = ConfirmationUi(confirmation = true, erreur = true)
+            }
+        }
+    }
+
+    fun demanderSuppression() {
+        _suppression.value = ConfirmationUi(confirmation = true)
+    }
+
+    fun annulerSuppression() {
+        if (!_suppression.value.enCours) _suppression.value = ConfirmationUi()
+    }
+
+    fun confirmerSuppression() {
+        if (_suppression.value.enCours || _supprime.value) return
+        _suppression.update { it.copy(enCours = true, erreur = false) }
+        viewModelScope.launch {
+            try {
+                enfants.supprimerDefinitivement(enfantId)
+                _supprime.value = true
+                _suppression.value = ConfirmationUi()
+            } catch (erreur: CancellationException) {
+                throw erreur
+            } catch (erreur: Exception) {
+                _suppression.value = ConfirmationUi(confirmation = true, erreur = true)
+            }
+        }
     }
 
     fun confirmerArchivage() {

@@ -37,6 +37,7 @@
     <string name="statut_present">Présent</string>
     <string name="statut_en_retard">En retard</string>
     <string name="statut_absent">Absent</string>
+    <string name="statut_non_inscrit">Non inscrit</string>
 
     <!-- Écran Dimanche -->
     <string name="phase_a_venir">Séance à venir</string>
@@ -54,6 +55,8 @@
     <string name="dimanche_vide_message">Ajoutez un enfant pour commencer le pointage.</string>
     <string name="dimanche_erreur">Impossible de lire les présences.</string>
     <string name="carte_description">%1$s %2$s : %3$s</string>
+    <string name="dimanche_aide_correction">Séance clôturée : touchez un enfant pour corriger son statut.</string>
+    <string name="dimanche_aide_correction_non_inscrits">Séance clôturée : touchez un enfant pour corriger son statut. Les enfants grisés n’étaient pas encore inscrits ce jour-là : touchez-les pour saisir ce dimanche.</string>
 
     <!-- Panneau de pointage et de correction -->
     <string name="panneau_date_enregistrement">Enregistré pour le dimanche %1$s</string>
@@ -68,6 +71,7 @@
     <string name="erreur_pointage_non_admissible">Cet enfant ne participe pas à ce dimanche.</string>
     <string name="erreur_pointage_absent_interdit">« Absent » est attribué à la clôture. Utilisez « Annuler le pointage » pour revenir à « Non enregistré ».</string>
     <string name="erreur_pointage_annulation">La séance est clôturée : choisissez Présent, En retard ou Absent.</string>
+    <string name="panneau_avant_inscription">Cet enfant n’était pas encore inscrit ce jour-là (suivi depuis le %1$s). Si vous enregistrez un statut, son suivi commencera le %2$s ; les dimanches entre ces deux dates seront marqués Absent et resteront modifiables.</string>
 
     <!-- Écran Enfants -->
     <string name="enfants_titre">Enfants</string>
@@ -80,6 +84,8 @@
     <string name="enfants_vide_actifs_message">Touchez « Ajouter un enfant » pour créer la première fiche.</string>
     <string name="enfants_vide_archives">Aucun enfant archivé</string>
     <string name="enfants_aucun_resultat">Aucun enfant ne correspond à « %1$s ».</string>
+    <string name="enfants_importer">Importer</string>
+    <string name="enfants_desarchiver">Désarchiver</string>
 
     <!-- Fiche -->
     <string name="fiche_titre">Fiche de l’enfant</string>
@@ -98,6 +104,22 @@
     <string name="archivage_confirmer">Archiver</string>
     <string name="archivage_erreur">L’archivage a échoué. Réessayez.</string>
     <string name="erreur_remplacement_photo">La photo n’a pas pu être remplacée. L’ancienne photo est conservée.</string>
+    <string name="fiche_ajouter_photo">Ajouter une photo</string>
+    <string name="fiche_desarchiver">Désarchiver l’enfant</string>
+    <string name="fiche_supprimer">Supprimer définitivement</string>
+    <string name="desarchivage_titre">Désarchiver l’enfant</string>
+    <string name="desarchivage_message">Cet enfant redeviendra actif et figurera de nouveau dans les pointages. Sa fiche, sa photo et son historique sont conservés. Les dimanches déjà clôturés pendant son archivage seront comptés Absent (corrigeables dans l’onglet Dimanche).</string>
+    <string name="desarchivage_message_nom">%1$s redeviendra actif et figurera de nouveau dans les pointages. Sa fiche, sa photo et son historique sont conservés. Les dimanches déjà clôturés pendant son archivage seront comptés Absent (corrigeables dans l’onglet Dimanche).</string>
+    <string name="desarchivage_confirmer">Désarchiver</string>
+    <string name="desarchivage_erreur">Le désarchivage a échoué. Réessayez.</string>
+    <string name="suppression_titre">Supprimer définitivement ?</string>
+    <string name="suppression_message">%1$s sera supprimé de l’application : sa fiche, sa photo et TOUT son historique de présences. Cette action est irréversible. Pour seulement le retirer des pointages en gardant son historique, utilisez plutôt « Archiver ».</string>
+    <string name="suppression_case">Je comprends que cette suppression est définitive.</string>
+    <string name="suppression_confirmer">Supprimer</string>
+    <string name="suppression_erreur">La suppression a échoué : rien n’a été supprimé. Réessayez.</string>
+    <string name="photo_source_titre">Photo de l’enfant</string>
+    <string name="photo_source_camera">Prendre une photo</string>
+    <string name="photo_source_galerie">Choisir dans la galerie</string>
 
     <!-- Sections et libellés des fiches et du formulaire -->
     <string name="section_enfant">Enfant</string>
@@ -130,6 +152,7 @@
     <string name="formulaire_photo_description">Photo validée de l’enfant</string>
     <string name="formulaire_photo_non_prise">Photo non prise : silhouette affichée</string>
     <string name="formulaire_prendre_photo">Prendre la photo</string>
+    <string name="formulaire_galerie">Galerie</string>
     <string name="formulaire_photo_facultative">Facultatif : vous pourrez prendre la photo plus tard depuis la fiche de l’enfant.</string>
     <string name="formulaire_reprendre_photo">Reprendre la photo</string>
     <string name="formulaire_retirer_photo">Retirer la photo</string>
@@ -168,6 +191,11 @@
     <string name="apercu_description">Aperçu de la photo prise</string>
     <string name="apercu_reprendre">Reprendre</string>
     <string name="apercu_utiliser">Utiliser cette photo</string>
+    <string name="apercu_autre_photo">Choisir une autre</string>
+    <string name="galerie_titre">Choisir une photo dans la galerie</string>
+    <string name="galerie_aide">La photo choisie est copiée dans l’application (recadrée et allégée) ; l’originale reste intacte dans la galerie.</string>
+    <string name="galerie_ouvrir">Ouvrir la galerie</string>
+    <string name="galerie_erreur">Cette photo n’a pas pu être lue. Choisissez-en une autre.</string>
 
     <!-- Export CSV -->
     <string name="export_titre">Exporter en CSV</string>
@@ -187,6 +215,51 @@
     <string name="export_reussi">Fichier enregistré : %1$s, %2$s.</string>
     <string name="export_echec">Le fichier n’a pas pu être enregistré. Réessayez, ou choisissez un autre emplacement.</string>
     <string name="export_erreur_apercu">Impossible de préparer l’export.</string>
+    <string name="export_astuce_import">Pour ajouter plusieurs enfants depuis un fichier CSV de même format : onglet Enfants ▸ Importer.</string>
+
+    <!-- Import CSV -->
+    <string name="import_titre">Importer des enfants (CSV)</string>
+    <string name="import_explication">Ajoutez plusieurs enfants en une seule fois à partir d’un fichier CSV, par exemple préparé dans Excel ou obtenu avec « Exporter ». Vous verrez la liste avant que quoi que ce soit ne soit enregistré.</string>
+    <string name="import_format_titre">Format du fichier (le même que l’export)</string>
+    <string name="import_format_colonnes">Une ligne d’en-tête, puis un enfant par ligne. Colonnes obligatoires : Nom, Prénom, Sexe (Garçon ou Fille), Date de naissance (JJ/MM/AAAA). Séparateur point-virgule.</string>
+    <string name="import_format_exemple">Nom;Prénom;Sexe;Date de naissance
+Rakoto;Sarah;Fille;15/03/2017
+Rabe;David;Garçon;02/11/2015</string>
+    <string name="import_format_ignore">Les autres colonnes de l’export (Âge, Statut, dimanches, totaux) sont acceptées : l’âge est recalculé, l’historique des présences n’est pas importé, et les lignes « Archivé » sont ignorées.</string>
+    <string name="import_format_regles">Les enfants déjà inscrits (même nom, prénom et date de naissance) ne sont pas ajoutés en double. Les enfants importés n’ont pas encore de photo ; leur suivi commence au prochain dimanche, comme pour un ajout manuel.</string>
+    <string name="import_format_entete">Nom;Prénom;Sexe;Date de naissance</string>
+    <string name="import_choisir">Choisir un fichier CSV</string>
+    <string name="import_choisir_autre">Choisir un autre fichier</string>
+    <string name="import_lecture">Lecture du fichier…</string>
+    <string name="import_illisible">Ce fichier n’a pas pu être lu. Vérifiez qu’il s’agit bien d’un fichier CSV (texte), de moins de 5 Mo.</string>
+    <string name="import_vide">Ce fichier est vide.</string>
+    <string name="import_colonnes_manquantes">Colonnes introuvables dans la première ligne : %1$s. La première ligne doit contenir les titres des colonnes, comme dans l’export :</string>
+    <string name="import_apercu_aucun">Aucun enfant à ajouter.</string>
+    <string name="import_apercu_un">%1$d enfant prêt à être ajouté :</string>
+    <string name="import_apercu_plusieurs">%1$d enfants prêts à être ajoutés :</string>
+    <string name="import_rejets_un">%1$d ligne ignorée :</string>
+    <string name="import_rejets_plusieurs">%1$d lignes ignorées :</string>
+    <string name="import_ligne_details">%1$s · né(e) le %2$s</string>
+    <string name="import_rejet_ligne">Ligne %1$d : %2$s</string>
+    <string name="import_bouton_un">AJOUTER %1$d ENFANT</string>
+    <string name="import_bouton_plusieurs">AJOUTER %1$d ENFANTS</string>
+    <string name="import_erreur_enregistrement">L’enregistrement a échoué : aucun enfant n’a été ajouté. Réessayez.</string>
+    <string name="import_termine_un">%1$d enfant ajouté</string>
+    <string name="import_termine_plusieurs">%1$d enfants ajoutés</string>
+    <string name="import_termine_aide">Ils apparaissent dans l’onglet Enfants et dans les prochains pointages. Vous pouvez ajouter leur photo depuis leur fiche.</string>
+    <string name="import_voir_liste">Voir la liste des enfants</string>
+    <string name="import_autre_fichier">Importer un autre fichier</string>
+    <string name="import_motif_nom">Nom manquant.</string>
+    <string name="import_motif_prenom">Prénom manquant.</string>
+    <string name="import_motif_naissance_manquante">Date de naissance manquante.</string>
+    <string name="import_motif_naissance_invalide">Date de naissance non reconnue (attendu : JJ/MM/AAAA).</string>
+    <string name="import_motif_naissance_future">La date de naissance est dans le futur.</string>
+    <string name="import_motif_sexe_manquant">Sexe manquant (Garçon ou Fille).</string>
+    <string name="import_motif_sexe_invalide">Sexe non reconnu (attendu : Garçon ou Fille).</string>
+    <string name="import_motif_trop_long">Texte trop long (100 caractères au plus).</string>
+    <string name="import_motif_deja_inscrit">Déjà inscrit dans l’application.</string>
+    <string name="import_motif_doublon">En double dans le fichier.</string>
+    <string name="import_motif_archive">Enfant archivé : non importé.</string>
 
     <!-- Assiduité et historique -->
     <string name="assiduite_titre">Assiduité</string>

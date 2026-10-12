@@ -11,11 +11,13 @@ import mg.ecoledimanche.presences.data.local.SeanceDao
 import mg.ecoledimanche.presences.domain.AppClock
 import mg.ecoledimanche.presences.domain.Dimanches
 import mg.ecoledimanche.presences.domain.DonneesEnfant
+import mg.ecoledimanche.presences.domain.IdentiteEnfant
 import mg.ecoledimanche.presences.domain.RegleSeance
 import mg.ecoledimanche.presences.domain.RegleSuivi
 import mg.ecoledimanche.presences.domain.Recherche
+import mg.ecoledimanche.presences.domain.StatutPresence
 
-/** Fiches enfants : création, modification, changement de photo et archivage. */
+/** Fiches enfants : création (une à une ou par import), modification, photo, archivage, désarchivage et suppression. */
 class EnfantRepository(
     private val enfantDao: EnfantDao,
     private val seanceDao: SeanceDao,
@@ -162,4 +164,94 @@ class EnfantRepository(
         if (archive) enfantDao.retirerPresencesApres(id, aujourdhui)
         archive
     }
+
+    /**
+     * Désarchive l'enfant : il redevient actif (plus de fin de suivi) et réapparaît dans les pointages.
+     * Fiche, photo et historique sont intacts. Les dimanches déjà clôturés pendant son archivage sont
+     * comptés « Absent », comme pour tout enfant suivi ; ils restent corrigeables depuis l'onglet Dimanche.
+     * @return vrai si l'enfant vient d'être désarchivé.
+     */
+    suspend fun desarchiver(id: Long): Boolean = transaction.executer {
+        val enfant = enfantDao.trouver(id)
+        if (enfant == null || !enfant.isArchived) return@executer false
+        val maintenant = clock.instant()
+        if (enfantDao.desarchiver(id, maintenant) == 0) return@executer false
+        val finSuivi = enfant.dateFinSuivi
+        if (finSuivi != null) {
+            enfantDao.completerSeancesCloturees(id, finSuivi, enfant.dateDebutSuivi, StatutPresence.ABSENT, maintenant)
+        }
+        true
+    }
+
+    /**
+     * Supprime DÉFINITIVEMENT l'enfant : sa fiche et tout son historique de présences (une transaction),
+     * puis le fichier de sa photo. Irréversible, contrairement à l'archivage.
+     * Non annulable en cours de route : une fiche supprimée ne doit jamais garder une photo orpheline
+     * volontaire (le nettoyage périodique retirerait de toute façon un fichier non référencé).
+     * @return faux si l'enfant n'existe pas.
+     */
+    suspend fun supprimerDefinitivement(id: Long): Boolean = withContext(NonCancellable) {
+        val photo: String? = transaction.executer<String?> {
+            val enfant = enfantDao.trouver(id) ?: return@executer null
+            enfantDao.supprimerPresences(id)
+            enfantDao.supprimer(id)
+            enfant.photoPath
+        }
+        if (photo == null) return@withContext false
+        if (photo != PHOTO_NON_PRISE) {
+            try {
+                photos.supprimer(photo)
+            } catch (erreur: Exception) {
+                // Le fichier restant n'est plus référencé : le nettoyage des orphelins le retirera.
+            }
+        }
+        true
+    }
+
+    /**
+     * Ajoute plusieurs enfants d'un coup (import CSV), sans photo, dans UNE transaction : tous sont
+     * enregistrés, ou aucun. Le début de suivi suit la même règle qu'un ajout manuel.
+     * @return le nombre d'enfants ajoutés.
+     */
+    suspend fun ajouterPlusieurs(liste: List<DonneesEnfant>): Int {
+        if (liste.isEmpty()) return 0
+        return transaction.executer {
+            val maintenant = clock.instant()
+            val zone = clock.zone()
+            val aujourdhui = maintenant.atZone(zone).toLocalDate()
+            val seanceDuJour = if (Dimanches.estDimanche(aujourdhui)) seanceDao.trouver(aujourdhui) else null
+            val phase = RegleSeance.phase(aujourdhui, seanceDuJour?.versEtat(), maintenant, zone)
+            val debut = RegleSuivi.dateDebutSuivi(aujourdhui, phase)
+            for (donnees in liste) {
+                enfantDao.inserer(
+                    EnfantEntity(
+                        nom = donnees.nom,
+                        prenom = donnees.prenom,
+                        dateNaissance = donnees.dateNaissance,
+                        sexe = donnees.sexe,
+                        adresse = donnees.adresse,
+                        nomPere = donnees.nomPere,
+                        pereMembre = donnees.pereMembre,
+                        nomMere = donnees.nomMere,
+                        mereMembre = donnees.mereMembre,
+                        nombreFreresSoeurs = donnees.nombreFreresSoeurs,
+                        nombreFreresSoeursMembres = donnees.nombreFreresSoeursMembres,
+                        photoPath = PHOTO_NON_PRISE,
+                        dateArriveeEglise = donnees.dateArrivee,
+                        dateDebutSuivi = debut,
+                        dateFinSuivi = null,
+                        isArchived = false,
+                        archivedAt = null,
+                        createdAt = maintenant,
+                        updatedAt = maintenant,
+                    ),
+                )
+            }
+            liste.size
+        }
+    }
+
+    /** Identité (nom, prénom, date de naissance) de tous les enfants, actifs et archivés : détection des doublons à l'import. */
+    suspend fun identitesExistantes(): List<IdentiteEnfant> =
+        enfantDao.tous().map { IdentiteEnfant(it.nom, it.prenom, it.dateNaissance) }
 }

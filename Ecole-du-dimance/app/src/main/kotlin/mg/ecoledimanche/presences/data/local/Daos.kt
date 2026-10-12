@@ -101,6 +101,44 @@ interface EnfantDao {
 
     @Query("SELECT photoPath FROM enfants")
     suspend fun tousLesCheminsPhoto(): List<String>
+
+    /**
+     * Enfants actifs dont le suivi commence APRÈS [dimanche] : sur un dimanche passé, ils sont proposés
+     * pour une saisie « avant inscription » (registre papier), qui avance leur début de suivi.
+     */
+    @Query("SELECT * FROM enfants WHERE isArchived = 0 AND dateDebutSuivi > :dimanche")
+    fun observerNonInscritsA(dimanche: LocalDate): Flow<List<EnfantEntity>>
+
+    /** Avance (antidate) le début de suivi d'un enfant. */
+    @Query("UPDATE enfants SET dateDebutSuivi = :debut, updatedAt = :maintenant WHERE id = :id")
+    suspend fun changerDebutSuivi(id: Long, debut: LocalDate, maintenant: Instant): Int
+
+    /** Désarchivage : l'enfant redevient actif, sans fin de suivi. */
+    @Query(
+        "UPDATE enfants SET isArchived = 0, dateFinSuivi = NULL, archivedAt = NULL, updatedAt = :maintenant " +
+            "WHERE id = :id AND isArchived = 1",
+    )
+    suspend fun desarchiver(id: Long, maintenant: Instant): Int
+
+    /**
+     * Désarchivage : chaque séance DÉJÀ clôturée postérieure à [apres] (et à partir de [debut]) reçoit une
+     * ligne [statut] pour l'enfant, comme l'aurait fait la clôture s'il n'avait pas été archivé. Les lignes
+     * existantes ne sont jamais remplacées.
+     */
+    @Query(
+        "INSERT OR IGNORE INTO presences (enfantId, dateDimanche, statut, createdAt, updatedAt) " +
+            "SELECT :id, dateDimanche, :statut, :maintenant, :maintenant FROM seances " +
+            "WHERE cloturee = 1 AND dateDimanche > :apres AND dateDimanche >= :debut",
+    )
+    suspend fun completerSeancesCloturees(id: Long, apres: LocalDate, debut: LocalDate, statut: StatutPresence, maintenant: Instant)
+
+    /** Suppression définitive, étape 1 : toutes les présences de l'enfant (clé étrangère en RESTRICT). */
+    @Query("DELETE FROM presences WHERE enfantId = :id")
+    suspend fun supprimerPresences(id: Long): Int
+
+    /** Suppression définitive, étape 2 : la fiche elle-même. */
+    @Query("DELETE FROM enfants WHERE id = :id")
+    suspend fun supprimer(id: Long): Int
 }
 
 @Dao

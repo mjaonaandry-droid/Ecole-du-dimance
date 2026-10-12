@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FlipCameraAndroid
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -70,6 +71,7 @@ fun CameraCapture(
     onErreur: (ErreurCamera) -> Unit,
     onFermer: () -> Unit,
     modifier: Modifier = Modifier,
+    onGalerie: (() -> Unit)? = null,
 ) {
     val contexte = LocalContext.current
     val proprietaire = LocalLifecycleOwner.current
@@ -140,7 +142,14 @@ fun CameraCapture(
                 .navigationBarsPadding()
                 .padding(bottom = 24.dp),
         ) {
-            Box(modifier = Modifier.size(56.dp)) // équilibre visuel avec le bouton de bascule
+            if (onGalerie != null) {
+                // Choisir une photo existante dans la galerie plutôt que d'en prendre une.
+                IconButton(onClick = onGalerie, enabled = !enCours, modifier = Modifier.size(56.dp)) {
+                    Icon(Icons.Filled.PhotoLibrary, contentDescription = stringResource(R.string.photo_source_galerie), tint = Color.White)
+                }
+            } else {
+                Box(modifier = Modifier.size(56.dp)) // équilibre visuel avec le bouton de bascule
+            }
             Box(
                 modifier = Modifier
                     .size(80.dp)

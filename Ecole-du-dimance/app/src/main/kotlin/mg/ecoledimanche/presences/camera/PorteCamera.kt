@@ -39,7 +39,7 @@ private enum class Refus { AUCUN, TEMPORAIRE, DEFINITIF }
  * - Au retour des paramètres, l'autorisation est relue.
  */
 @Composable
-fun PorteCamera(onAnnuler: () -> Unit, contenu: @Composable () -> Unit) {
+fun PorteCamera(onAnnuler: () -> Unit, onGalerie: (() -> Unit)? = null, contenu: @Composable () -> Unit) {
     val contexte = LocalContext.current
     var accordee by remember { mutableStateOf(permissionAccordee(contexte)) }
     var refus by rememberSaveable { mutableStateOf(Refus.AUCUN) }
@@ -74,6 +74,7 @@ fun PorteCamera(onAnnuler: () -> Unit, contenu: @Composable () -> Unit) {
             onReessayer = { lanceur.launch(Manifest.permission.CAMERA) },
             onOuvrirParametres = { ouvrirParametres(contexte) },
             onAnnuler = onAnnuler,
+            onGalerie = onGalerie,
         )
         else -> EcranChargement(stringResource(R.string.camera_chargement))
     }

@@ -1,9 +1,11 @@
 package mg.ecoledimanche.presences.camera
 
+import android.content.ContentResolver
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.media.ExifInterface
+import android.net.Uri
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -57,6 +59,29 @@ class StockagePhotosPrive(racine: File) : StockagePhotos {
         } finally {
             brut.delete()
         }
+    }
+
+    /**
+     * Photo choisie dans la galerie : copiée d'abord dans le stockage privé (l'application ne garde aucun
+     * accès à la galerie), puis traitée exactement comme une capture de la caméra (orientation EXIF,
+     * côté max. [CalculsImage.COTE_MAX], JPEG). La photo d'origine dans la galerie n'est pas modifiée.
+     * @return le chemin relatif de la photo temporaire.
+     */
+    suspend fun importerDepuisGalerie(resolveur: ContentResolver, source: Uri): String = withContext(Dispatchers.IO) {
+        val brut = nouveauFichierBrut()
+        try {
+            val entree = resolveur.openInputStream(source) ?: throw IOException("Photo illisible")
+            entree.use { flux ->
+                FileOutputStream(brut).use { sortie ->
+                    val copie = flux.copyTo(sortie)
+                    if (copie <= 0L) throw IOException("Photo vide")
+                }
+            }
+        } catch (erreur: Throwable) {
+            brut.delete()
+            throw erreur
+        }
+        traiterPhotoCapturee(brut) // supprime le fichier brut dans tous les cas
     }
 
     override suspend fun promouvoirTemporaire(cheminTemporaire: String): String = withContext(Dispatchers.IO) {

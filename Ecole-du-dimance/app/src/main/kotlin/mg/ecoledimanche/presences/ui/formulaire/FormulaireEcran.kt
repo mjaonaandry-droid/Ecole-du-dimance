@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -78,6 +79,8 @@ class ActionsFormulaire(
     val onChamps: ((ChampsFormulaire) -> ChampsFormulaire) -> Unit,
     /** Ouvre le parcours photo (caméra, aperçu) ; sans effet en modification. */
     val onPrendrePhoto: () -> Unit,
+    /** Ouvre le sélecteur de photos (galerie), puis l'aperçu ; sans effet en modification. */
+    val onChoisirPhotoGalerie: () -> Unit = {},
     val onRetirerPhoto: () -> Unit,
     val onEnregistrer: () -> Unit,
 )
@@ -151,14 +154,25 @@ fun FormulaireEcran(
                 )
                 if (etat.modeAjout) {
                     if (sansPhoto) {
-                        FilledTonalButton(
-                            onClick = actions.onPrendrePhoto,
-                            enabled = !etat.enregistrement,
-                            modifier = Modifier.heightIn(min = 48.dp),
-                        ) {
-                            Icon(Icons.Filled.CameraAlt, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.formulaire_prendre_photo))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilledTonalButton(
+                                onClick = actions.onPrendrePhoto,
+                                enabled = !etat.enregistrement,
+                                modifier = Modifier.heightIn(min = 48.dp),
+                            ) {
+                                Icon(Icons.Filled.CameraAlt, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.formulaire_prendre_photo))
+                            }
+                            FilledTonalButton(
+                                onClick = actions.onChoisirPhotoGalerie,
+                                enabled = !etat.enregistrement,
+                                modifier = Modifier.heightIn(min = 48.dp),
+                            ) {
+                                Icon(Icons.Filled.PhotoLibrary, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.formulaire_galerie))
+                            }
                         }
                         Text(
                             text = stringResource(R.string.formulaire_photo_facultative),
@@ -170,6 +184,9 @@ fun FormulaireEcran(
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             TextButton(onClick = actions.onPrendrePhoto, enabled = !etat.enregistrement) {
                                 Text(stringResource(R.string.formulaire_reprendre_photo))
+                            }
+                            TextButton(onClick = actions.onChoisirPhotoGalerie, enabled = !etat.enregistrement) {
+                                Text(stringResource(R.string.formulaire_galerie))
                             }
                             TextButton(onClick = actions.onRetirerPhoto, enabled = !etat.enregistrement) {
                                 Text(stringResource(R.string.formulaire_retirer_photo))

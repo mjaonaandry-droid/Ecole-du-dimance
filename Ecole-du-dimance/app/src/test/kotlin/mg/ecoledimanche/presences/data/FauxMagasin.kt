@@ -145,6 +145,54 @@ class FauxMagasin {
         }
 
         override suspend fun tousLesCheminsPhoto(): List<String> = enfants.values.map { it.photoPath }
+
+        override fun observerNonInscritsA(dimanche: LocalDate): Flow<List<EnfantEntity>> =
+            flux { enfants.values.filter { !it.isArchived && it.dateDebutSuivi > dimanche } }
+
+        override suspend fun changerDebutSuivi(id: Long, debut: LocalDate, maintenant: Instant): Int {
+            val e = enfants[id] ?: return 0
+            enfants[id] = e.copy(dateDebutSuivi = debut, updatedAt = maintenant)
+            notifier()
+            return 1
+        }
+
+        override suspend fun desarchiver(id: Long, maintenant: Instant): Int {
+            val e = enfants[id] ?: return 0
+            if (!e.isArchived) return 0
+            enfants[id] = e.copy(isArchived = false, dateFinSuivi = null, archivedAt = null, updatedAt = maintenant)
+            notifier()
+            return 1
+        }
+
+        override suspend fun completerSeancesCloturees(
+            id: Long,
+            apres: LocalDate,
+            debut: LocalDate,
+            statut: StatutPresence,
+            maintenant: Instant,
+        ) {
+            for (seance in seances.values.filter { it.cloturee && it.dateDimanche > apres && it.dateDimanche >= debut }) {
+                check(enfants.containsKey(id)) { "FOREIGN KEY constraint failed (enfant)" }
+                val cle = id to seance.dateDimanche
+                if (!presences.containsKey(cle)) presences[cle] = PresenceEntity(id, seance.dateDimanche, statut, maintenant, maintenant)
+            }
+            notifier()
+        }
+
+        override suspend fun supprimerPresences(id: Long): Int {
+            val aRetirer = presences.keys.filter { it.first == id }
+            aRetirer.forEach { presences.remove(it) }
+            notifier()
+            return aRetirer.size
+        }
+
+        override suspend fun supprimer(id: Long): Int {
+            // Clé étrangère en RESTRICT : impossible tant qu'il reste des présences.
+            check(presences.keys.none { it.first == id }) { "FOREIGN KEY constraint failed (presences)" }
+            val retire = enfants.remove(id) != null
+            if (retire) notifier()
+            return if (retire) 1 else 0
+        }
     }
 
     val seanceDao = object : SeanceDao {

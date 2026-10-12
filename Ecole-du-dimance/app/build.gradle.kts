@@ -16,6 +16,20 @@ val keystoreProperties = Properties().apply {
     if (keystorePropertiesFile.exists()) keystorePropertiesFile.inputStream().use { load(it) }
 }
 
+// Clé PERMANENTE de l'application (depuis la 1.1.0). Android n'installe une mise à jour par-dessus la
+// version existante (données conservées) QUE si elle est signée avec la même clé. La clé de débogage
+// créée automatiquement change à chaque machine (et à chaque build GitHub Actions) : elle ne convient pas.
+// La clé permanente est fournie par des variables d'environnement (secrets GitHub Actions en CI) :
+//   SIGNATURE_KEYSTORE_FILE  chemin du fichier ecole-dimanche.keystore
+//   SIGNATURE_PASSWORD       mot de passe (keystore et clé)
+//   SIGNATURE_ALIAS          alias de la clé (par défaut « ecoledimanche »)
+// Sans ces variables, l'APK est signé avec la clé de débogage locale et ne peut PAS mettre à jour
+// l'application installée sur le téléphone.
+val cleePermanenteFichier: File? = System.getenv("SIGNATURE_KEYSTORE_FILE")?.takeIf { it.isNotBlank() }?.let { file(it) }
+val cleePermanenteMotDePasse: String? = System.getenv("SIGNATURE_PASSWORD")?.takeIf { it.isNotBlank() }
+val cleePermanenteAlias: String = System.getenv("SIGNATURE_ALIAS")?.takeIf { it.isNotBlank() } ?: "ecoledimanche"
+val cleePermanenteDisponible = cleePermanenteFichier?.exists() == true && cleePermanenteMotDePasse != null
+
 android {
     // L'identifiant technique ne doit plus changer après la première installation :
     // il conditionne les mises à jour. Le nom affiché se règle dans res/values/strings.xml.
@@ -26,12 +40,21 @@ android {
         applicationId = "mg.ecoledimanche.presences"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        // Toujours augmenter versionCode à chaque nouvelle version installée sur le téléphone.
+        versionCode = 2
+        versionName = "1.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
+        if (cleePermanenteDisponible) {
+            create("permanente") {
+                storeFile = cleePermanenteFichier
+                storePassword = cleePermanenteMotDePasse
+                keyAlias = cleePermanenteAlias
+                keyPassword = cleePermanenteMotDePasse
+            }
+        }
         if (keystorePropertiesFile.exists()) {
             create("release") {
                 storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
@@ -43,6 +66,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            // L'APK installé sur le téléphone est la variante « debug » : il doit porter la clé permanente.
+            if (cleePermanenteDisponible) signingConfig = signingConfigs.getByName("permanente")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(

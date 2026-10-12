@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -48,6 +49,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -56,6 +58,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -110,7 +113,10 @@ fun DimancheEcran(
                 if (etat.phase == PhaseSeance.A_VENIR) {
                     BandeauDimancheAVenir(etat.dimancheAVenir) { actions.onChoisirDimanche(etat.dimancheAVenir) }
                 }
-                if (etat.elements.isEmpty()) {
+                if (etat.phase == PhaseSeance.CLOTUREE && etat.grille.isNotEmpty()) {
+                    AideCorrection(nonInscrits = etat.nonInscrits.isNotEmpty())
+                }
+                if (etat.grille.isEmpty()) {
                     EtatVide(
                         icone = Icons.Filled.Groups,
                         titre = stringResource(R.string.dimanche_vide_titre),
@@ -126,7 +132,7 @@ fun DimancheEcran(
                 } else {
                     GrilleEnfants(etat, aujourdhui, actions)
                 }
-                val selection = etat.elements.firstOrNull { it.enfant.id == panneau.enfantId }
+                val selection = etat.grille.firstOrNull { it.enfant.id == panneau.enfantId }
                 if (selection != null) {
                     PanneauStatut(selection, etat.phase, etat.dimanche, panneau, actions.onPointer, actions.onFermerPanneau)
                 }
@@ -218,19 +224,21 @@ private fun BandeauDimancheAVenir(dimancheAVenir: LocalDate, onAller: () -> Unit
 @Composable
 private fun GrilleEnfants(pret: EtatEcranDimanche.Pret, aujourdhui: LocalDate, actions: ActionsDimanche) {
     val pointageActif = pret.phase != PhaseSeance.A_VENIR
+    val grille = pret.grille
     // Le nom n'est ajouté sous le prénom que pour distinguer des homonymes ; l'âge, si même nom et prénom.
-    val prenomsDoubles = pret.elements.groupingBy { Recherche.normaliser(it.enfant.prenom) }.eachCount().filterValues { it > 1 }.keys
-    val nomsCompletsDoubles = pret.elements
+    val prenomsDoubles = grille.groupingBy { Recherche.normaliser(it.enfant.prenom) }.eachCount().filterValues { it > 1 }.keys
+    val nomsCompletsDoubles = grille
         .groupingBy { Recherche.normaliser("${it.enfant.prenom} ${it.enfant.nom}") }
         .eachCount().filterValues { it > 1 }.keys
+    // Trois enfants par ligne : non pointés en haut, pointés en bas (ordre alphabétique dans chaque groupe).
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 150.dp),
-        contentPadding = PaddingValues(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        columns = GridCells.Fixed(COLONNES_GRILLE),
+        contentPadding = PaddingValues(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxSize(),
     ) {
-        items(pret.elements, key = { it.enfant.id }) { element ->
+        items(grille, key = { it.enfant.id }) { element ->
             val enfant = element.enfant
             CarteEnfant(
                 element = element,
@@ -239,9 +247,25 @@ private fun GrilleEnfants(pret: EtatEcranDimanche.Pret, aujourdhui: LocalDate, a
                 age = Age.enAnnees(enfant.dateNaissance, aujourdhui),
                 actif = pointageActif,
                 onClick = { actions.onOuvrirPanneau(enfant.id) },
+                modifier = Modifier.animateItem(),
             )
         }
     }
+}
+
+/** Nombre de cartes par ligne dans la grille du dimanche. */
+private const val COLONNES_GRILLE = 3
+
+/** Rappel sur une séance clôturée : la correction (et la saisie d'avant l'inscription) se fait en touchant une photo. */
+@Composable
+private fun AideCorrection(nonInscrits: Boolean) {
+    Text(
+        text = stringResource(if (nonInscrits) R.string.dimanche_aide_correction_non_inscrits else R.string.dimanche_aide_correction),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+    )
 }
 
 @Composable
@@ -252,47 +276,83 @@ private fun CarteEnfant(
     age: Int,
     actif: Boolean,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val style = element.statut.style()
     val enfant = element.enfant
-    val description = stringResource(R.string.carte_description, enfant.prenom, enfant.nom, stringResource(style.libelle))
+    val libelleStatut = if (element.inscrit) stringResource(style.libelle) else stringResource(R.string.statut_non_inscrit)
+    val description = stringResource(R.string.carte_description, enfant.prenom, enfant.nom, libelleStatut)
+    // Un enfant pas encore inscrit à ce dimanche passé est grisé ; il reste touchable pour la saisie.
+    val fond = if (element.inscrit) style.fond else MaterialTheme.colorScheme.surfaceVariant
+    val contenu = if (element.inscrit) style.contenu else MaterialTheme.colorScheme.onSurfaceVariant
     Card(
         onClick = onClick,
         enabled = actif,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = style.fond,
-            contentColor = style.contenu,
-            disabledContainerColor = style.fond,
-            disabledContentColor = style.contenu,
+            containerColor = fond,
+            contentColor = contenu,
+            disabledContainerColor = fond,
+            disabledContentColor = contenu,
         ),
-        modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = description },
+        modifier = modifier
+            .fillMaxWidth()
+            .alpha(if (element.inscrit) 1f else 0.6f)
+            .semantics(mergeDescendants = true) { contentDescription = description },
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(8.dp)) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(5.dp)) {
             Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
                 PhotoEnfant(
                     chemin = enfant.photoPath,
                     sexe = enfant.sexe,
                     description = null,
+                    coteMaxPx = 320,
+                    forme = RoundedCornerShape(8.dp),
                     modifier = Modifier.fillMaxSize(),
                 )
-                BadgeStatut(element.statut, modifier = Modifier.align(Alignment.BottomStart).padding(6.dp))
+                if (element.inscrit) {
+                    PastilleStatut(element.statut, modifier = Modifier.align(Alignment.BottomStart).padding(4.dp))
+                }
             }
-            Spacer(Modifier.size(8.dp))
+            Spacer(Modifier.size(4.dp))
             Text(
                 text = enfant.prenom,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             if (afficherNom) {
-                Text(text = enfant.nom, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    text = enfant.nom,
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
             if (afficherAge) {
-                Text(text = libelleAge(age), style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                Text(text = libelleAge(age), style = MaterialTheme.typography.labelSmall, maxLines = 1)
             }
+            // Libellé du statut sous le prénom : la petite pastille sur la photo ne porte que l'icône.
+            Text(
+                text = libelleStatut,
+                style = MaterialTheme.typography.labelSmall,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
+    }
+}
+
+/** Pastille compacte (icône seule) posée sur la photo : la carte est trop petite pour le libellé complet. */
+@Composable
+private fun PastilleStatut(statut: StatutPresence, modifier: Modifier = Modifier) {
+    val style = statut.style()
+    Surface(color = style.fond, contentColor = style.contenu, shape = CircleShape, shadowElevation = 1.dp, modifier = modifier) {
+        Icon(imageVector = style.icone, contentDescription = null, modifier = Modifier.padding(3.dp).size(14.dp))
     }
 }
 
@@ -318,6 +378,7 @@ private fun PanneauStatut(
     val feuille = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val enfant = element.enfant
     val correction = phase == PhaseSeance.CLOTUREE
+    val avantInscription = !element.inscrit
     ModalBottomSheet(onDismissRequest = onFermer, sheetState = feuille) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -348,11 +409,24 @@ private fun PanneauStatut(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.panneau_statut_actuel), style = MaterialTheme.typography.bodyLarge)
-                BadgeStatut(element.statut)
+            if (avantInscription) {
+                // Saisie d'un dimanche antérieur à l'inscription (registre papier).
+                Text(
+                    text = stringResource(
+                        R.string.panneau_avant_inscription,
+                        FormatsFr.dateCourte(enfant.dateDebutSuivi),
+                        FormatsFr.dateCourte(dimanche),
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                )
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.panneau_statut_actuel), style = MaterialTheme.typography.bodyLarge)
+                    BadgeStatut(element.statut)
+                }
             }
-            if (correction) {
+            if (correction && !avantInscription) {
                 Text(
                     text = stringResource(R.string.panneau_correction_titre),
                     style = MaterialTheme.typography.titleMedium,

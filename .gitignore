@@ -1,3 +1,11 @@
 # Fichiers générés (Python des scripts de CI)
 __pycache__/
 *.pyc
+
+# Sorties de la vérification CI et fichiers locaux du transfert
+ci-sorties/
+ci-fixture/
+transfert-donnees/*.apk
+transfert-donnees/platform-tools/
+transfert-donnees/sauvegardes/
+transfert-donnees/journal-transfert.txt

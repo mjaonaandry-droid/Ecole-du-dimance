@@ -40,6 +40,14 @@ import mg.ecoledimanche.presences.di.ConteneurApp
 
 private val ArgumentId = listOf(navArgument(Routes.ARG_ID) { type = NavType.LongType })
 
+private val ArgumentsPhoto = listOf(
+    navArgument(Routes.ARG_ID) { type = NavType.LongType },
+    navArgument(Routes.ARG_GALERIE) {
+        type = NavType.BoolType
+        defaultValue = false
+    },
+)
+
 @Composable
 fun NavigationApp(conteneur: ConteneurApp) {
     val navigation = rememberNavController()
@@ -61,7 +69,11 @@ fun NavigationApp(conteneur: ConteneurApp) {
                     conteneur,
                     onOuvrir = { navigation.navigate(Routes.fiche(it)) },
                     onAjouter = { navigation.navigate(Routes.AJOUTER) { launchSingleTop = true } },
+                    onImporter = { navigation.navigate(Routes.IMPORTER) { launchSingleTop = true } },
                 )
+            }
+            composable(Routes.IMPORTER) {
+                ImporterRoute(conteneur, onRetour = { navigation.popBackStack() })
             }
             composable(Routes.ASSIDUITE) {
                 AssiduiteRoute(conteneur, onOuvrirHistorique = { navigation.navigate(Routes.historique(it)) })
@@ -85,7 +97,7 @@ fun NavigationApp(conteneur: ConteneurApp) {
                     enfantId = id,
                     onRetour = { navigation.popBackStack() },
                     onModifier = { navigation.navigate(Routes.modifier(id)) },
-                    onChangerPhoto = { navigation.navigate(Routes.photo(id)) },
+                    onChangerPhoto = { galerie -> navigation.navigate(Routes.photo(id, galerie)) },
                     onHistorique = { navigation.navigate(Routes.historique(id)) },
                 )
             }
@@ -93,9 +105,16 @@ fun NavigationApp(conteneur: ConteneurApp) {
                 val id = retour.arguments?.getLong(Routes.ARG_ID) ?: return@composable
                 ModifierRoute(conteneur, enfantId = id, onTermine = { navigation.popBackStack() }, onRetour = { navigation.popBackStack() })
             }
-            composable(Routes.PHOTO, arguments = ArgumentId) { retour ->
+            composable(Routes.PHOTO, arguments = ArgumentsPhoto) { retour ->
                 val id = retour.arguments?.getLong(Routes.ARG_ID) ?: return@composable
-                ChangerPhotoRoute(conteneur, enfantId = id, onTermine = { navigation.popBackStack() }, onAnnuler = { navigation.popBackStack() })
+                val galerie = retour.arguments?.getBoolean(Routes.ARG_GALERIE) ?: false
+                ChangerPhotoRoute(
+                    conteneur,
+                    enfantId = id,
+                    depuisGalerie = galerie,
+                    onTermine = { navigation.popBackStack() },
+                    onAnnuler = { navigation.popBackStack() },
+                )
             }
             composable(Routes.HISTORIQUE, arguments = ArgumentId) { retour ->
                 val id = retour.arguments?.getLong(Routes.ARG_ID) ?: return@composable

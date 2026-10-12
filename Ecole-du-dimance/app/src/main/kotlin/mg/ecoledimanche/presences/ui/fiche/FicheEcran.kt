@@ -18,12 +18,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -37,7 +41,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -57,11 +67,18 @@ import mg.ecoledimanche.presences.ui.components.libelleAge
 class ActionsFiche(
     val onRetour: () -> Unit,
     val onModifier: () -> Unit,
-    val onChangerPhoto: () -> Unit,
+    /** Vrai : choisir la photo dans la galerie ; faux : la prendre avec la caméra. */
+    val onChangerPhoto: (galerie: Boolean) -> Unit,
     val onHistorique: () -> Unit,
     val onDemanderArchivage: () -> Unit,
     val onConfirmerArchivage: () -> Unit,
     val onAnnulerArchivage: () -> Unit,
+    val onDemanderDesarchivage: () -> Unit,
+    val onConfirmerDesarchivage: () -> Unit,
+    val onAnnulerDesarchivage: () -> Unit,
+    val onDemanderSuppression: () -> Unit,
+    val onConfirmerSuppression: () -> Unit,
+    val onAnnulerSuppression: () -> Unit,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,6 +88,8 @@ fun FicheEcran(
     archivage: ArchivageUi,
     actions: ActionsFiche,
     modifier: Modifier = Modifier,
+    desarchivage: ConfirmationUi = ConfirmationUi(),
+    suppression: ConfirmationUi = ConfirmationUi(),
 ) {
     Scaffold(
         modifier = modifier,
@@ -122,6 +141,90 @@ fun FicheEcran(
             },
         )
     }
+    if (desarchivage.confirmation) {
+        DialogueConfirmation(
+            titre = stringResource(R.string.desarchivage_titre),
+            message = stringResource(R.string.desarchivage_message),
+            confirmer = stringResource(R.string.desarchivage_confirmer),
+            erreur = if (desarchivage.erreur) stringResource(R.string.desarchivage_erreur) else null,
+            enCours = desarchivage.enCours,
+            onConfirmer = actions.onConfirmerDesarchivage,
+            onAnnuler = actions.onAnnulerDesarchivage,
+        )
+    }
+    if (suppression.confirmation) {
+        val nom = (etat as? EtatEcranFiche.Pret)?.enfant?.let { "${it.prenom} ${it.nom}" }.orEmpty()
+        DialogueConfirmation(
+            titre = stringResource(R.string.suppression_titre),
+            message = stringResource(R.string.suppression_message, nom),
+            confirmer = stringResource(R.string.suppression_confirmer),
+            erreur = if (suppression.erreur) stringResource(R.string.suppression_erreur) else null,
+            enCours = suppression.enCours,
+            onConfirmer = actions.onConfirmerSuppression,
+            onAnnuler = actions.onAnnulerSuppression,
+            destructif = true,
+        )
+    }
+}
+
+/** Confirmation d'une action importante (désarchiver, supprimer définitivement). */
+@Composable
+private fun DialogueConfirmation(
+    titre: String,
+    message: String,
+    confirmer: String,
+    erreur: String?,
+    enCours: Boolean,
+    onConfirmer: () -> Unit,
+    onAnnuler: () -> Unit,
+    destructif: Boolean = false,
+) {
+    // Suppression : une case à cocher évite une suppression définitive par un toucher maladroit.
+    var compris by rememberSaveable { mutableStateOf(!destructif) }
+    val icone: (@Composable () -> Unit)? = if (destructif) {
+        { Icon(Icons.Filled.DeleteForever, contentDescription = null, tint = MaterialTheme.colorScheme.error) }
+    } else {
+        null
+    }
+    AlertDialog(
+        onDismissRequest = onAnnuler,
+        icon = icone,
+        title = { Text(titre) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(message)
+                if (destructif) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .toggleable(value = compris, enabled = !enCours, role = Role.Checkbox) { compris = it },
+                    ) {
+                        Checkbox(checked = compris, onCheckedChange = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.suppression_case), style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+                if (erreur != null) Text(erreur, color = MaterialTheme.colorScheme.error)
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirmer,
+                enabled = !enCours && compris,
+                colors = if (destructif) ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error) else ButtonDefaults.textButtonColors(),
+            ) {
+                if (enCours) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                } else {
+                    Text(confirmer)
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onAnnuler, enabled = !enCours) { Text(stringResource(R.string.action_annuler)) }
+        },
+    )
 }
 
 @Composable
@@ -208,6 +311,14 @@ private fun ContenuFiche(etat: EtatEcranFiche.Pret, actions: ActionsFiche) {
 
 @Composable
 private fun Actions(enfant: EnfantEntity, actions: ActionsFiche) {
+    var choixPhoto by rememberSaveable { mutableStateOf(false) }
+    if (choixPhoto) {
+        ChoixSourcePhoto(
+            onCamera = { choixPhoto = false; actions.onChangerPhoto(false) },
+            onGalerie = { choixPhoto = false; actions.onChangerPhoto(true) },
+            onFermer = { choixPhoto = false },
+        )
+    }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
         Button(onClick = actions.onHistorique, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
             Icon(Icons.Filled.History, contentDescription = null)
@@ -220,13 +331,22 @@ private fun Actions(enfant: EnfantEntity, actions: ActionsFiche) {
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.fiche_modifier))
             }
-            FilledTonalButton(onClick = actions.onChangerPhoto, modifier = Modifier.weight(1f).heightIn(min = 52.dp)) {
+            FilledTonalButton(onClick = { choixPhoto = true }, modifier = Modifier.weight(1f).heightIn(min = 52.dp)) {
                 Icon(Icons.Filled.CameraAlt, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text(stringResource(if (enfant.aUnePhoto) R.string.fiche_changer_photo else R.string.fiche_prendre_photo))
+                Text(stringResource(if (enfant.aUnePhoto) R.string.fiche_changer_photo else R.string.fiche_ajouter_photo))
             }
         }
-        if (!enfant.isArchived) {
+        if (enfant.isArchived) {
+            FilledTonalButton(
+                onClick = actions.onDemanderDesarchivage,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+            ) {
+                Icon(Icons.Filled.Unarchive, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.fiche_desarchiver))
+            }
+        } else {
             OutlinedButton(
                 onClick = actions.onDemanderArchivage,
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
@@ -237,7 +357,41 @@ private fun Actions(enfant: EnfantEntity, actions: ActionsFiche) {
                 Text(stringResource(R.string.fiche_archiver))
             }
         }
+        TextButton(
+            onClick = actions.onDemanderSuppression,
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+        ) {
+            Icon(Icons.Filled.DeleteForever, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.fiche_supprimer))
+        }
     }
+}
+
+/** « Prendre une photo » (caméra) ou « Choisir dans la galerie ». */
+@Composable
+fun ChoixSourcePhoto(onCamera: () -> Unit, onGalerie: () -> Unit, onFermer: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onFermer,
+        title = { Text(stringResource(R.string.photo_source_titre)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilledTonalButton(onClick = onCamera, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                    Icon(Icons.Filled.CameraAlt, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.photo_source_camera))
+                }
+                FilledTonalButton(onClick = onGalerie, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                    Icon(Icons.Filled.PhotoLibrary, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.photo_source_galerie))
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onFermer) { Text(stringResource(R.string.action_annuler)) } },
+    )
 }
 
 @Composable

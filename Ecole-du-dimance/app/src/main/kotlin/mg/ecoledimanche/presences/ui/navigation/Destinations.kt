@@ -41,6 +41,10 @@ import mg.ecoledimanche.presences.ui.formulaire.FormulaireEcran
 import mg.ecoledimanche.presences.ui.formulaire.FormulaireViewModel
 import mg.ecoledimanche.presences.ui.historique.HistoriqueEcran
 import mg.ecoledimanche.presences.ui.historique.HistoriqueViewModel
+import mg.ecoledimanche.presences.ui.importer.ActionsImport
+import mg.ecoledimanche.presences.ui.importer.ImporterEcran
+import mg.ecoledimanche.presences.ui.importer.ImporterViewModel
+import mg.ecoledimanche.presences.ui.importer.lireFichier
 
 // Ce fichier ne fait que relier les ViewModels, le cycle de vie Android et les écrans sans état.
 // Aucune règle métier ici : elles vivent dans `domain` et `data.repository`.
@@ -70,17 +74,57 @@ fun DimancheRoute(conteneur: ConteneurApp, onAjouter: () -> Unit) {
 }
 
 @Composable
-fun EnfantsRoute(conteneur: ConteneurApp, onOuvrir: (Long) -> Unit, onAjouter: () -> Unit) {
+fun EnfantsRoute(conteneur: ConteneurApp, onOuvrir: (Long) -> Unit, onAjouter: () -> Unit, onImporter: () -> Unit) {
     val vm: EnfantsViewModel = viewModel(factory = fabrique { EnfantsViewModel(conteneur.enfantRepository, conteneur.horloge) })
     val etat by vm.etat.collectAsStateWithLifecycle()
+    val desarchivage by vm.desarchivage.collectAsStateWithLifecycle()
     EnfantsEcran(
         etat = etat,
         onRecherche = vm::rechercher,
         onVoirArchives = vm::voirArchives,
         onOuvrir = onOuvrir,
         onAjouter = onAjouter,
+        onImporter = onImporter,
+        desarchivage = desarchivage,
+        onDemanderDesarchivage = vm::demanderDesarchivage,
+        onConfirmerDesarchivage = vm::confirmerDesarchivage,
+        onAnnulerDesarchivage = vm::annulerDesarchivage,
     )
 }
+
+/**
+ * Import CSV : le sélecteur de fichiers du système choisit le fichier (aucune permission de stockage) ;
+ * l'application ne lit que ce fichier, et n'enregistre rien avant la confirmation de l'aperçu.
+ */
+@Composable
+fun ImporterRoute(conteneur: ConteneurApp, onRetour: () -> Unit) {
+    val vm: ImporterViewModel = viewModel(factory = fabrique { ImporterViewModel(conteneur.enfantRepository, conteneur.horloge) })
+    val etat by vm.etat.collectAsStateWithLifecycle()
+    val contexte = LocalContext.current
+    val choisirFichier = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { source ->
+        // Source nulle : l'utilisateur a fermé le sélecteur, rien n'est lu.
+        if (source != null) vm.analyser { lireFichier(contexte, source) }
+    }
+    ImporterEcran(
+        etat = etat,
+        actions = ActionsImport(
+            onRetour = onRetour,
+            onChoisirFichier = { choisirFichier.launch(TYPES_CSV) },
+            onConfirmer = vm::confirmer,
+            onRecommencer = vm::recommencer,
+        ),
+    )
+}
+
+/** Types proposés par le sélecteur : selon le téléphone, un CSV est annoncé sous l'un ou l'autre. */
+private val TYPES_CSV = arrayOf(
+    "text/csv",
+    "text/comma-separated-values",
+    "text/plain",
+    "application/csv",
+    "application/vnd.ms-excel",
+    "application/octet-stream",
+)
 
 @Composable
 fun AssiduiteRoute(conteneur: ConteneurApp, onOuvrirHistorique: (Long) -> Unit) {
@@ -129,7 +173,7 @@ fun FicheRoute(
     enfantId: Long,
     onRetour: () -> Unit,
     onModifier: () -> Unit,
-    onChangerPhoto: () -> Unit,
+    onChangerPhoto: (galerie: Boolean) -> Unit,
     onHistorique: () -> Unit,
 ) {
     val vm: FicheViewModel = viewModel(
@@ -137,9 +181,18 @@ fun FicheRoute(
     )
     val etat by vm.etat.collectAsStateWithLifecycle()
     val archivage by vm.archivage.collectAsStateWithLifecycle()
+    val desarchivage by vm.desarchivage.collectAsStateWithLifecycle()
+    val suppression by vm.suppression.collectAsStateWithLifecycle()
+    val supprime by vm.supprime.collectAsStateWithLifecycle()
+    // Fiche supprimée définitivement : retour à l'écran précédent (la liste des enfants).
+    LaunchedEffect(supprime) {
+        if (supprime) onRetour()
+    }
     FicheEcran(
         etat = etat,
         archivage = archivage,
+        desarchivage = desarchivage,
+        suppression = suppression,
         actions = ActionsFiche(
             onRetour = onRetour,
             onModifier = onModifier,
@@ -148,6 +201,12 @@ fun FicheRoute(
             onDemanderArchivage = vm::demanderArchivage,
             onConfirmerArchivage = vm::confirmerArchivage,
             onAnnulerArchivage = vm::annulerArchivage,
+            onDemanderDesarchivage = vm::demanderDesarchivage,
+            onConfirmerDesarchivage = vm::confirmerDesarchivage,
+            onAnnulerDesarchivage = vm::annulerDesarchivage,
+            onDemanderSuppression = vm::demanderSuppression,
+            onConfirmerSuppression = vm::confirmerSuppression,
+            onAnnulerSuppression = vm::annulerSuppression,
         ),
     )
 }
@@ -168,6 +227,7 @@ fun AjoutRoute(conteneur: ConteneurApp, onTermine: (Long) -> Unit, onAbandon: ()
     val etat by vm.etat.collectAsStateWithLifecycle()
     var confirmerAbandon by rememberSaveable { mutableStateOf(false) }
     var priseDePhoto by rememberSaveable { mutableStateOf(false) }
+    var photoDepuisGalerie by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(etat.enfantEnregistre) {
         etat.enfantEnregistre?.let(onTermine)
@@ -183,6 +243,7 @@ fun AjoutRoute(conteneur: ConteneurApp, onTermine: (Long) -> Unit, onAbandon: ()
                 priseDePhoto = false
             },
             onAnnuler = { priseDePhoto = false },
+            depuisGalerie = photoDepuisGalerie,
         )
     } else {
         BackHandler { confirmerAbandon = true }
@@ -192,7 +253,14 @@ fun AjoutRoute(conteneur: ConteneurApp, onTermine: (Long) -> Unit, onAbandon: ()
             actions = ActionsFormulaire(
                 onRetour = { confirmerAbandon = true },
                 onChamps = vm::modifierChamps,
-                onPrendrePhoto = { priseDePhoto = true },
+                onPrendrePhoto = {
+                    photoDepuisGalerie = false
+                    priseDePhoto = true
+                },
+                onChoisirPhotoGalerie = {
+                    photoDepuisGalerie = true
+                    priseDePhoto = true
+                },
                 onRetirerPhoto = vm::retirerPhoto,
                 onEnregistrer = vm::enregistrer,
             ),
@@ -243,7 +311,13 @@ fun ModifierRoute(conteneur: ConteneurApp, enfantId: Long, onTermine: () -> Unit
 
 /** Remplacement de la photo : l'ancienne n'est supprimée qu'une fois la nouvelle référence enregistrée. */
 @Composable
-fun ChangerPhotoRoute(conteneur: ConteneurApp, enfantId: Long, onTermine: () -> Unit, onAnnuler: () -> Unit) {
+fun ChangerPhotoRoute(
+    conteneur: ConteneurApp,
+    enfantId: Long,
+    onTermine: () -> Unit,
+    onAnnuler: () -> Unit,
+    depuisGalerie: Boolean = false,
+) {
     val vm: ChangerPhotoViewModel = viewModel(factory = fabrique { ChangerPhotoViewModel(conteneur.enfantRepository, enfantId) })
     val etat by vm.etat.collectAsStateWithLifecycle()
     LaunchedEffect(etat.termine) {
@@ -254,6 +328,7 @@ fun ChangerPhotoRoute(conteneur: ConteneurApp, enfantId: Long, onTermine: () -> 
         onValidee = vm::valider,
         onAnnuler = onAnnuler,
         enCours = etat.enCours,
+        depuisGalerie = depuisGalerie,
     )
     if (etat.erreur) {
         AlertDialog(

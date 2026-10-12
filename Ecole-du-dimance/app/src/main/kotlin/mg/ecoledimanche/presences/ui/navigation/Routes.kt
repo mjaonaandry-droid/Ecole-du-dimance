@@ -7,16 +7,18 @@ object Routes {
     const val ASSIDUITE = "assiduite"
     const val EXPORTER = "exporter"
     const val AJOUTER = "ajouter"
+    const val IMPORTER = "importer"
 
     const val ARG_ID = "id"
+    const val ARG_GALERIE = "galerie"
     const val FICHE = "enfant/{$ARG_ID}"
     const val MODIFIER = "enfant/{$ARG_ID}/modifier"
-    const val PHOTO = "enfant/{$ARG_ID}/photo"
+    const val PHOTO = "enfant/{$ARG_ID}/photo?$ARG_GALERIE={$ARG_GALERIE}"
     const val HISTORIQUE = "enfant/{$ARG_ID}/historique"
 
     fun fiche(id: Long) = "enfant/$id"
     fun modifier(id: Long) = "enfant/$id/modifier"
-    fun photo(id: Long) = "enfant/$id/photo"
+    fun photo(id: Long, galerie: Boolean = false) = "enfant/$id/photo?$ARG_GALERIE=$galerie"
     fun historique(id: Long) = "enfant/$id/historique"
 
     /** Écrans qui affichent la barre de navigation basse. */

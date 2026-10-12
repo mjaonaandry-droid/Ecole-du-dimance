@@ -36,6 +36,7 @@ sealed interface EtatEcranDimanche {
     data class Pret(
         val dimanche: LocalDate,
         val phase: PhaseSeance,
+        /** Enfants suivis ce dimanche : non pointés d'abord, puis pointés (ordre alphabétique dans chaque groupe). */
         val elements: List<ElementDimanche>,
         val peutReculer: Boolean,
         val peutAvancer: Boolean,
@@ -47,7 +48,13 @@ sealed interface EtatEcranDimanche {
          * (exemple : un clic le vendredi 09/10/2026 est enregistré au dimanche 11/10/2026).
          */
         val dimancheAVenir: LocalDate,
-    ) : EtatEcranDimanche
+        /** Séance clôturée : enfants actifs pas encore inscrits ce jour-là (saisie d'un registre papier). */
+        val nonInscrits: List<ElementDimanche> = emptyList(),
+    ) : EtatEcranDimanche {
+        /** Ordre de la grille : non pointés, non inscrits (grisés), puis pointés. */
+        val grille: List<ElementDimanche>
+            get() = elements.filter { !it.pointe } + nonInscrits + elements.filter { it.pointe }
+    }
 }
 
 /** Pourquoi un pointage a échoué ; transformé en message français par l'écran. */
@@ -110,6 +117,7 @@ class DimancheViewModel(
                     dimanche = dimanche,
                     phase = contenu.phase,
                     elements = contenu.elements,
+                    nonInscrits = contenu.nonInscrits,
                     peutReculer = dimanche.isAfter(debut),
                     peutAvancer = dimanche.isBefore(fin),
                     dimanchesProposes = proposes,
@@ -161,10 +169,15 @@ class DimancheViewModel(
         val pret = etat.value as? EtatEcranDimanche.Pret ?: return
         val enfantId = _panneau.value.enfantId ?: return
         if (_panneau.value.enregistrement) return // clics rapprochés : un seul enregistrement à la fois
+        val avantInscription = pret.nonInscrits.any { it.enfant.id == enfantId }
         _panneau.update { it.copy(enregistrement = true, erreur = null) }
         viewModelScope.launch {
             val resultat = try {
-                presences.pointer(enfantId, pret.dimanche, statut)
+                if (avantInscription) {
+                    presences.pointerAvantInscription(enfantId, pret.dimanche, statut)
+                } else {
+                    presences.pointer(enfantId, pret.dimanche, statut)
+                }
             } catch (erreur: CancellationException) {
                 throw erreur
             } catch (erreur: Exception) {
