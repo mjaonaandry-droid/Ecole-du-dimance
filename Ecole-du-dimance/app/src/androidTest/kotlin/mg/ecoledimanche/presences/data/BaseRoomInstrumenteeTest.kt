@@ -101,7 +101,16 @@ class BaseRoomInstrumenteeTest {
         val id = inscrire("Rakoto", "Sarah")
         horloge.allerA("2026-11-01", 15, 0)
         assertEquals(4, presences.rattraper())
-        assertEquals(CompteursAssiduite(0, 0, 4), presences.observerAssiduite(false).first().single { it.enfant.id == id }.compteurs)
+        // Personne n'a été pointé ces quatre dimanches : ils ne comptent pas (vraie requête SQL, 1.3.0).
+        assertEquals(CompteursAssiduite.VIDE, presences.observerAssiduite(false).first().single { it.enfant.id == id }.compteurs)
+        assertEquals(4, base.presenceDao().toutes().count { it.statut == StatutPresence.ABSENT })
+
+        // Sarah pointée le 01/11 (correction après clôture) : ce dimanche compte désormais, les autres non.
+        presences.pointer(id, LocalDate.parse("2026-11-01"), StatutPresence.PRESENT)
+        assertEquals(CompteursAssiduite(1, 0, 0), presences.observerAssiduite(false).first().single { it.enfant.id == id }.compteurs)
+        val historique = presences.observerHistorique(id).first()!!
+        assertEquals(CompteursAssiduite(1, 0, 0), historique.compteurs)
+        assertEquals(listOf(true, false, false, false), historique.elements.map { it.compte })
     }
 
     @Test
