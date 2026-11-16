@@ -9,6 +9,26 @@ Elle fonctionne **sans aucune connexion Internet**, y compris après un redémar
 
 ---
 
+## Version 1.3.0 (versionCode 4)
+
+1. **Onglet « Notes »** (notes d'examen) — « Nouvel examen » : intitulé, date, puis une note sur 20 par enfant actif
+   (12 ou 12,5 ; deux décimales au plus). Toucher un examen permet de corriger ses notes ou de le supprimer.
+   Pour chaque enfant actif, l'onglet affiche **chacune de ses notes**, son **total** (sur 20 × nombre d'examens) et sa
+   **moyenne sur 20**. **Règle :** chaque enfant actif compte à **tous** les examens ; un examen sans note pour lui compte
+   **0** (exemple : trois examens, un enfant noté 12 et 15 seulement → total 27 / 60, moyenne 9 / 20). Les notes des
+   enfants archivés sont conservées mais n'apparaissent pas. (`domain/Notes.kt`, `NotesRepository`, `ui/notes/`)
+2. **Assiduité : un dimanche où personne n'a été pointé ne compte pas** — tant qu'aucun enfant n'y est Présent ou En
+   retard, un dimanche clôturé n'entre dans aucun cumul (Assiduité, Historique, export) ; il est signalé sur l'écran
+   Dimanche (« Personne n'a été pointé ce dimanche ») et dans l'historique (« non compté »). Dès qu'un enfant y est pointé
+   (même après coup), le dimanche compte, et les non-pointés y sont absents comme avant.
+3. **Barre du bas** : Dimanche, Enfants, Assiduité, **Notes**, Données. L'ajout d'un enfant se fait depuis l'onglet Enfants
+   (« Ajouter un enfant ») ou depuis un dimanche sans enfant.
+4. **Base version 3** (tables `examens` et `notes`, migration `MIGRATION_2_3`, schéma `3.json`) ; une base 1.1.0 (version 1)
+   passe directement en version 3. **Sauvegarde au format 2** (avec examens et notes) : une 1.2.0 la refuse (« version plus
+   récente ») au lieu de perdre les notes ; une sauvegarde 1.2.0 (format 1) se restaure dans la 1.3.0.
+5. **Export CSV** : nouveau groupe « Notes d'examen » (une colonne par examen, total, moyenne sur 20 ; cellule vide = pas de
+   note, comptée 0).
+
 ## Version 1.2.0 (versionCode 3)
 
 1. **Mise à jour sans désinstaller** — la 1.2.0 s'installe **par-dessus** la 1.1.0 (même identifiant, même clé permanente,
@@ -381,7 +401,7 @@ Choisissez donc la clé définitive **avant** d'enregistrer de vraies données.
   l'emplacement choisi avec le sélecteur du système ; aucune sauvegarde cloud. Le CSV, lui, n'est pas une sauvegarde
   (ni photos, ni historique réimportable).
 - **Schéma Room** : l'export est activé (`room.schemaLocation` → `app/schemas/`). Versions : 1 (applications 1.0 et 1.1),
-  2 (application 1.2 : table `parametres`). **À chaque évolution du schéma** :
+  2 (application 1.2 : table `parametres`), 3 (application 1.3 : tables `examens` et `notes`). **À chaque évolution du schéma** :
   1. incrémenter `AppDatabase.VERSION` ;
   2. ajouter une migration explicite `MIGRATION_N_N+1` dans `AppDatabase.MIGRATIONS` (jamais de migration destructive) ;
   3. compiler, puis versionner le schéma `app/schemas/.../N+1.json` généré ;

@@ -172,7 +172,7 @@ class EnfantRepository(
     }
 
     /**
-     * Supprime DÉFINITIVEMENT l'enfant : sa fiche et tout son historique de présences (une transaction),
+     * Supprime DÉFINITIVEMENT l'enfant : sa fiche, tout son historique de présences et ses notes (une transaction),
      * puis le fichier de sa photo. Irréversible, contrairement à l'archivage.
      * Non annulable en cours de route : une fiche supprimée ne doit jamais garder une photo orpheline
      * volontaire (le nettoyage périodique retirerait de toute façon un fichier non référencé).
@@ -182,6 +182,7 @@ class EnfantRepository(
         val photo: String? = transaction.executer<String?> {
             val enfant = enfantDao.trouver(id) ?: return@executer null
             enfantDao.supprimerPresences(id)
+            enfantDao.supprimerNotes(id)
             enfantDao.supprimer(id)
             enfant.photoPath
         }

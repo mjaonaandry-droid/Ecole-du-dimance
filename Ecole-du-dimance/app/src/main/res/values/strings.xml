@@ -28,7 +28,6 @@
     <!-- Navigation -->
     <string name="nav_dimanche">Dimanche</string>
     <string name="nav_enfants">Enfants</string>
-    <string name="nav_ajouter">Ajouter</string>
     <string name="nav_assiduite">Assiduité</string>
     <string name="nav_donnees">Données</string>
 
@@ -363,4 +362,43 @@ Rabe;David;Garçon;02/11/2015</string>
     <string name="import_motif_nombre">Nombre de frères et sœurs non reconnu (attendu : un entier de 0 à 99).</string>
     <string name="import_motif_arrivee">Date d’arrivée dans l’église non reconnue (attendu : JJ/MM/AAAA).</string>
     <string name="import_motif_incoherent">Informations contradictoires (date d’arrivée avant la naissance ou dans le futur, ou plus de frères et sœurs membres que de frères et sœurs).</string>
+
+    <!-- Version 1.3.0 : assiduité, dimanches sans pointage -->
+    <string name="assiduite_regle">Seuls les dimanches clôturés où au moins un enfant a été pointé sont comptés.</string>
+    <string name="dimanche_sans_pointage">Personne n’a été pointé ce dimanche : il n’est pas compté dans l’assiduité.</string>
+    <string name="historique_non_compte">%1$s · non compté (personne pointé ce jour-là)</string>
+
+    <!-- Version 1.3.0 : notes d’examen -->
+    <string name="nav_notes">Notes</string>
+    <string name="notes_titre">Notes d’examen</string>
+    <string name="notes_regle">Notes sur 20. Chaque enfant actif compte à tous les examens : un examen sans note compte 0 dans le total et la moyenne.</string>
+    <string name="notes_nouvel_examen">Nouvel examen</string>
+    <string name="notes_erreur">Impossible de lire les notes.</string>
+    <string name="notes_vide_titre">Aucun examen</string>
+    <string name="notes_vide_message">Touchez « Nouvel examen » pour saisir les premières notes.</string>
+    <string name="notes_examens">Examens (%1$d) : touchez pour saisir ou corriger</string>
+    <string name="notes_examen_resume">%1$s · notes saisies : %2$d / %3$d</string>
+    <string name="notes_saisir">Notes</string>
+    <string name="notes_cumul">Cumul par enfant</string>
+    <string name="notes_absente">0 (abs.)</string>
+    <string name="notes_total">Total : %1$s / %2$s</string>
+    <string name="notes_sur_20">moyenne / 20</string>
+    <string name="examen_titre_nouveau">Nouvel examen</string>
+    <string name="examen_titre_modifier">Notes de l’examen</string>
+    <string name="examen_intitule">Intitulé de l’examen *</string>
+    <string name="examen_intitule_exemple">Ex. : Examen du 1er trimestre</string>
+    <string name="examen_date">Date : %1$s</string>
+    <string name="examen_changer_date">Changer</string>
+    <string name="examen_aide_notes">Une note sur 20 par enfant (12 ou 12,5). Laissez vide si l’enfant n’a pas de note : elle comptera 0.</string>
+    <string name="examen_note_vide">0</string>
+    <string name="examen_enregistrer">ENREGISTRER · NOTES : %1$d / %2$d</string>
+    <string name="examen_notes_invalides">Certaines notes ne sont pas valables (une note de 0 à 20, deux décimales au plus).</string>
+    <string name="examen_erreur_enregistrement">L’enregistrement a échoué : rien n’a été modifié. Réessayez.</string>
+    <string name="examen_introuvable">Cet examen n’existe plus.</string>
+    <string name="examen_supprimer">Supprimer l’examen</string>
+    <string name="examen_supprimer_titre">Supprimer l’examen ?</string>
+    <string name="examen_supprimer_message">« %1$s » et toutes ses notes seront supprimés définitivement. Les cumuls seront recalculés sans cet examen.</string>
+    <string name="examen_abandon_titre">Abandonner les modifications ?</string>
+    <string name="examen_abandon_message">Les notes saisies depuis le dernier enregistrement seront perdues.</string>
+    <string name="export_groupe_notes">Notes d’examen (chaque note, total et moyenne)</string>
 </resources>

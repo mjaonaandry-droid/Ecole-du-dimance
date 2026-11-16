@@ -249,8 +249,9 @@ class PresenceRepositoryTest {
         val dimanches = listOf("2026-10-11", "2026-10-18", "2026-10-25", "2026-11-01").map(LocalDate::parse)
         assertEquals(dimanches, env.magasin.seances.keys.sorted())
         assertTrue(env.magasin.seances.values.all { it.cloturee && it.clotureeAt != null })
+        // Personne n'a été pointé ces dimanches-là : ils ne comptent pas dans les cumuls (1.3.0).
         for (id in listOf(sarah, david, nathan)) {
-            assertEquals(CompteursAssiduite(0, 0, 4), compteurs(env, id))
+            assertEquals(CompteursAssiduite.VIDE, compteurs(env, id))
         }
         assertEquals(12, env.magasin.presences.size)
         assertTrue(env.magasin.presences.values.all { it.statut == StatutPresence.ABSENT })
@@ -268,9 +269,10 @@ class PresenceRepositoryTest {
 
         env.allerA("2026-10-19", 8, 0) // rouverte le lundi : 11/10 et 18/10 échus
         assertEquals(2, env.presences.rattraper())
-        assertEquals(CompteursAssiduite(1, 0, 1), compteurs(env, sarah))
-        assertEquals(CompteursAssiduite(0, 1, 1), compteurs(env, david))
-        assertEquals(CompteursAssiduite(0, 0, 2), compteurs(env, nathan))
+        // Le 18/10, personne n'a été pointé : seul le 11/10 compte.
+        assertEquals(CompteursAssiduite(1, 0, 0), compteurs(env, sarah))
+        assertEquals(CompteursAssiduite(0, 1, 0), compteurs(env, david))
+        assertEquals(CompteursAssiduite(0, 0, 1), compteurs(env, nathan))
     }
 
     @Test
@@ -497,9 +499,10 @@ class PresenceRepositoryTest {
 
         env.allerA("2026-10-19", 8, 0) // le 18/10 est maintenant clôturé
         env.presences.rattraper()
-        // Sarah : seulement le 11/10. David : 11/10 (présent) et 18/10 (absent).
+        // Sarah : seulement le 11/10. David : 11/10 (présent) ; le 18/10, où personne n'a été pointé, ne compte pas.
         assertEquals(CompteursAssiduite(1, 0, 0), compteurs(env, sarah, archives = true))
-        assertEquals(CompteursAssiduite(1, 0, 1), compteurs(env, david))
+        assertEquals(CompteursAssiduite(1, 0, 0), compteurs(env, david))
+        assertEquals(StatutPresence.ABSENT, env.magasin.presences.getValue(david to LocalDate.parse("2026-10-18")).statut)
         assertNull(env.magasin.presences[sarah to LocalDate.parse("2026-10-18")])
         assertEquals(1, env.presences.observerDimanche(LocalDate.parse("2026-10-18")).first().elements.count { it.enfant.id == david })
         assertTrue(env.presences.observerDimanche(LocalDate.parse("2026-10-18")).first().elements.none { it.enfant.id == sarah })
@@ -569,8 +572,9 @@ class PresenceRepositoryTest {
             listOf("2026-10-25" to StatutPresence.NON_ENREGISTRE, "2026-10-18" to StatutPresence.ABSENT, "2026-10-11" to StatutPresence.EN_RETARD, "2026-10-04" to StatutPresence.PRESENT),
             h.elements.map { it.dimanche.toString() to it.statut },
         )
-        // La séance en cours (25/10) ne compte pas dans les statistiques.
-        assertEquals(CompteursAssiduite(1, 1, 1), h.compteurs)
+        // La séance en cours (25/10) ne compte pas, ni le 18/10 où personne n'a été pointé.
+        assertEquals(CompteursAssiduite(1, 1, 0), h.compteurs)
+        assertEquals(listOf(true, false, true, true), h.elements.map { it.compte })
 
         // Un mercredi : le dimanche suivant (01/11) n'est pas un élément d'historique.
         env.allerA("2026-10-28", 9, 0)
@@ -578,7 +582,8 @@ class PresenceRepositoryTest {
         val mercredi = env.presences.observerHistorique(id).first()!!
         assertEquals(4, mercredi.elements.size)
         assertEquals(StatutPresence.ABSENT, mercredi.elements.first().statut)
-        assertEquals(CompteursAssiduite(1, 1, 2), mercredi.compteurs)
+        // 25/10 clôturé sans aucun pointage, comme le 18/10 : ni l'un ni l'autre ne comptent.
+        assertEquals(CompteursAssiduite(1, 1, 0), mercredi.compteurs)
     }
 
     @Test

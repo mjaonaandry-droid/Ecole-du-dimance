@@ -11,6 +11,9 @@ import mg.ecoledimanche.presences.data.local.CompteurStatutLigne
 import mg.ecoledimanche.presences.data.local.EnfantAvecStatut
 import mg.ecoledimanche.presences.data.local.EnfantDao
 import mg.ecoledimanche.presences.data.local.EnfantEntity
+import mg.ecoledimanche.presences.data.local.ExamenDao
+import mg.ecoledimanche.presences.data.local.ExamenEntity
+import mg.ecoledimanche.presences.data.local.NoteEntity
 import mg.ecoledimanche.presences.data.local.LigneHistorique
 import mg.ecoledimanche.presences.data.local.MaintenanceDao
 import mg.ecoledimanche.presences.data.local.ParametreDao
@@ -45,6 +48,9 @@ class FauxMagasin {
     val seances = LinkedHashMap<LocalDate, SeanceEntity>()
     val presences = LinkedHashMap<Pair<Long, LocalDate>, PresenceEntity>()
     val parametres = LinkedHashMap<String, String>()
+    val examens = LinkedHashMap<Long, ExamenEntity>()
+    val notes = LinkedHashMap<Pair<Long, Long>, NoteEntity>()
+    private var sequenceExamens = 0L
 
     /** Si vrai, `marquerCloturee` échoue : sert à vérifier l'atomicité de la clôture. */
     var echecSurMarquerCloturee = false
@@ -74,17 +80,26 @@ class FauxMagasin {
         val seances: Map<LocalDate, SeanceEntity>,
         val presences: Map<Pair<Long, LocalDate>, PresenceEntity>,
         val parametres: Map<String, String>,
+        val examens: Map<Long, ExamenEntity>,
+        val notes: Map<Pair<Long, Long>, NoteEntity>,
         val sequence: Long,
+        val sequenceExamens: Long,
     )
 
-    fun capturer() = Instantane(LinkedHashMap(enfants), LinkedHashMap(seances), LinkedHashMap(presences), LinkedHashMap(parametres), sequence)
+    fun capturer() = Instantane(
+        LinkedHashMap(enfants), LinkedHashMap(seances), LinkedHashMap(presences), LinkedHashMap(parametres),
+        LinkedHashMap(examens), LinkedHashMap(notes), sequence, sequenceExamens,
+    )
 
     fun restaurer(i: Instantane) {
         enfants.clear(); enfants.putAll(i.enfants)
         seances.clear(); seances.putAll(i.seances)
         presences.clear(); presences.putAll(i.presences)
         parametres.clear(); parametres.putAll(i.parametres)
+        examens.clear(); examens.putAll(i.examens)
+        notes.clear(); notes.putAll(i.notes)
         sequence = i.sequence
+        sequenceExamens = i.sequenceExamens
         notifier()
     }
 
@@ -193,9 +208,17 @@ class FauxMagasin {
             return aRetirer.size
         }
 
+        override suspend fun supprimerNotes(id: Long): Int {
+            val aRetirer = notes.keys.filter { it.second == id }
+            aRetirer.forEach { notes.remove(it) }
+            notifier()
+            return aRetirer.size
+        }
+
         override suspend fun supprimer(id: Long): Int {
-            // Clé étrangère en RESTRICT : impossible tant qu'il reste des présences.
+            // Clés étrangères en RESTRICT : impossible tant qu'il reste des présences ou des notes.
             check(presences.keys.none { it.first == id }) { "FOREIGN KEY constraint failed (presences)" }
+            check(notes.keys.none { it.second == id }) { "FOREIGN KEY constraint failed (notes)" }
             val retire = enfants.remove(id) != null
             if (retire) notifier()
             return if (retire) 1 else 0
@@ -277,9 +300,13 @@ class FauxMagasin {
 
         override suspend fun trouver(enfantId: Long, dimanche: LocalDate): PresenceEntity? = presences[enfantId to dimanche]
 
+        /** Comme la requête Room : au moins un enfant Présent ou En retard ce dimanche-là. */
+        private fun pointe(dimanche: LocalDate): Boolean =
+            presences.values.any { it.dateDimanche == dimanche && (it.statut == StatutPresence.PRESENT || it.statut == StatutPresence.EN_RETARD) }
+
         override fun observerCompteurs(): Flow<List<CompteurStatutLigne>> = flux {
             presences.values
-                .filter { seances[it.dateDimanche]?.cloturee == true }
+                .filter { seances[it.dateDimanche]?.cloturee == true && pointe(it.dateDimanche) }
                 .groupBy { it.enfantId to it.statut }
                 .map { (cle, liste) -> CompteurStatutLigne(cle.first, cle.second, liste.size) }
         }
@@ -287,7 +314,7 @@ class FauxMagasin {
         override fun observerHistorique(enfantId: Long): Flow<List<LigneHistorique>> = flux {
             presences.values.filter { it.enfantId == enfantId }
                 .sortedByDescending { it.dateDimanche }
-                .map { LigneHistorique(it.dateDimanche, it.statut, seances.getValue(it.dateDimanche).cloturee) }
+                .map { LigneHistorique(it.dateDimanche, it.statut, seances.getValue(it.dateDimanche).cloturee, pointe(it.dateDimanche)) }
         }
     }
 
@@ -319,6 +346,38 @@ class FauxMagasin {
 
         override suspend fun presences(): List<PresenceEntity> = presences.values.sortedWith(compareBy({ it.enfantId }, { it.dateDimanche }))
 
+        override suspend fun examens(): List<ExamenEntity> = examens.values.sortedBy { it.id }
+
+        override suspend fun notes(): List<NoteEntity> = notes.values.sortedWith(compareBy({ it.examenId }, { it.enfantId }))
+
+        override suspend fun viderNotes() {
+            notes.clear()
+            notifier()
+        }
+
+        override suspend fun viderExamens() {
+            check(notes.isEmpty()) { "FOREIGN KEY constraint failed (notes)" }
+            examens.clear()
+            notifier()
+        }
+
+        override suspend fun insererExamens(examens: List<ExamenEntity>) {
+            for (x in examens) {
+                check(!this@FauxMagasin.examens.containsKey(x.id)) { "UNIQUE constraint failed: examens.id" }
+                this@FauxMagasin.examens[x.id] = x
+                if (x.id > sequenceExamens) sequenceExamens = x.id
+            }
+            notifier()
+        }
+
+        override suspend fun insererNotes(notes: List<NoteEntity>) {
+            for (n in notes) {
+                check(examens.containsKey(n.examenId) && enfants.containsKey(n.enfantId)) { "FOREIGN KEY constraint failed" }
+                this@FauxMagasin.notes[n.examenId to n.enfantId] = n
+            }
+            notifier()
+        }
+
         override suspend fun nombreEnfants(): Int = enfants.size
 
         override suspend fun nombreSeances(): Int = seances.size
@@ -335,7 +394,7 @@ class FauxMagasin {
         }
 
         override suspend fun viderEnfants() {
-            check(presences.isEmpty()) { "FOREIGN KEY constraint failed (presences)" }
+            check(presences.isEmpty() && notes.isEmpty()) { "FOREIGN KEY constraint failed (presences, notes)" }
             enfants.clear()
             notifier()
         }
@@ -364,6 +423,56 @@ class FauxMagasin {
                 this@FauxMagasin.presences[p.enfantId to p.dateDimanche] = p
             }
             notifier()
+        }
+    }
+
+    val examenDao = object : ExamenDao {
+        override fun observerExamens(): Flow<List<ExamenEntity>> = flux { examens.values.sortedWith(compareBy({ it.date }, { it.id })) }
+
+        override fun observerNotes(): Flow<List<NoteEntity>> = flux { notes.values.toList() }
+
+        override suspend fun tous(): List<ExamenEntity> = examens.values.sortedWith(compareBy({ it.date }, { it.id }))
+
+        override suspend fun toutesLesNotes(): List<NoteEntity> = notes.values.toList()
+
+        override suspend fun trouver(id: Long): ExamenEntity? = examens[id]
+
+        override suspend fun notesDe(examenId: Long): List<NoteEntity> = notes.values.filter { it.examenId == examenId }
+
+        override suspend fun inserer(examen: ExamenEntity): Long {
+            val id = ++sequenceExamens
+            examens[id] = examen.copy(id = id)
+            notifier()
+            return id
+        }
+
+        override suspend fun mettreAJour(examen: ExamenEntity) {
+            check(examens.containsKey(examen.id)) { "examen inconnu" }
+            examens[examen.id] = examen
+            notifier()
+        }
+
+        override suspend fun ecrireNote(note: NoteEntity) {
+            check(examens.containsKey(note.examenId) && enfants.containsKey(note.enfantId)) { "FOREIGN KEY constraint failed" }
+            notes[note.examenId to note.enfantId] = note
+            notifier()
+        }
+
+        override suspend fun effacerNote(examenId: Long, enfantId: Long) {
+            notes.remove(examenId to enfantId)
+            notifier()
+        }
+
+        override suspend fun supprimerNotesDe(examenId: Long) {
+            notes.keys.filter { it.first == examenId }.forEach { notes.remove(it) }
+            notifier()
+        }
+
+        override suspend fun supprimer(id: Long): Int {
+            check(notes.keys.none { it.first == id }) { "FOREIGN KEY constraint failed (notes)" }
+            val retire = examens.remove(id) != null
+            notifier()
+            return if (retire) 1 else 0
         }
     }
 

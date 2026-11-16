@@ -116,6 +116,16 @@ fun DimancheEcran(
                 if (etat.phase == PhaseSeance.CLOTUREE && etat.grille.isNotEmpty()) {
                     AideCorrection(nonInscrits = etat.nonInscrits.isNotEmpty())
                 }
+                if (etat.sansPointage) {
+                    Text(
+                        text = stringResource(R.string.dimanche_sans_pointage),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                    )
+                }
                 if (etat.grille.isEmpty()) {
                     EtatVide(
                         icone = Icons.Filled.Groups,

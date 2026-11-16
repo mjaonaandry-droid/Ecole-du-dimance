@@ -1,32 +1,25 @@
 package mg.ecoledimanche.presences.ui.navigation
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -39,6 +32,13 @@ import mg.ecoledimanche.presences.R
 import mg.ecoledimanche.presences.di.ConteneurApp
 
 private val ArgumentId = listOf(navArgument(Routes.ARG_ID) { type = NavType.LongType })
+
+private val ArgumentExamen = listOf(
+    navArgument(Routes.ARG_ID) {
+        type = NavType.LongType
+        defaultValue = Routes.NOUVEL_EXAMEN
+    },
+)
 
 private val ArgumentsPhoto = listOf(
     navArgument(Routes.ARG_ID) { type = NavType.LongType },
@@ -77,6 +77,13 @@ fun NavigationApp(conteneur: ConteneurApp) {
             }
             composable(Routes.ASSIDUITE) {
                 AssiduiteRoute(conteneur, onOuvrirHistorique = { navigation.navigate(Routes.historique(it)) })
+            }
+            composable(Routes.NOTES) {
+                NotesRoute(conteneur, onOuvrirExamen = { id -> navigation.navigate(Routes.examen(id)) { launchSingleTop = true } })
+            }
+            composable(Routes.EXAMEN, arguments = ArgumentExamen) { retour ->
+                val id = retour.arguments?.getLong(Routes.ARG_ID)?.takeIf { it != Routes.NOUVEL_EXAMEN }
+                ExamenRoute(conteneur, examenId = id, onTermine = { navigation.popBackStack() })
             }
             composable(Routes.DONNEES) {
                 DonneesRoute(
@@ -132,29 +139,16 @@ fun NavigationApp(conteneur: ConteneurApp) {
 }
 
 /**
- * Cinq accès : Dimanche, Enfants, Ajouter, Assiduité, Données (CSV, sauvegarde, remise à zéro). « Ajouter » est une action centrale
- * (jamais sélectionnée) qui ouvre le formulaire d'ajout : pas d'onglet vide.
+ * Cinq onglets : Dimanche, Enfants, Assiduité, Notes, Données (CSV, sauvegarde, remise à zéro).
+ * L'ajout d'un enfant se fait depuis l'onglet Enfants (« Ajouter un enfant ») ou depuis un dimanche vide.
  */
 @Composable
 private fun BarreNavigation(routeCourante: String?, navigation: NavHostController) {
     NavigationBar {
         ElementOnglet(Routes.DIMANCHE, R.string.nav_dimanche, Icons.Filled.Today, routeCourante, navigation)
         ElementOnglet(Routes.ENFANTS, R.string.nav_enfants, Icons.Filled.Groups, routeCourante, navigation)
-        NavigationBarItem(
-            selected = false,
-            onClick = { navigation.navigate(Routes.AJOUTER) { launchSingleTop = true } },
-            icon = {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.primary, CircleShape),
-                ) {
-                    Icon(Icons.Filled.Add, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
-                }
-            },
-            label = { Text(stringResource(R.string.nav_ajouter)) },
-            colors = NavigationBarItemDefaults.colors(unselectedTextColor = MaterialTheme.colorScheme.primary),
-        )
         ElementOnglet(Routes.ASSIDUITE, R.string.nav_assiduite, Icons.Filled.Insights, routeCourante, navigation)
+        ElementOnglet(Routes.NOTES, R.string.nav_notes, Icons.Filled.School, routeCourante, navigation)
         ElementOnglet(Routes.DONNEES, R.string.nav_donnees, Icons.Filled.Storage, routeCourante, navigation)
     }
 }

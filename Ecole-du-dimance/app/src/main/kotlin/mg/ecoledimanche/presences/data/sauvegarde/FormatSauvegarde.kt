@@ -11,8 +11,11 @@ import java.util.zip.ZipException
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 import mg.ecoledimanche.presences.data.local.EnfantEntity
+import mg.ecoledimanche.presences.data.local.ExamenEntity
+import mg.ecoledimanche.presences.data.local.NoteEntity
 import mg.ecoledimanche.presences.data.local.PresenceEntity
 import mg.ecoledimanche.presences.data.local.SeanceEntity
+import mg.ecoledimanche.presences.domain.Notes
 import mg.ecoledimanche.presences.domain.Sexe
 import mg.ecoledimanche.presences.domain.StatutPresence
 
@@ -27,6 +30,8 @@ data class ManifesteSauvegarde(
     val seances: Int,
     val presences: Int,
     val photos: Int,
+    /** Depuis le format 2. */
+    val examens: Int = 0,
 )
 
 /** Toutes les données de la base qui sont sauvegardées. */
@@ -34,6 +39,9 @@ data class ContenuSauvegarde(
     val enfants: List<EnfantEntity>,
     val seances: List<SeanceEntity>,
     val presences: List<PresenceEntity>,
+    /** Depuis le format 2 (application 1.3.0) ; vides dans une sauvegarde plus ancienne. */
+    val examens: List<ExamenEntity> = emptyList(),
+    val notes: List<NoteEntity> = emptyList(),
 )
 
 enum class ProblemeSauvegarde {
@@ -66,16 +74,19 @@ data class SauvegardeLue(
 /**
  * Format de la sauvegarde complète : une archive .zip contenant
  * - `sauvegarde.json` : le manifeste (format, version de l'application et de la base, date, nombres) ;
- * - `donnees.json` : toutes les lignes des tables enfants, seances et presences ;
+ * - `donnees.json` : toutes les lignes des tables enfants, seances, presences, examens et notes ;
  * - `photos/…` : les photos des enfants, sous le même chemin relatif que dans l'application.
  *
  * Le contenu est LOGIQUE (des valeurs, pas le fichier SQLite) : une sauvegarde faite avec une ancienne
  * version de l'application se restaure dans une version plus récente, quelle que soit l'évolution du
- * schéma Room entre-temps. [FORMAT] n'augmente que si `donnees.json` change de façon incompatible ;
- * la lecture doit alors continuer d'accepter les formats précédents.
+ * schéma Room entre-temps. [FORMAT] augmente quand `donnees.json` gagne des données qu'une version plus
+ * ancienne perdrait sans le dire ; la lecture accepte toujours les formats précédents.
+ * - format 1 (application 1.2.0) : enfants, séances, présences ;
+ * - format 2 (application 1.3.0) : + examens et notes. Une 1.2.0 refuse une sauvegarde au format 2
+ *   (« version plus récente ») au lieu de perdre les notes.
  */
 object FormatSauvegarde {
-    const val FORMAT = 1
+    const val FORMAT = 2
     const val APPLICATION = "mg.ecoledimanche.presences"
     const val ENTREE_MANIFESTE = "sauvegarde.json"
     const val ENTREE_DONNEES = "donnees.json"
@@ -136,6 +147,7 @@ object FormatSauvegarde {
             seances = contenu.seances.size,
             presences = contenu.presences.size,
             photos = photosEcrites.size,
+            examens = contenu.examens.size,
         )
         zip.putNextEntry(ZipEntry(ENTREE_MANIFESTE))
         zip.write(Json.ecrire(manifesteVersJson(manifeste)).toByteArray(Charsets.UTF_8))
@@ -226,6 +238,14 @@ object FormatSauvegarde {
             if (p.enfantId !in ids || p.dateDimanche !in dates) incoherente("présence ${p.enfantId} ${p.dateDimanche}")
             if (!cles.add(p.enfantId to p.dateDimanche)) incoherente("présence ${p.enfantId} ${p.dateDimanche} en double")
         }
+        val examens = HashSet<Long>()
+        for (x in c.examens) if (x.id <= 0 || !examens.add(x.id)) incoherente("identifiant d'examen ${x.id}")
+        val notes = HashSet<Pair<Long, Long>>()
+        for (n in c.notes) {
+            if (n.examenId !in examens || n.enfantId !in ids) incoherente("note ${n.examenId} ${n.enfantId}")
+            if (n.centiemes !in 0..Notes.MAX_CENTIEMES) incoherente("note ${n.centiemes} hors barème")
+            if (!notes.add(n.examenId to n.enfantId)) incoherente("note ${n.examenId} ${n.enfantId} en double")
+        }
     }
 
     private fun lireTexte(flux: InputStream, limite: Long): String {
@@ -289,6 +309,7 @@ object FormatSauvegarde {
         "seances" to m.seances,
         "presences" to m.presences,
         "photos" to m.photos,
+        "examens" to m.examens,
     )
 
     private fun manifesteDepuisJson(m: Map<String, Any?>): ManifesteSauvegarde = ManifesteSauvegarde(
@@ -300,6 +321,7 @@ object FormatSauvegarde {
         seances = (m["seances"] as? Long)?.toInt() ?: 0,
         presences = (m["presences"] as? Long)?.toInt() ?: 0,
         photos = (m["photos"] as? Long)?.toInt() ?: 0,
+        examens = (m["examens"] as? Long)?.toInt() ?: 0,
     )
 
     internal fun versJson(c: ContenuSauvegarde): Map<String, Any?> = linkedMapOf(
@@ -345,6 +367,24 @@ object FormatSauvegarde {
                 "statut" to p.statut.name,
                 "createdAt" to p.createdAt.toEpochMilli(),
                 "updatedAt" to p.updatedAt.toEpochMilli(),
+            )
+        },
+        "examens" to c.examens.map { x ->
+            linkedMapOf(
+                "id" to x.id,
+                "intitule" to x.intitule,
+                "date" to x.date.toString(),
+                "createdAt" to x.createdAt.toEpochMilli(),
+                "updatedAt" to x.updatedAt.toEpochMilli(),
+            )
+        },
+        "notes" to c.notes.map { n ->
+            linkedMapOf(
+                "examenId" to n.examenId,
+                "enfantId" to n.enfantId,
+                "centiemes" to n.centiemes,
+                "createdAt" to n.createdAt.toEpochMilli(),
+                "updatedAt" to n.updatedAt.toEpochMilli(),
             )
         },
     )
@@ -395,6 +435,27 @@ object FormatSauvegarde {
                 statut = enumeration<StatutPresence>(p, "statut"),
                 createdAt = instant(p, "createdAt"),
                 updatedAt = instant(p, "updatedAt"),
+            )
+        },
+        // Absents d'une sauvegarde au format 1 : listes vides.
+        examens = liste(d, "examens").map { o ->
+            val x = objet(o)
+            ExamenEntity(
+                id = entier(x, "id"),
+                intitule = texte(x, "intitule"),
+                date = date(x, "date"),
+                createdAt = instant(x, "createdAt"),
+                updatedAt = instant(x, "updatedAt"),
+            )
+        },
+        notes = liste(d, "notes").map { o ->
+            val n = objet(o)
+            NoteEntity(
+                examenId = entier(n, "examenId"),
+                enfantId = entier(n, "enfantId"),
+                centiemes = entier(n, "centiemes").toInt(),
+                createdAt = instant(n, "createdAt"),
+                updatedAt = instant(n, "updatedAt"),
             )
         },
     )

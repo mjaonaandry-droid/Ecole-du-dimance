@@ -117,7 +117,10 @@ private fun ContenuHistorique(historique: HistoriqueEnfant) {
             items(historique.elements, key = { it.dimanche.toEpochDay() }) { element ->
                 ListItem(
                     headlineContent = { Text(FormatsFr.dateCourte(element.dimanche), style = MaterialTheme.typography.titleMedium) },
-                    supportingContent = { Text(FormatsFr.dateLongue(element.dimanche).replaceFirstChar { it.uppercase() }) },
+                    supportingContent = {
+                        val date = FormatsFr.dateLongue(element.dimanche).replaceFirstChar { it.uppercase() }
+                        Text(if (element.compte) date else stringResource(R.string.historique_non_compte, date))
+                    },
                     trailingContent = { BadgeStatut(element.statut) },
                 )
                 HorizontalDivider()

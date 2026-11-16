@@ -9,6 +9,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import mg.ecoledimanche.presences.data.local.EnfantDao
 import mg.ecoledimanche.presences.data.local.EnfantEntity
+import mg.ecoledimanche.presences.data.local.ExamenDao
 import mg.ecoledimanche.presences.data.local.PresenceDao
 import mg.ecoledimanche.presences.data.local.PresenceEntity
 import mg.ecoledimanche.presences.data.local.SeanceDao
@@ -16,6 +17,7 @@ import mg.ecoledimanche.presences.data.local.SeanceEntity
 import mg.ecoledimanche.presences.domain.AppClock
 import mg.ecoledimanche.presences.domain.CompteursAssiduite
 import mg.ecoledimanche.presences.domain.DetailsExport
+import mg.ecoledimanche.presences.domain.ExamenExport
 import mg.ecoledimanche.presences.domain.Dimanches
 import mg.ecoledimanche.presences.domain.LigneExport
 import mg.ecoledimanche.presences.domain.PhaseSeance
@@ -63,6 +65,8 @@ data class LigneAssiduite(
 data class ElementHistorique(
     val dimanche: LocalDate,
     val statut: StatutPresence,
+    /** Faux pour un dimanche clôturé où personne n'a été pointé : il n'entre pas dans les cumuls. */
+    val compte: Boolean = true,
 )
 
 data class HistoriqueEnfant(
@@ -102,6 +106,8 @@ class PresenceRepository(
     private val clock: AppClock,
     /** Garde-fou de la date du téléphone : rien n'est clôturé tant qu'elle est douteuse. */
     private val controleHorloge: ControleHorloge = ControleHorloge.TOUJOURS_FIABLE,
+    /** Examens et notes, pour le groupe « Notes » de l'export (absent : aucune colonne de notes). */
+    private val examenDao: ExamenDao? = null,
 ) {
     private val verrouRattrapage = Mutex()
     private val comparateur = Recherche.comparateurNoms()
@@ -377,12 +383,13 @@ class PresenceRepository(
                     } else {
                         statutAffiche(null, RegleSeance.phase(dimanche, null, maintenant, zone))
                     }
-                    ElementHistorique(dimanche, statut)
+                    ElementHistorique(dimanche, statut, compte = ligne == null || !ligne.cloturee || ligne.pointee)
                 }
                 // asReversed() (Kotlin) et non reversed() : compilé contre un SDK récent, reversed() viserait la méthode
                 // Java 21 de List, absente avant Android 15.
                 .asReversed()
-            val cloturees = lignes.filter { it.cloturee }
+            // Cumuls : séances clôturées où au moins un enfant a été pointé.
+            val cloturees = lignes.filter { it.cloturee && it.pointee }
             HistoriqueEnfant(
                 enfant = enfant,
                 elements = elements,
@@ -403,7 +410,8 @@ class PresenceRepository(
      * les groupes choisis) et leur statut pour chaque
      * dimanche, depuis le premier début de suivi jusqu'au dernier dimanche échu (ou jusqu'au dimanche
      * à venir s'il a déjà été pointé). Les statuts sont ceux de l'écran Dimanche (un non-pointé d'une
-     * séance clôturée y est « Absent »), les comptes ne portent que sur les séances clôturées.
+     * séance clôturée y est « Absent »), les comptes ne portent que sur les séances clôturées où au moins
+     * un enfant a été pointé ; un dimanche clôturé sans aucun pointage reste vide.
      *
      * @param inclureArchives vrai pour exporter aussi les enfants archivés (colonne « Statut »).
      */
@@ -417,9 +425,15 @@ class PresenceRepository(
             .filter { inclureArchives || !it.isArchived }
             .sortedWith { a, b -> comparateur.compare(a.prenom to a.nom, b.prenom to b.nom) }
         if (enfants.isEmpty()) return TableauExport(emptyList(), emptyList())
+        val examens = examenDao?.tous().orEmpty()
+        val notes = examenDao?.toutesLesNotes().orEmpty().associateBy({ it.enfantId to it.examenId }, { it.centiemes })
 
         val identifiants = enfants.map { it.id }.toSet()
-        val presences = presenceDao.toutes().filter { it.enfantId in identifiants }.associateBy { it.enfantId to it.dateDimanche }
+        val toutes = presenceDao.toutes()
+        // Dimanches où au moins un enfant (exporté ou non) a été pointé : les seuls comptés dans les cumuls.
+        val dimanchesPointes = toutes.filter { it.statut == StatutPresence.PRESENT || it.statut == StatutPresence.EN_RETARD }
+            .mapTo(HashSet()) { it.dateDimanche }
+        val presences = toutes.filter { it.enfantId in identifiants }.associateBy { it.enfantId to it.dateDimanche }
         val seances = seanceDao.toutes().associateBy { it.dateDimanche }
 
         val premier = Dimanches.courantOuSuivant(enfants.minOf { it.dateDebutSuivi })
@@ -436,6 +450,8 @@ class PresenceRepository(
             for (dimanche in dimanches) {
                 if (!RegleSuivi.estAdmissible(dimanche, enfant.dateDebutSuivi, enfant.dateFinSuivi)) continue
                 val phase = phases.getValue(dimanche)
+                // Dimanche clôturé sans aucun pointage : cellule vide, non compté.
+                if (phase == PhaseSeance.CLOTUREE && dimanche !in dimanchesPointes) continue
                 val statut = statutAffiche(presences[enfant.id to dimanche]?.statut, phase)
                 statuts[dimanche] = statut
                 if (phase == PhaseSeance.CLOTUREE) {
@@ -467,10 +483,11 @@ class PresenceRepository(
                     dateArrivee = enfant.dateArriveeEglise,
                     debutSuivi = enfant.dateDebutSuivi,
                     finSuivi = enfant.dateFinSuivi,
+                    notes = examens.map { notes[enfant.id to it.id] },
                 ),
             )
         }
-        return TableauExport(dimanches, lignes)
+        return TableauExport(dimanches, lignes, examens.map { ExamenExport(it.intitule, it.date) })
     }
 
     private fun statutAffiche(statut: StatutPresence?, phase: PhaseSeance): StatutPresence =

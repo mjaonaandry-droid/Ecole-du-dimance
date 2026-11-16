@@ -108,12 +108,12 @@ class AmeliorationsV11Test {
         assertNull(env.magasin.presences[david to d27sept])
         assertNull(env.magasin.presences[nathan to d04])
         assertEquals(LocalDate.parse("2026-10-11"), env.magasin.enfants.getValue(david).dateDebutSuivi)
-        // Assiduité : 27/09 présent, 04/10, 11/10 et 18/10 absents.
-        assertEquals(CompteursAssiduite(1, 0, 3), compteurs(env, sarah))
+        // Assiduité : 27/09 présent ; les 04/10, 11/10 et 18/10, personne n'a été pointé : non comptés.
+        assertEquals(CompteursAssiduite(1, 0, 0), compteurs(env, sarah))
 
         // Le 04/10 se corrige ensuite comme n'importe quel dimanche clôturé.
         assertEquals(enregistre(StatutPresence.EN_RETARD), env.presences.pointer(sarah, d04, StatutPresence.EN_RETARD))
-        assertEquals(CompteursAssiduite(1, 1, 2), compteurs(env, sarah))
+        assertEquals(CompteursAssiduite(1, 1, 0), compteurs(env, sarah)) // le 04/10 est désormais pointé
         // Sarah n'est plus proposée comme « non inscrite » au 04/10 : elle y est suivie.
         val etat04 = env.presences.observerDimanche(d04).first()
         assertEquals(listOf(sarah), etat04.elements.map { it.enfant.id })
@@ -237,7 +237,7 @@ class AmeliorationsV11Test {
         // David est intact.
         assertEquals(StatutPresence.EN_RETARD, env.magasin.presences.getValue(david to d11).statut)
         assertTrue(photoDavid in env.photos.definitives)
-        assertEquals(CompteursAssiduite(0, 1, 1), compteurs(env, david))
+        assertEquals(CompteursAssiduite(0, 1, 0), compteurs(env, david)) // 18/10 sans aucun pointage : non compté
         assertTrue(env.presences.observerDimanche(d11).first().elements.none { it.enfant.id == sarah })
         assertNull(env.presences.observerHistorique(sarah).first())
         assertFalse(env.enfants.supprimerDefinitivement(sarah)) // n'existe plus

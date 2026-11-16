@@ -132,3 +132,51 @@ object CleParametre {
     /** Instant le plus récent vu sur l'horloge du téléphone (millisecondes Unix) : garde-fou de date. */
     const val HORLOGE_DERNIERE = "horloge.derniere"
 }
+
+/**
+ * Table EXAMENS (version 3 de la base). Toutes les notes sont sur 20 ; un enfant actif sans note à un
+ * examen compte 0 dans son cumul (voir `domain/Notes.kt`).
+ */
+@Entity(tableName = "examens")
+data class ExamenEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val intitule: String,
+    val date: LocalDate,
+    val createdAt: Instant,
+    val updatedAt: Instant,
+)
+
+/**
+ * Table NOTES (version 3 de la base) : une note par enfant et par examen, en CENTIÈMES de point
+ * (1250 = 12,5 / 20) pour éviter les arrondis des nombres à virgule. Pas de ligne = pas de note.
+ * Clés étrangères en RESTRICT, comme les présences : supprimer un examen ou un enfant supprime
+ * d'abord ses notes, explicitement, dans la même transaction.
+ */
+@Entity(
+    tableName = "notes",
+    primaryKeys = ["examenId", "enfantId"],
+    foreignKeys = [
+        ForeignKey(
+            entity = ExamenEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["examenId"],
+            onDelete = ForeignKey.RESTRICT,
+            onUpdate = ForeignKey.RESTRICT,
+        ),
+        ForeignKey(
+            entity = EnfantEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["enfantId"],
+            onDelete = ForeignKey.RESTRICT,
+            onUpdate = ForeignKey.RESTRICT,
+        ),
+    ],
+    indices = [Index(value = ["enfantId"])],
+)
+data class NoteEntity(
+    val examenId: Long,
+    val enfantId: Long,
+    val centiemes: Int,
+    val createdAt: Instant,
+    val updatedAt: Instant,
+)

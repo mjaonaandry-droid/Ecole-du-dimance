@@ -83,7 +83,7 @@ class MigrationRoomTest {
     }
 
     @Test
-    fun migration1vers2_conserveLesDonnees_etMarqueLAccueilCommePasse() {
+    fun migration1versActuelle_conserveLesDonnees_etMarqueLAccueilCommePasse() {
         creerBase(1) { db ->
             db.execSQL(
                 "INSERT INTO enfants (id, nom, prenom, dateNaissance, sexe, adresse, nomPere, pereMembre, nomMere, mereMembre, " +
@@ -110,8 +110,43 @@ class MigrationRoomTest {
                 assertEquals("EN_RETARD", base.presenceDao().toutes().single().statut.name)
                 assertTrue(base.seanceDao().trouver(java.time.LocalDate.parse("2026-10-04"))!!.cloturee)
                 assertEquals("1", base.parametreDao().lire(CleParametre.ACCUEIL_FAIT))
+                assertTrue(base.examenDao().tous().isEmpty())
             }
-            assertEquals(2, base.openHelper.readableDatabase.version)
+            assertEquals(AppDatabase.VERSION, base.openHelper.readableDatabase.version)
+        } finally {
+            base.close()
+        }
+    }
+
+    @Test
+    fun migration2vers3_ajouteExamensEtNotes_sansToucherAuReste() {
+        creerBase(2) { db ->
+            db.execSQL(
+                "INSERT INTO enfants (id, nom, prenom, dateNaissance, sexe, nombreFreresSoeurs, nombreFreresSoeursMembres, " +
+                    "photoPath, dateDebutSuivi, isArchived, createdAt, updatedAt) " +
+                    "VALUES (4, 'Rabe', 'David', '2015-11-02', 'GARCON', 0, 0, '', '2026-10-04', 0, 1, 1)",
+            )
+            db.execSQL("INSERT INTO parametres (cle, valeur) VALUES ('${CleParametre.ACCUEIL_FAIT}', '1')")
+            db.execSQL("INSERT INTO parametres (cle, valeur) VALUES ('${CleParametre.HORLOGE_DERNIERE}', '1790000000000')")
+        }
+        val base = ouvrir()
+        try {
+            runBlocking {
+                assertEquals("David", base.enfantDao().trouver(4)?.prenom)
+                assertEquals("1790000000000", base.parametreDao().lire(CleParametre.HORLOGE_DERNIERE))
+                // Les nouvelles tables fonctionnent, clés étrangères comprises.
+                val examen = base.examenDao().inserer(
+                    mg.ecoledimanche.presences.data.local.ExamenEntity(
+                        intitule = "Examen",
+                        date = java.time.LocalDate.parse("2026-11-15"),
+                        createdAt = java.time.Instant.EPOCH,
+                        updatedAt = java.time.Instant.EPOCH,
+                    ),
+                )
+                base.examenDao().ecrireNote(mg.ecoledimanche.presences.data.local.NoteEntity(examen, 4, 1250, java.time.Instant.EPOCH, java.time.Instant.EPOCH))
+                assertEquals(1250, base.examenDao().notesDe(examen).single().centiemes)
+            }
+            assertEquals(3, base.openHelper.readableDatabase.version)
         } finally {
             base.close()
         }

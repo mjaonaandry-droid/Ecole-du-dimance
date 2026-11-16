@@ -50,6 +50,11 @@ import mg.ecoledimanche.presences.ui.importer.ActionsImport
 import mg.ecoledimanche.presences.ui.importer.ImporterEcran
 import mg.ecoledimanche.presences.ui.importer.ImporterViewModel
 import mg.ecoledimanche.presences.ui.importer.lireFichier
+import mg.ecoledimanche.presences.ui.notes.ActionsExamen
+import mg.ecoledimanche.presences.ui.notes.ExamenEcran
+import mg.ecoledimanche.presences.ui.notes.ExamenViewModel
+import mg.ecoledimanche.presences.ui.notes.NotesEcran
+import mg.ecoledimanche.presences.ui.notes.NotesViewModel
 
 // Ce fichier ne fait que relier les ViewModels, le cycle de vie Android et les écrans sans état.
 // Aucune règle métier ici : elles vivent dans `domain` et `data.repository`.
@@ -207,6 +212,67 @@ fun DonneesRoute(conteneur: ConteneurApp, onExporter: () -> Unit, onImporter: ()
             onAnnulerRemiseAZero = vm::annulerRemiseAZero,
         ),
     )
+}
+
+/** Onglet Notes : examens et cumul des notes de chaque enfant actif. */
+@Composable
+fun NotesRoute(conteneur: ConteneurApp, onOuvrirExamen: (Long?) -> Unit) {
+    val vm: NotesViewModel = viewModel(factory = fabrique { NotesViewModel(conteneur.notesRepository) })
+    val etat by vm.etat.collectAsStateWithLifecycle()
+    NotesEcran(etat = etat, onNouvelExamen = { onOuvrirExamen(null) }, onOuvrirExamen = onOuvrirExamen)
+}
+
+/**
+ * Création ou modification d'un examen et de ses notes. Quitter avec des changements non enregistrés
+ * demande confirmation.
+ */
+@Composable
+fun ExamenRoute(conteneur: ConteneurApp, examenId: Long?, onTermine: () -> Unit) {
+    val vm: ExamenViewModel = viewModel(
+        factory = fabrique { ExamenViewModel(conteneur.notesRepository, conteneur.enfantRepository, conteneur.horloge, examenId) },
+    )
+    val etat by vm.etat.collectAsStateWithLifecycle()
+    var confirmerAbandon by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(etat.termine) {
+        if (etat.termine) onTermine()
+    }
+    val retour: () -> Unit = {
+        if (etat.modifie && !etat.termine) {
+            confirmerAbandon = true
+        } else {
+            onTermine()
+        }
+    }
+    BackHandler(onBack = retour)
+    ExamenEcran(
+        etat = etat,
+        actions = ActionsExamen(
+            onRetour = retour,
+            onIntitule = vm::modifierIntitule,
+            onDate = vm::modifierDate,
+            onNote = vm::modifierNote,
+            onEnregistrer = vm::enregistrer,
+            onDemanderSuppression = vm::demanderSuppression,
+            onConfirmerSuppression = vm::confirmerSuppression,
+            onAnnulerSuppression = vm::annulerSuppression,
+        ),
+    )
+    if (confirmerAbandon) {
+        AlertDialog(
+            onDismissRequest = { confirmerAbandon = false },
+            title = { Text(stringResource(R.string.examen_abandon_titre)) },
+            text = { Text(stringResource(R.string.examen_abandon_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmerAbandon = false
+                        onTermine()
+                    },
+                ) { Text(stringResource(R.string.abandon_confirmer)) }
+            },
+            dismissButton = { TextButton(onClick = { confirmerAbandon = false }) { Text(stringResource(R.string.abandon_continuer)) } },
+        )
+    }
 }
 
 @Composable

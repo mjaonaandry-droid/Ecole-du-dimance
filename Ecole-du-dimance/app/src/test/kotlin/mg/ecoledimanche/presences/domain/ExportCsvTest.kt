@@ -140,11 +140,12 @@ class ExportCsvTest {
         assertEquals(
             "Identifiant;Nom;Prénom;Sexe;Date de naissance;Âge;Statut;Adresse;Nom du père;Père membre de l'église;" +
                 "Nom de la mère;Mère membre de l'église;Frères et sœurs;Frères et sœurs membres de l'église;" +
-                "Date d'arrivée dans l'église;Début du suivi;Fin du suivi;11/10/2026;Présences;Retards;Absences;Assiduité",
+                "Date d'arrivée dans l'église;Début du suivi;Fin du suivi;11/10/2026;Présences;Retards;Absences;Assiduité;" +
+                "Total des notes;Moyenne sur 20",
             csv[0],
         )
         assertEquals(
-            "7;Rakoto;Sarah;Fille;15/03/2017;9;Actif;\"Lot 1; Antananarivo\";Jean Rakoto;Oui;Hanta;;2;1;05/01/2020;04/10/2026;;Présent;1;0;0;100 %",
+            "7;Rakoto;Sarah;Fille;15/03/2017;9;Actif;\"Lot 1; Antananarivo\";Jean Rakoto;Oui;Hanta;;2;1;05/01/2020;04/10/2026;;Présent;1;0;0;100 %;;",
             csv[1],
         )
     }

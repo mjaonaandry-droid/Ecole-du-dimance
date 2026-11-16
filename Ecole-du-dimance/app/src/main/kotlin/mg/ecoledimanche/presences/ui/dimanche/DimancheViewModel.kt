@@ -51,6 +51,13 @@ sealed interface EtatEcranDimanche {
         /** Séance clôturée : enfants actifs pas encore inscrits ce jour-là (saisie d'un registre papier). */
         val nonInscrits: List<ElementDimanche> = emptyList(),
     ) : EtatEcranDimanche {
+        /**
+         * Séance clôturée où personne n'a été pointé (Présent ou En retard) : elle n'entre pas dans les
+         * cumuls d'assiduité tant qu'aucun enfant n'y est pointé.
+         */
+        val sansPointage: Boolean
+            get() = phase == PhaseSeance.CLOTUREE && elements.isNotEmpty() && elements.none { it.pointe }
+
         /** Ordre de la grille : non pointés, non inscrits (grisés), puis pointés. */
         val grille: List<ElementDimanche>
             get() = elements.filter { !it.pointe } + nonInscrits + elements.filter { it.pointe }

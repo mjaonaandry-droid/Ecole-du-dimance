@@ -83,6 +83,8 @@ class SauvegardeInstrumenteeTest {
         a.horloge.allerA("2026-10-11", 11)
         a.presences.rattraper()
         a.enfants.archiver(david)
+        val notes = mg.ecoledimanche.presences.data.repository.NotesRepository(a.base.examenDao(), a.base.enfantDao(), ExecuteurTransactionRoom(a.base), a.horloge)
+        notes.enregistrerExamen(null, "Trimestre 1", LocalDate.parse("2026-10-11"), mapOf(sarah to 1250, david to 900))
 
         val octets = ByteArrayOutputStream().also { a.donnees.sauvegarder(it) }.toByteArray()
 
@@ -94,6 +96,9 @@ class SauvegardeInstrumenteeTest {
         assertEquals(a.base.maintenanceDao().enfants(), b.base.maintenanceDao().enfants())
         assertEquals(a.base.maintenanceDao().seances(), b.base.maintenanceDao().seances())
         assertEquals(a.base.maintenanceDao().presences(), b.base.maintenanceDao().presences())
+        assertEquals(a.base.maintenanceDao().examens(), b.base.maintenanceDao().examens())
+        assertEquals(a.base.maintenanceDao().notes(), b.base.maintenanceDao().notes())
+        assertEquals(2, b.base.maintenanceDao().notes().size)
         assertEquals(StatutPresence.ABSENT, b.base.presenceDao().trouver(david, LocalDate.parse("2026-10-11"))?.statut)
         assertTrue(b.base.enfantDao().trouver(david)!!.isArchived)
         val photo = b.base.enfantDao().trouver(sarah)!!.photoPath

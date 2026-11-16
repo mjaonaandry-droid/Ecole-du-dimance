@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # =============================================================================================
-#  Vérification sur émulateur du passage 1.1.0 -> 1.2.0 SANS DÉSINSTALLER :
+#  Vérification sur émulateur du passage 1.1.0 -> version actuelle SANS DÉSINSTALLER :
 #  1. l'APK 1.1.0 livré (clé permanente) est installé avec des données réalistes (base version 1) ;
 #  2. le nouvel APK est installé PAR-DESSUS (adb install -r), comme le fera le téléphone ;
-#  3. au premier lancement, Room migre la base 1 -> 2 : les données doivent être intactes ;
-#  4. tour des nouveautés : onglet Données, export partiel, « Repartir de zéro », écran d'accueil.
+#  3. au premier lancement, Room migre la base 1 -> dernière version : les données doivent être intactes ;
+#  4. tour des nouveautés : onglets Notes et Données, export partiel, « Repartir de zéro », écran d'accueil.
 #  Si le nouvel APK n'est PAS signé avec la clé permanente (secrets GitHub absents), la mise à jour
 #  directe est impossible : c'est signalé, puis la migration est vérifiée en remettant la base 1.1.0
 #  dans la nouvelle version.
@@ -61,6 +61,10 @@ extraire_base() { # extraire_base <dossier>
 }
 
 APKSIGNER="$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)"
+AAPT2="$(dirname "$APKSIGNER")/aapt2"
+VERSION_ATTENDUE="$("$AAPT2" dump badging "$NOUVEAU" | grep -m1 '^package:' | sed -E "s/.*versionName='([^']*)'.*/\1/")"
+SCHEMA_ACTUEL="$(ls "$SCHEMAS"/*.json | sort -V | tail -1)"
+echo "Version attendue : $VERSION_ATTENDUE ; schéma : $(basename "$SCHEMA_ACTUEL")" | tee -a "$RESUME"
 adb wait-for-device
 adb shell input keyevent 82
 adb shell settings put system screen_off_timeout 1800000
@@ -95,7 +99,7 @@ adb shell am force-stop "$PKG"
 SORTIE="$(adb install -r "$NOUVEAU" 2>&1)"
 echo "$SORTIE" >> "$SORTIES/adb.log"
 if echo "$SORTIE" | grep -q "Success"; then
-    ok "mise à jour 1.1.0 -> 1.2.0 installée PAR-DESSUS (adb install -r), sans désinstaller"
+    ok "mise à jour 1.1.0 -> $VERSION_ATTENDUE installée PAR-DESSUS (adb install -r), sans désinstaller"
 elif echo "$SORTIE" | grep -q "INSTALL_FAILED_UPDATE_INCOMPATIBLE"; then
     if [ "$MEME_CLE" = 1 ]; then
         ko_donnees "mise à jour refusée alors que les clés sont identiques : $SORTIE"
@@ -109,24 +113,29 @@ else
     ko_donnees "installation du nouvel APK impossible : $SORTIE"
 fi
 VERSION="$(adb shell dumpsys package "$PKG" | grep -m1 versionName | tr -d ' \r')"
-[ "$VERSION" = "versionName=1.2.0" ] && ok "version installée : 1.2.0" || ko_donnees "version installée inattendue : $VERSION"
+[ "$VERSION" = "versionName=$VERSION_ATTENDUE" ] && ok "version installée : $VERSION_ATTENDUE" || ko_donnees "version installée inattendue : $VERSION"
 
-# --- 3. Premier lancement : migration Room 1 -> 2, données intactes -----------------------------
+# --- 3. Premier lancement : migration Room 1 -> dernière version, données intactes ----------------
 adb shell am start -n "$PKG/.MainActivity"
 sleep 8
 verifier_ecran "Sarah" 60
-capture "02-version-1.2.0-apres-mise-a-jour"
+capture "02-nouvelle-version-apres-mise-a-jour"
 extraire_base "$SORTIES/base-apres"
-if python3 - "$SORTIES/base-test" "$SORTIES/base-apres" "$SCHEMAS/2.json" >> "$RESUME" 2>&1 <<'PY'
+if python3 - "$SORTIES/base-test" "$SORTIES/base-apres" "$SCHEMA_ACTUEL" >> "$RESUME" 2>&1 <<'PY'
 import json, sqlite3, sys
-avant, apres, schema2 = sys.argv[1:4]
+avant, apres, chemin_schema = sys.argv[1:4]
 attendu = json.load(open(f"{avant}/attendu.json"))
-hash2 = json.load(open(schema2))["database"]["identityHash"]
+schema = json.load(open(chemin_schema))["database"]
+hash2 = schema["identityHash"]
 base = sqlite3.connect(f"{apres}/ecole_dimanche.db")
 erreurs = 0
 version = base.execute("PRAGMA user_version").fetchone()[0]
-if version != 2:
-    print("   version de la base :", version, "(2 attendu)"); erreurs += 1
+if version != schema["version"]:
+    print("   version de la base :", version, f"({schema['version']} attendu)"); erreurs += 1
+tables = {r[0] for r in base.execute("select name from sqlite_master where type = 'table'")}
+manquantes = {e["tableName"] for e in schema["entities"]} - tables
+if manquantes:
+    print("   tables manquantes :", manquantes); erreurs += 1
 identite = base.execute("select identity_hash from room_master_table where id = 42").fetchone()
 if identite is None or identite[0] != hash2:
     print("   empreinte du schéma inattendue :", identite, "attendu", hash2); erreurs += 1
@@ -146,15 +155,23 @@ print(f"   base version {version}, {len(enfants)} enfants, {len(presences)} pré
 sys.exit(1 if erreurs else 0)
 PY
 then
-    ok "migration Room 1 -> 2 : schéma 2 exact, enfants et présences intacts, écran d'accueil non affiché"
+    ok "migration Room 1 -> $(basename "$SCHEMA_ACTUEL" .json) : schéma exact, enfants et présences intacts, écran d'accueil non affiché"
 else
-    ko_donnees "migration Room 1 -> 2 : écart (détail ci-dessus)"
+    ko_donnees "migration Room : écart (détail ci-dessus)"
 fi
 
 # --- 4. Nouveautés à l'écran ----------------------------------------------------------------------
 adb shell am start -n "$PKG/.MainActivity"
 sleep 6
 verifier_ecran "Sarah" 60
+toucher_exact "Notes"
+verifier_ecran "Nouvel examen"
+capture "03a-onglet-notes"
+toucher "Nouvel examen"
+verifier_ecran "ENREGISTRER · NOTES"
+capture "03b-saisie-examen"
+adb shell input keyevent 4
+sleep 2
 toucher_exact "Données"
 verifier_ecran "Sauvegarde complète"
 capture "03-onglet-donnees"

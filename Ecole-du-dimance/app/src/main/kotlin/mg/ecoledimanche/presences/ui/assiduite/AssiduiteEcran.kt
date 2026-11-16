@@ -51,6 +51,12 @@ fun AssiduiteEcran(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 8.dp),
         )
+        Text(
+            text = stringResource(R.string.assiduite_regle),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+        )
         val archives = (etat as? EtatEcranAssiduite.Pret)?.archives ?: false
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
             FilterChip(selected = !archives, onClick = { onVoirArchives(false) }, label = { Text(stringResource(R.string.filtre_actifs)) })

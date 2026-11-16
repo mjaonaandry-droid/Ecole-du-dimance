@@ -50,7 +50,13 @@ class DonneesRepository(
      */
     suspend fun sauvegarder(sortie: OutputStream): ManifesteSauvegarde {
         val contenu = transaction.executer {
-            ContenuSauvegarde(maintenance.enfants(), maintenance.seances(), maintenance.presences())
+            ContenuSauvegarde(
+                maintenance.enfants(),
+                maintenance.seances(),
+                maintenance.presences(),
+                maintenance.examens(),
+                maintenance.notes(),
+            )
         }
         return withContext(Dispatchers.IO) {
             FormatSauvegarde.ecrire(sortie, contenu, versionApplication, versionBase, clock.instant(), fichiers::ouvrir)
@@ -83,27 +89,34 @@ class DonneesRepository(
         }
         val enfants = lue.contenu.enfants.map { if (it.photoPath.isNotEmpty() && it.photoPath !in photos) it.copy(photoPath = PHOTO_NON_PRISE) else it }
         transaction.executer {
-            maintenance.viderPresences()
-            maintenance.viderSeances()
-            maintenance.viderEnfants()
+            viderTout()
             maintenance.insererEnfants(enfants)
             maintenance.insererSeances(lue.contenu.seances)
             maintenance.insererPresences(lue.contenu.presences)
+            maintenance.insererExamens(lue.contenu.examens)
+            maintenance.insererNotes(lue.contenu.notes)
             parametres.ecrire(ParametreEntity(CleParametre.ACCUEIL_FAIT, "1"))
         }
     }
 
     /**
-     * « Repartir de zéro » : efface DÉFINITIVEMENT enfants, séances, présences et photos. L'application
+     * « Repartir de zéro » : efface DÉFINITIVEMENT enfants, séances, présences, examens, notes et photos. L'application
      * revient à l'écran d'accueil (commencer vide ou restaurer une sauvegarde). Non annulable en cours de route.
      */
     suspend fun reinitialiser() = withContext(NonCancellable) {
         transaction.executer {
-            maintenance.viderPresences()
-            maintenance.viderSeances()
-            maintenance.viderEnfants()
+            viderTout()
             parametres.effacer(CleParametre.ACCUEIL_FAIT)
         }
         withContext(Dispatchers.IO) { fichiers.toutSupprimer() }
+    }
+
+    /** Ordre imposé par les clés étrangères en RESTRICT : les tables « enfants » avant leurs parents. */
+    private suspend fun viderTout() {
+        maintenance.viderNotes()
+        maintenance.viderPresences()
+        maintenance.viderSeances()
+        maintenance.viderEnfants()
+        maintenance.viderExamens()
     }
 }

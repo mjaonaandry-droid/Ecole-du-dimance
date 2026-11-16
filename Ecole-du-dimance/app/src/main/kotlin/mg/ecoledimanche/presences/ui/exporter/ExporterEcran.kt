@@ -242,6 +242,7 @@ private fun libelleGroupe(groupe: GroupeExport): Int = when (groupe) {
     GroupeExport.SUIVI -> R.string.export_groupe_suivi
     GroupeExport.PRESENCES -> R.string.export_groupe_presences
     GroupeExport.TOTAUX -> R.string.export_groupe_totaux
+    GroupeExport.NOTES -> R.string.export_groupe_notes
 }
 
 /** « 1 enfant », « 12 enfants » (le pluriel français commence à 2). */

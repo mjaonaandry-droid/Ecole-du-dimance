@@ -11,6 +11,13 @@ import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 import mg.ecoledimanche.presences.domain.StatutPresence
 
+/**
+ * Condition SQL (alias `p` sur la table presences) : au moins un enfant a été pointé Présent ou En retard
+ * le dimanche de la ligne `p`. Un dimanche clôturé sans aucun pointage n'entre pas dans les cumuls.
+ */
+private const val DIMANCHE_POINTE =
+    "EXISTS (SELECT 1 FROM presences q WHERE q.dateDimanche = p.dateDimanche AND q.statut IN ('PRESENT', 'EN_RETARD'))"
+
 /** Un enfant admissible à un dimanche, avec son statut s'il est déjà enregistré (sinon nul). */
 data class EnfantAvecStatut(
     @Embedded val enfant: EnfantEntity,
@@ -35,6 +42,11 @@ data class LigneHistorique(
     val dateDimanche: LocalDate,
     val statut: StatutPresence,
     val cloturee: Boolean,
+    /**
+     * Vrai si au moins un enfant a été pointé (Présent ou En retard) ce dimanche-là. Un dimanche
+     * clôturé où personne n'a été pointé n'entre pas dans les cumuls d'assiduité.
+     */
+    val pointee: Boolean = true,
 )
 
 @Dao
@@ -136,6 +148,10 @@ interface EnfantDao {
     @Query("DELETE FROM presences WHERE enfantId = :id")
     suspend fun supprimerPresences(id: Long): Int
 
+    /** Suppression définitive : ses notes d'examen (clé étrangère en RESTRICT). */
+    @Query("DELETE FROM notes WHERE enfantId = :id")
+    suspend fun supprimerNotes(id: Long): Int
+
     /** Suppression définitive, étape 2 : la fiche elle-même. */
     @Query("DELETE FROM enfants WHERE id = :id")
     suspend fun supprimer(id: Long): Int
@@ -204,16 +220,20 @@ interface PresenceDao {
     @Query("SELECT * FROM presences WHERE enfantId = :enfantId AND dateDimanche = :dimanche")
     suspend fun trouver(enfantId: Long, dimanche: LocalDate): PresenceEntity?
 
-    /** Compteurs par enfant et par statut, sur les seules séances CLÔTURÉES. */
+    /**
+     * Compteurs par enfant et par statut, sur les seules séances CLÔTURÉES où au moins un enfant a été
+     * pointé (Présent ou En retard) : un dimanche où personne n'a été pointé n'est pas compté.
+     */
     @Query(
         "SELECT p.enfantId AS enfantId, p.statut AS statut, COUNT(*) AS nombre FROM presences p " +
             "INNER JOIN seances s ON s.dateDimanche = p.dateDimanche " +
-            "WHERE s.cloturee = 1 GROUP BY p.enfantId, p.statut",
+            "WHERE s.cloturee = 1 AND " + DIMANCHE_POINTE + " GROUP BY p.enfantId, p.statut",
     )
     fun observerCompteurs(): Flow<List<CompteurStatutLigne>>
 
     @Query(
-        "SELECT p.dateDimanche AS dateDimanche, p.statut AS statut, s.cloturee AS cloturee FROM presences p " +
+        "SELECT p.dateDimanche AS dateDimanche, p.statut AS statut, s.cloturee AS cloturee, " +
+            DIMANCHE_POINTE + " AS pointee FROM presences p " +
             "INNER JOIN seances s ON s.dateDimanche = p.dateDimanche WHERE p.enfantId = :enfantId " +
             "ORDER BY p.dateDimanche DESC",
     )
@@ -255,11 +275,23 @@ interface MaintenanceDao {
     @Query("SELECT * FROM presences ORDER BY enfantId, dateDimanche")
     suspend fun presences(): List<PresenceEntity>
 
+    @Query("SELECT * FROM examens ORDER BY id")
+    suspend fun examens(): List<ExamenEntity>
+
+    @Query("SELECT * FROM notes ORDER BY examenId, enfantId")
+    suspend fun notes(): List<NoteEntity>
+
     @Query("SELECT COUNT(*) FROM enfants")
     suspend fun nombreEnfants(): Int
 
     @Query("SELECT COUNT(*) FROM seances")
     suspend fun nombreSeances(): Int
+
+    @Query("DELETE FROM notes")
+    suspend fun viderNotes()
+
+    @Query("DELETE FROM examens")
+    suspend fun viderExamens()
 
     @Query("DELETE FROM presences")
     suspend fun viderPresences()
@@ -279,5 +311,52 @@ interface MaintenanceDao {
 
     @Insert
     suspend fun insererPresences(presences: List<PresenceEntity>)
+
+    @Insert
+    suspend fun insererExamens(examens: List<ExamenEntity>)
+
+    @Insert
+    suspend fun insererNotes(notes: List<NoteEntity>)
+}
+
+/** Examens et notes (tables EXAMENS et NOTES, version 3 de la base). */
+@Dao
+interface ExamenDao {
+    @Query("SELECT * FROM examens ORDER BY date, id")
+    fun observerExamens(): Flow<List<ExamenEntity>>
+
+    @Query("SELECT * FROM notes")
+    fun observerNotes(): Flow<List<NoteEntity>>
+
+    @Query("SELECT * FROM examens ORDER BY date, id")
+    suspend fun tous(): List<ExamenEntity>
+
+    @Query("SELECT * FROM notes")
+    suspend fun toutesLesNotes(): List<NoteEntity>
+
+    @Query("SELECT * FROM examens WHERE id = :id")
+    suspend fun trouver(id: Long): ExamenEntity?
+
+    @Query("SELECT * FROM notes WHERE examenId = :examenId")
+    suspend fun notesDe(examenId: Long): List<NoteEntity>
+
+    @Insert
+    suspend fun inserer(examen: ExamenEntity): Long
+
+    @Update
+    suspend fun mettreAJour(examen: ExamenEntity)
+
+    /** Enregistre ou remplace la note d'un enfant à un examen. */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun ecrireNote(note: NoteEntity)
+
+    @Query("DELETE FROM notes WHERE examenId = :examenId AND enfantId = :enfantId")
+    suspend fun effacerNote(examenId: Long, enfantId: Long)
+
+    @Query("DELETE FROM notes WHERE examenId = :examenId")
+    suspend fun supprimerNotesDe(examenId: Long)
+
+    @Query("DELETE FROM examens WHERE id = :id")
+    suspend fun supprimer(id: Long): Int
 }
 

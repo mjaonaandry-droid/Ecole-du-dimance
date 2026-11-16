@@ -16,6 +16,8 @@ data class DetailsExport(
     val dateArrivee: LocalDate? = null,
     val debutSuivi: LocalDate? = null,
     val finSuivi: LocalDate? = null,
+    /** Une note (centièmes) par examen de [TableauExport.examens], nul = pas de note (compte 0). */
+    val notes: List<Int?> = emptyList(),
 )
 
 /** Une ligne de l'export : un enfant et sa présence, dimanche par dimanche. */
@@ -39,7 +41,11 @@ data class LigneExport(
 data class TableauExport(
     val dimanches: List<LocalDate>,
     val lignes: List<LigneExport>,
+    /** Examens (du plus ancien au plus récent) : une colonne chacun dans le groupe [GroupeExport.NOTES]. */
+    val examens: List<ExamenExport> = emptyList(),
 )
+
+data class ExamenExport(val intitule: String, val date: LocalDate)
 
 /**
  * Groupes de colonnes que l'utilisateur peut inclure ou non. Nom, prénom, sexe et date de naissance
@@ -59,6 +65,9 @@ enum class GroupeExport(val colonnes: List<String>) {
     /** Une colonne par dimanche (Présent, En retard, Absent). */
     PRESENCES(emptyList()),
     TOTAUX(listOf("Présences", "Retards", "Absences", "Assiduité")),
+
+    /** Une colonne par examen (vide = pas de note, compte 0), puis le total et la moyenne sur 20. */
+    NOTES(emptyList()),
     ;
 
     companion object {
@@ -119,7 +128,12 @@ object ExportCsv {
         entete += listOf("Nom", "Prénom", "Sexe", "Date de naissance")
         for (groupe in GroupeExport.entries) {
             if (groupe == GroupeExport.IDENTIFIANT || groupe !in groupes) continue
-            entete += if (groupe == GroupeExport.PRESENCES) tableau.dimanches.map(FormatsFr::dateCourte) else groupe.colonnes
+            entete += when (groupe) {
+                GroupeExport.PRESENCES -> tableau.dimanches.map(FormatsFr::dateCourte)
+                GroupeExport.NOTES -> tableau.examens.map { "Examen : ${it.intitule} (${FormatsFr.dateCourte(it.date)})" } +
+                    listOf("Total des notes", "Moyenne sur 20")
+                else -> groupe.colonnes
+            }
         }
         lignes += ligne(entete)
 
@@ -156,6 +170,13 @@ object ExportCsv {
                         enfant.compteurs.absences.toString(),
                         enfant.compteurs.tauxDixiemes?.let { FormatTaux.format(it) }.orEmpty(),
                     )
+                    GroupeExport.NOTES -> {
+                        val cumul = CumulNotes(tableau.examens.indices.map { d.notes.getOrNull(it) })
+                        cumul.notes.map { note -> note?.let(Notes::format).orEmpty() } + listOf(
+                            if (cumul.nombreExamens == 0) "" else Notes.format(cumul.totalCentiemes),
+                            cumul.moyenneCentiemes?.let(Notes::format).orEmpty(),
+                        )
+                    }
                 }
             }
             lignes += ligne(cellules)

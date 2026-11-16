@@ -8,6 +8,7 @@ import mg.ecoledimanche.presences.data.local.ExecuteurTransactionRoom
 import mg.ecoledimanche.presences.data.repository.DonneesRepository
 import mg.ecoledimanche.presences.data.repository.EnfantRepository
 import mg.ecoledimanche.presences.data.repository.GardienHorloge
+import mg.ecoledimanche.presences.data.repository.NotesRepository
 import mg.ecoledimanche.presences.data.repository.PresenceRepository
 import mg.ecoledimanche.presences.domain.AppClock
 import mg.ecoledimanche.presences.domain.SystemAppClock
@@ -37,8 +38,11 @@ class ConteneurApp(contexte: Context) {
     }
 
     val presenceRepository: PresenceRepository by lazy {
-        PresenceRepository(base.enfantDao(), base.seanceDao(), base.presenceDao(), transaction, horloge, gardienHorloge)
+        PresenceRepository(base.enfantDao(), base.seanceDao(), base.presenceDao(), transaction, horloge, gardienHorloge, base.examenDao())
     }
+
+    /** Examens et notes (onglet Notes). */
+    val notesRepository: NotesRepository by lazy { NotesRepository(base.examenDao(), base.enfantDao(), transaction, horloge) }
 
     /** Sauvegarde complète, restauration, remise à zéro et écran d'accueil. */
     val donneesRepository: DonneesRepository by lazy {
