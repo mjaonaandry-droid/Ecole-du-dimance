@@ -36,10 +36,27 @@ info() { echo "INFO    $*" | tee -a "$RESUME"; }
 attention() { echo "ATTENTION $*" | tee -a "$RESUME"; echo "::warning::$*"; }
 ko_donnees() { echo "ECHEC   [données] $*" | tee -a "$RESUME"; ECHECS_DONNEES=$((ECHECS_DONNEES + 1)); }
 ko_ecran() { echo "ECHEC   [écran] $*" | tee -a "$RESUME"; ECHECS_ECRANS=$((ECHECS_ECRANS + 1)); }
-verifier_ecran() { if $UI attendre "$1" "${2:-20}" >> "$SORTIES/ui.log" 2>&1; then ok "écran : « $1 » visible"; else ko_ecran "« $1 » absent de l'écran"; fi; }
+# L'émulateur de la CI affiche parfois « Pixel Launcher isn't responding » par-dessus l'application :
+# ce dialogue du système (pas de l'application) est fermé avant chaque vérification d'écran.
+fermer_dialogue_systeme() {
+    if $UI texte 2>/dev/null | grep -q "isn't responding"; then
+        $UI toucher-exact "Wait" >> "$SORTIES/ui.log" 2>&1 || $UI toucher-exact "Close app" >> "$SORTIES/ui.log" 2>&1
+        echo "(dialogue système « ne répond pas » fermé)" >> "$SORTIES/ui.log"
+        sleep 2
+    fi
+}
+verifier_ecran() {
+    fermer_dialogue_systeme
+    if $UI attendre "$1" "${2:-20}" >> "$SORTIES/ui.log" 2>&1; then
+        ok "écran : « $1 » visible"
+    else
+        fermer_dialogue_systeme
+        if $UI attendre "$1" 10 >> "$SORTIES/ui.log" 2>&1; then ok "écran : « $1 » visible"; else ko_ecran "« $1 » absent de l'écran"; fi
+    fi
+}
 capture() { $UI capture "$CAPTURES/$1.png" > /dev/null 2>&1; }
-toucher() { $UI toucher "$@" >> "$SORTIES/ui.log" 2>&1 || ko_ecran "impossible de toucher « $1 »"; }
-toucher_exact() { $UI toucher-exact "$@" >> "$SORTIES/ui.log" 2>&1 || ko_ecran "impossible de toucher « $1 »"; }
+toucher() { fermer_dialogue_systeme; $UI toucher "$@" >> "$SORTIES/ui.log" 2>&1 || ko_ecran "impossible de toucher « $1 »"; }
+toucher_exact() { fermer_dialogue_systeme; $UI toucher-exact "$@" >> "$SORTIES/ui.log" 2>&1 || ko_ecran "impossible de toucher « $1 »"; }
 defiler() { adb shell input swipe 540 1700 540 600 300; sleep 1; }
 empreinte() { "$APKSIGNER" verify --print-certs "$1" 2>/dev/null | grep -m1 'certificate SHA-256 digest' | awk '{print $NF}'; }
 pousser() { # pousser <fichier local> <chemin dans les données de l'application>
@@ -71,6 +88,7 @@ echo "Version attendue : $VERSION_ATTENDUE ; schéma : $(basename "$SCHEMA_ACTUE
 adb wait-for-device
 adb shell input keyevent 82
 adb shell settings put system screen_off_timeout 1800000
+adb shell settings put global hide_error_dialogs 1 > /dev/null 2>&1 || true
 echo "Appareil : $(adb shell getprop ro.build.version.release) / API $(adb shell getprop ro.build.version.sdk)" | tee -a "$RESUME"
 
 # --- 0. Clés de signature ---------------------------------------------------------------------

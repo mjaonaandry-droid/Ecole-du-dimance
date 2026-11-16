@@ -419,9 +419,8 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
-          script: |
-            bash ci/test-mise-a-jour.sh livre/app.apk nouveau/app-debug.apk ci-sorties-v12
-            if [ -f livre/recent.apk ]; then bash ci/test-mise-a-jour.sh livre/app.apk livre/recent.apk ci-sorties-livraison; fi
+          # Une seule ligne : les deux vérifications s'exécutent toujours, l'échec de l'une ou l'autre fait échouer le job.
+          script: bash ci/test-mise-a-jour.sh livre/app.apk nouveau/app-debug.apk ci-sorties-v12; r1=$?; r2=0; if [ -f livre/recent.apk ]; then bash ci/test-mise-a-jour.sh livre/app.apk livre/recent.apk ci-sorties-livraison; r2=$?; fi; exit $((r1 + r2))
 
       - name: Résumé de la mise à jour
         if: ${{ !cancelled() }}
