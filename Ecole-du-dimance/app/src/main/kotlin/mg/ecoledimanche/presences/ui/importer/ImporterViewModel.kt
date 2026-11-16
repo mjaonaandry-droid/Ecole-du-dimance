@@ -14,9 +14,10 @@ import mg.ecoledimanche.presences.domain.AppClock
 import mg.ecoledimanche.presences.domain.DonneesEnfant
 import mg.ecoledimanche.presences.domain.ImportCsv
 import mg.ecoledimanche.presences.domain.LigneRejetee
+import mg.ecoledimanche.presences.domain.MiseAJourEnfant
 import mg.ecoledimanche.presences.domain.aujourdhui
 
-/** Étapes de l'import : choix du fichier → aperçu (rien n'est encore enregistré) → ajout. */
+/** Étapes de l'import : choix du fichier → aperçu (rien n'est encore enregistré) → ajouts et mises à jour. */
 sealed interface EtatImport {
     /** Explications et bouton « Choisir un fichier CSV ». */
     data object Repos : EtatImport
@@ -30,15 +31,22 @@ sealed interface EtatImport {
 
     data class ColonnesManquantes(val colonnes: List<String>) : EtatImport
 
-    /** Résultat de l'analyse, à confirmer : les enfants valides et les lignes écartées (avec le motif). */
+    /**
+     * Résultat de l'analyse, à confirmer : nouveaux enfants, fiches existantes qui changent (avec ce qui
+     * change), fiches reconnues sans changement, et lignes écartées (avec le motif).
+     */
     data class Apercu(
         val aAjouter: List<DonneesEnfant>,
         val rejets: List<LigneRejetee>,
+        val aMettreAJour: List<MiseAJourEnfant> = emptyList(),
+        val inchanges: Int = 0,
         val enregistrement: Boolean = false,
         val erreurEnregistrement: Boolean = false,
-    ) : EtatImport
+    ) : EtatImport {
+        val rienAEnregistrer: Boolean get() = aAjouter.isEmpty() && aMettreAJour.isEmpty()
+    }
 
-    data class Termine(val ajoutes: Int, val ignores: Int) : EtatImport
+    data class Termine(val ajoutes: Int, val ignores: Int, val misAJour: Int = 0, val inchanges: Int = 0) : EtatImport
 }
 
 /**
@@ -61,14 +69,14 @@ class ImporterViewModel(
                 if (octets.size > ImportCsv.TAILLE_MAX_OCTETS) {
                     EtatImport.FichierIllisible
                 } else {
-                    val existants = enfants.identitesExistantes()
+                    val connus = enfants.enfantsConnus()
                     val analyse = withContext(Dispatchers.Default) {
-                        ImportCsv.analyser(ImportCsv.decoder(octets), horloge.aujourdhui(), existants)
+                        ImportCsv.analyser(ImportCsv.decoder(octets), horloge.aujourdhui(), connus)
                     }
                     when (analyse) {
                         AnalyseImport.FichierVide -> EtatImport.FichierVide
                         is AnalyseImport.ColonnesManquantes -> EtatImport.ColonnesManquantes(analyse.colonnes)
-                        is AnalyseImport.Pret -> EtatImport.Apercu(analyse.aAjouter, analyse.rejets)
+                        is AnalyseImport.Pret -> EtatImport.Apercu(analyse.aAjouter, analyse.rejets, analyse.aMettreAJour, analyse.inchanges)
                     }
                 }
             } catch (erreur: CancellationException) {
@@ -79,15 +87,15 @@ class ImporterViewModel(
         }
     }
 
-    /** Ajoute tous les enfants valides de l'aperçu, en une seule transaction (tous ou aucun). */
+    /** Ajoute les nouveaux enfants et met à jour les fiches de l'aperçu, en une seule transaction (tout ou rien). */
     fun confirmer() {
         val apercu = _etat.value as? EtatImport.Apercu ?: return
-        if (apercu.enregistrement || apercu.aAjouter.isEmpty()) return
+        if (apercu.enregistrement || apercu.rienAEnregistrer) return
         _etat.value = apercu.copy(enregistrement = true, erreurEnregistrement = false)
         viewModelScope.launch {
             _etat.value = try {
-                val ajoutes = enfants.ajouterPlusieurs(apercu.aAjouter)
-                EtatImport.Termine(ajoutes, apercu.rejets.size)
+                val (ajoutes, misAJour) = enfants.appliquerImport(apercu.aAjouter, apercu.aMettreAJour)
+                EtatImport.Termine(ajoutes, apercu.rejets.size, misAJour, apercu.inchanges)
             } catch (erreur: CancellationException) {
                 throw erreur
             } catch (erreur: Exception) {

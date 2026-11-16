@@ -268,7 +268,7 @@ class AmeliorationsV11Test {
         assertTrue(env.magasin.enfants.values.all { it.photoPath == PHOTO_NON_PRISE && it.dateDebutSuivi == d11 && !it.isArchived })
         assertEquals(
             setOf(IdentiteEnfant("Rakoto", "Sarah", LocalDate.parse("2017-03-15")), IdentiteEnfant("Rabe", "David", LocalDate.parse("2015-11-02"))),
-            env.enfants.identitesExistantes().toSet(),
+            env.enfants.enfantsConnus().map { IdentiteEnfant(it.donnees.nom, it.donnees.prenom, it.donnees.dateNaissance) }.toSet(),
         )
         assertEquals(0, env.enfants.ajouterPlusieurs(emptyList()))
     }

@@ -115,4 +115,54 @@ class ExportCsvTest {
     fun nomDeFichier_contientLaDateIso() {
         assertEquals("presences-ecole-du-dimanche-2026-10-09.csv", ExportCsv.nomFichier(LocalDate.parse("2026-10-09")))
     }
+
+    // --- Export complet ou partiel (version 1.2.0) ------------------------------------------------
+
+    private val complet = ligne(statuts = mapOf(d1 to StatutPresence.PRESENT), compteurs = CompteursAssiduite(1, 0, 0)).copy(
+        details = DetailsExport(
+            id = 7,
+            adresse = "Lot 1; Antananarivo",
+            nomPere = "Jean Rakoto",
+            pereMembre = true,
+            nomMere = "Hanta",
+            mereMembre = null,
+            nombreFreresSoeurs = 2,
+            nombreFreresSoeursMembres = 1,
+            dateArrivee = LocalDate.parse("2020-01-05"),
+            debutSuivi = LocalDate.parse("2026-10-04"),
+            finSuivi = null,
+        ),
+    )
+
+    @Test
+    fun exportComplet_toutesLesColonnes_dansLOrdre() {
+        val csv = lignes(ExportCsv.construire(TableauExport(listOf(d1), listOf(complet)), aujourdhui, GroupeExport.TOUS))
+        assertEquals(
+            "Identifiant;Nom;Prénom;Sexe;Date de naissance;Âge;Statut;Adresse;Nom du père;Père membre de l'église;" +
+                "Nom de la mère;Mère membre de l'église;Frères et sœurs;Frères et sœurs membres de l'église;" +
+                "Date d'arrivée dans l'église;Début du suivi;Fin du suivi;11/10/2026;Présences;Retards;Absences;Assiduité",
+            csv[0],
+        )
+        assertEquals(
+            "7;Rakoto;Sarah;Fille;15/03/2017;9;Actif;\"Lot 1; Antananarivo\";Jean Rakoto;Oui;Hanta;;2;1;05/01/2020;04/10/2026;;Présent;1;0;0;100 %",
+            csv[1],
+        )
+    }
+
+    @Test
+    fun exportPartiel_seulementLesGroupesChoisis_identiteToujoursPresente() {
+        val csv = lignes(ExportCsv.construire(TableauExport(listOf(d1), listOf(complet)), aujourdhui, setOf(GroupeExport.PARENTS)))
+        assertEquals("Nom;Prénom;Sexe;Date de naissance;Nom du père;Père membre de l'église;Nom de la mère;Mère membre de l'église", csv[0])
+        assertEquals("Rakoto;Sarah;Fille;15/03/2017;Jean Rakoto;Oui;Hanta;", csv[1])
+
+        val minimal = lignes(ExportCsv.construire(TableauExport(listOf(d1), listOf(complet)), aujourdhui, emptySet()))
+        assertEquals(listOf("Nom;Prénom;Sexe;Date de naissance", "Rakoto;Sarah;Fille;15/03/2017"), minimal)
+    }
+
+    @Test
+    fun exportPartiel_seRelitAvecLImport() {
+        val csv = ExportCsv.construire(TableauExport(listOf(d1), listOf(complet)), aujourdhui, setOf(GroupeExport.IDENTIFIANT, GroupeExport.ADRESSE))
+        val r = ImportCsv.analyser(csv, aujourdhui, emptyList()) as AnalyseImport.Pret
+        assertEquals("Lot 1; Antananarivo", r.aAjouter.single().adresse)
+    }
 }

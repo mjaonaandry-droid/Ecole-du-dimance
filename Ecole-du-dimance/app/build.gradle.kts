@@ -41,8 +41,8 @@ android {
         minSdk = 26
         targetSdk = 36
         // Toujours augmenter versionCode à chaque nouvelle version installée sur le téléphone.
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 3
+        versionName = "1.2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -84,6 +84,8 @@ android {
 
     buildFeatures {
         compose = true
+        // VERSION_NAME est écrit dans le manifeste des sauvegardes complètes.
+        buildConfig = true
     }
 
     compileOptions {

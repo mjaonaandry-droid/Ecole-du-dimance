@@ -9,9 +9,11 @@ import android.net.Uri
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.InputStream
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import mg.ecoledimanche.presences.data.repository.FichiersPhotos
 import mg.ecoledimanche.presences.data.repository.StockagePhotos
 
 /**
@@ -23,7 +25,7 @@ import mg.ecoledimanche.presences.data.repository.StockagePhotos
  *
  * Toutes les opérations de fichiers s'exécutent hors du thread principal.
  */
-class StockagePhotosPrive(racine: File) : StockagePhotos {
+class StockagePhotosPrive(racine: File) : StockagePhotos, FichiersPhotos {
     private val racine: File = racine.canonicalFile
     private val dossierPhotos = File(this.racine, DOSSIER_PHOTOS)
     private val dossierTemporaire = File(this.racine, DOSSIER_TEMPORAIRE)
@@ -36,6 +38,32 @@ class StockagePhotosPrive(racine: File) : StockagePhotos {
             return null
         }
         return fichier.takeIf { it.path.startsWith(racine.path + File.separator) }
+    }
+
+    // --- Sauvegarde complète et remise à zéro (FichiersPhotos) ---------------------------------------
+
+    override fun ouvrir(chemin: String): InputStream? {
+        val fichier = resoudre(chemin)?.takeIf { dans(it, dossierPhotos) && it.isFile } ?: return null
+        return fichier.inputStream()
+    }
+
+    /** Écriture dans un fichier « .part » puis renommage : jamais de photo à moitié écrite sous le vrai nom. */
+    override fun enregistrer(chemin: String, contenu: InputStream) {
+        val cible = resoudre(chemin)?.takeIf { dans(it, dossierPhotos) } ?: throw IOException("Chemin de photo refusé : $chemin")
+        dossierPhotos.mkdirs()
+        val partiel = File(dossierPhotos, cible.name + EXTENSION_PARTIELLE)
+        try {
+            FileOutputStream(partiel).use { contenu.copyTo(it) }
+            if (cible.exists() && !cible.delete()) throw IOException("Impossible de remplacer $chemin")
+            if (!partiel.renameTo(cible)) throw IOException("Impossible d'enregistrer $chemin")
+        } finally {
+            partiel.delete()
+        }
+    }
+
+    override fun toutSupprimer() {
+        dossierPhotos.deleteRecursively()
+        dossierTemporaire.deleteRecursively()
     }
 
     /** Nouveau fichier pour la capture brute de CameraX (supprimé après traitement). */

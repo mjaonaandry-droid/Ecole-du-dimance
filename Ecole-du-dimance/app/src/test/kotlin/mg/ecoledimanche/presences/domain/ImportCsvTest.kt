@@ -9,7 +9,7 @@ import org.junit.Test
 class ImportCsvTest {
     private val aujourdhui = LocalDate.parse("2026-10-12")
 
-    private fun pret(texte: String, existants: Collection<IdentiteEnfant> = emptyList()): AnalyseImport.Pret =
+    private fun pret(texte: String, existants: List<EnfantConnu> = emptyList()): AnalyseImport.Pret =
         ImportCsv.analyser(texte, aujourdhui, existants) as AnalyseImport.Pret
 
     @Test
@@ -107,18 +107,21 @@ class ImportCsvTest {
     }
 
     @Test
-    fun doublons_dejaInscrits_etDansLeFichier_casseEtAccentsIgnores() {
-        val existants = listOf(IdentiteEnfant("Rakoto", "Éva", LocalDate.parse("2017-03-15")))
+    fun doublons_dejaInscritsReconnus_etDansLeFichier_casseEtAccentsIgnores() {
+        val existants = listOf(EnfantConnu(1, fiche("Rakoto", "Éva", "2017-03-15")))
         val resultat = pret(
             "Nom;Prénom;Sexe;Date de naissance\n" +
-                "RAKOTO;Eva;Fille;15/03/2017\n" + // déjà inscrite
+                "RAKOTO;Eva;Fille;15/03/2017\n" + // déjà inscrite : reconnue (casse et accents ignorés)
                 "Rabe;David;Garçon;02/11/2015\n" +
                 "rabe ; david ;garcon;2/11/2015\n" + // même identité plus haut dans le fichier
                 "Rabe;David;Garçon;02/11/2016\n", // homonyme né un autre jour : accepté
             existants,
         )
         assertEquals(2, resultat.aAjouter.size)
-        assertEquals(listOf(2 to MotifRejet.DEJA_INSCRIT, 4 to MotifRejet.DOUBLON_DANS_LE_FICHIER), resultat.rejets.map { it.numeroLigne to it.motif })
+        // Reconnue, donc mise à jour et non ajoutée : le fichier fait foi pour l'orthographe, annoncée dans l'aperçu.
+        assertEquals(listOf(ChampImport.NOM, ChampImport.PRENOM), resultat.aMettreAJour.single().champsModifies)
+        assertEquals(1L, resultat.aMettreAJour.single().id)
+        assertEquals(listOf(4 to MotifRejet.DOUBLON_DANS_LE_FICHIER), resultat.rejets.map { it.numeroLigne to it.motif })
     }
 
     @Test
@@ -167,4 +170,19 @@ class ImportCsvTest {
         assertEquals("'Sarah", ImportCsv.nettoyer("'Sarah"))
         assertEquals("N'Dri", ImportCsv.nettoyer("N'Dri"))
     }
+
+    private fun fiche(nom: String, prenom: String, naissance: String) = DonneesEnfant(
+        nom = nom,
+        prenom = prenom,
+        dateNaissance = LocalDate.parse(naissance),
+        sexe = Sexe.FILLE,
+        adresse = null,
+        nomPere = null,
+        pereMembre = null,
+        nomMere = null,
+        mereMembre = null,
+        nombreFreresSoeurs = 0,
+        nombreFreresSoeursMembres = 0,
+        dateArrivee = null,
+    )
 }

@@ -5,6 +5,7 @@ object Routes {
     const val DIMANCHE = "dimanche"
     const val ENFANTS = "enfants"
     const val ASSIDUITE = "assiduite"
+    const val DONNEES = "donnees"
     const val EXPORTER = "exporter"
     const val AJOUTER = "ajouter"
     const val IMPORTER = "importer"
@@ -22,5 +23,5 @@ object Routes {
     fun historique(id: Long) = "enfant/$id/historique"
 
     /** Écrans qui affichent la barre de navigation basse. */
-    val ONGLETS = setOf(DIMANCHE, ENFANTS, ASSIDUITE, EXPORTER)
+    val ONGLETS = setOf(DIMANCHE, ENFANTS, ASSIDUITE, DONNEES)
 }

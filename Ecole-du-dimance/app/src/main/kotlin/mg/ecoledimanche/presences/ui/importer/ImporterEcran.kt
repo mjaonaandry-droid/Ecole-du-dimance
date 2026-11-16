@@ -40,9 +40,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import mg.ecoledimanche.presences.R
+import mg.ecoledimanche.presences.domain.ChampImport
 import mg.ecoledimanche.presences.domain.DonneesEnfant
 import mg.ecoledimanche.presences.domain.FormatsFr
 import mg.ecoledimanche.presences.domain.LigneRejetee
+import mg.ecoledimanche.presences.domain.MiseAJourEnfant
 import mg.ecoledimanche.presences.domain.MotifRejet
 import mg.ecoledimanche.presences.domain.Sexe
 import mg.ecoledimanche.presences.ui.components.EcranChargement
@@ -165,23 +167,38 @@ private fun Probleme(message: String, onChoisirFichier: () -> Unit, aide: String
 private fun Apercu(apercu: EtatImport.Apercu, actions: ActionsImport, contenu: PaddingValues, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize()) {
         LazyColumn(contentPadding = contenu, modifier = Modifier.weight(1f).fillMaxWidth()) {
-            item {
-                Text(
-                    text = if (apercu.aAjouter.isEmpty()) {
-                        stringResource(R.string.import_apercu_aucun)
-                    } else {
-                        libelleNombreEnfants(apercu.aAjouter.size, R.string.import_apercu_un, R.string.import_apercu_plusieurs)
-                    },
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
+            if (apercu.rienAEnregistrer) {
+                item {
+                    Text(
+                        text = stringResource(R.string.import_apercu_rien),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                }
             }
-            items(apercu.aAjouter) { enfant -> LigneEnfant(enfant) }
+            if (apercu.aAjouter.isNotEmpty()) {
+                item { TitreSection(libelleNombre(apercu.aAjouter.size, R.string.import_apercu_un, R.string.import_apercu_plusieurs)) }
+                items(apercu.aAjouter) { enfant -> LigneEnfant(enfant) }
+            }
+            if (apercu.aMettreAJour.isNotEmpty()) {
+                item { TitreSection(libelleNombre(apercu.aMettreAJour.size, R.string.import_maj_un, R.string.import_maj_plusieurs)) }
+                items(apercu.aMettreAJour) { maj -> LigneMiseAJour(maj) }
+            }
+            if (apercu.inchanges > 0) {
+                item {
+                    Text(
+                        text = libelleNombre(apercu.inchanges, R.string.import_inchanges_un, R.string.import_inchanges_plusieurs),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 16.dp),
+                    )
+                }
+            }
             if (apercu.rejets.isNotEmpty()) {
                 item {
                     Text(
-                        text = libelleNombreEnfants(apercu.rejets.size, R.string.import_rejets_un, R.string.import_rejets_plusieurs),
+                        text = libelleNombre(apercu.rejets.size, R.string.import_rejets_un, R.string.import_rejets_plusieurs),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.error,
@@ -198,7 +215,7 @@ private fun Apercu(apercu: EtatImport.Apercu, actions: ActionsImport, contenu: P
             }
             Button(
                 onClick = actions.onConfirmer,
-                enabled = apercu.aAjouter.isNotEmpty() && !apercu.enregistrement,
+                enabled = !apercu.rienAEnregistrer && !apercu.enregistrement,
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
             ) {
@@ -206,7 +223,7 @@ private fun Apercu(apercu: EtatImport.Apercu, actions: ActionsImport, contenu: P
                     CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
                 } else {
                     Text(
-                        libelleNombreEnfants(apercu.aAjouter.size, R.string.import_bouton_un, R.string.import_bouton_plusieurs),
+                        stringResource(R.string.import_bouton_enregistrer, apercu.aAjouter.size, apercu.aMettreAJour.size),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
@@ -219,6 +236,45 @@ private fun Apercu(apercu: EtatImport.Apercu, actions: ActionsImport, contenu: P
             ) { Text(stringResource(R.string.import_choisir_autre)) }
         }
     }
+}
+
+@Composable
+private fun TitreSection(texte: String) {
+    Text(
+        text = texte,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(top = 12.dp, bottom = 8.dp),
+    )
+}
+
+/** Un enfant existant qui change : son nom (après) et la liste de ce qui change. */
+@Composable
+private fun LigneMiseAJour(maj: MiseAJourEnfant) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+        Text("${maj.apres.prenom} ${maj.apres.nom}", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+        Text(
+            text = stringResource(R.string.import_maj_champs, maj.champsModifies.map { stringResource(libelleChamp(it)) }.joinToString(", ")),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+    HorizontalDivider()
+}
+
+private fun libelleChamp(champ: ChampImport): Int = when (champ) {
+    ChampImport.NOM -> R.string.label_nom
+    ChampImport.PRENOM -> R.string.label_prenom
+    ChampImport.SEXE -> R.string.label_sexe
+    ChampImport.NAISSANCE -> R.string.label_naissance
+    ChampImport.ADRESSE -> R.string.label_adresse
+    ChampImport.NOM_PERE -> R.string.label_nom_pere
+    ChampImport.PERE_MEMBRE -> R.string.import_champ_pere_membre
+    ChampImport.NOM_MERE -> R.string.label_nom_mere
+    ChampImport.MERE_MEMBRE -> R.string.import_champ_mere_membre
+    ChampImport.FRATRIE -> R.string.import_champ_fratrie
+    ChampImport.FRATRIE_MEMBRES -> R.string.import_champ_fratrie_membres
+    ChampImport.ARRIVEE -> R.string.label_arrivee
 }
 
 @Composable
@@ -259,17 +315,26 @@ private fun Termine(termine: EtatImport.Termine, actions: ActionsImport) {
                 Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(12.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        libelleNombreEnfants(termine.ajoutes, R.string.import_termine_un, R.string.import_termine_plusieurs),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    if (termine.ajoutes > 0 || termine.misAJour == 0) {
+                        Text(
+                            libelleNombre(termine.ajoutes, R.string.import_termine_un, R.string.import_termine_plusieurs),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                    if (termine.misAJour > 0) {
+                        Text(
+                            libelleNombre(termine.misAJour, R.string.import_termine_maj_un, R.string.import_termine_maj_plusieurs),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                     Text(stringResource(R.string.import_termine_aide), style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
         Button(onClick = actions.onRetour, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
-            Text(stringResource(R.string.import_voir_liste))
+            Text(stringResource(R.string.action_retour))
         }
         OutlinedButton(onClick = actions.onRecommencer, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
             Text(stringResource(R.string.import_autre_fichier))
@@ -279,7 +344,7 @@ private fun Termine(termine: EtatImport.Termine, actions: ActionsImport) {
 
 /** Le pluriel français commence à 2 : « 1 enfant », « 0 enfant », « 12 enfants ». */
 @Composable
-private fun libelleNombreEnfants(nombre: Int, singulier: Int, pluriel: Int): String =
+private fun libelleNombre(nombre: Int, singulier: Int, pluriel: Int): String =
     if (nombre <= 1) stringResource(singulier, nombre) else stringResource(pluriel, nombre)
 
 @Composable
@@ -296,5 +361,11 @@ private fun libelleMotif(motif: MotifRejet): String = stringResource(
         MotifRejet.DEJA_INSCRIT -> R.string.import_motif_deja_inscrit
         MotifRejet.DOUBLON_DANS_LE_FICHIER -> R.string.import_motif_doublon
         MotifRejet.ARCHIVE -> R.string.import_motif_archive
+        MotifRejet.IDENTIFIANT_INVALIDE -> R.string.import_motif_identifiant_invalide
+        MotifRejet.IDENTIFIANT_NE_CORRESPOND_PAS -> R.string.import_motif_identifiant_different
+        MotifRejet.OUI_NON_INVALIDE -> R.string.import_motif_oui_non
+        MotifRejet.NOMBRE_INVALIDE -> R.string.import_motif_nombre
+        MotifRejet.DATE_ARRIVEE_INVALIDE -> R.string.import_motif_arrivee
+        MotifRejet.DONNEES_INCOHERENTES -> R.string.import_motif_incoherent
     },
 )

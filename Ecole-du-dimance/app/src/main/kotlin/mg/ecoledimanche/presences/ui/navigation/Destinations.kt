@@ -26,6 +26,11 @@ import mg.ecoledimanche.presences.ui.assiduite.AssiduiteViewModel
 import mg.ecoledimanche.presences.ui.dimanche.ActionsDimanche
 import mg.ecoledimanche.presences.ui.dimanche.DimancheEcran
 import mg.ecoledimanche.presences.ui.dimanche.DimancheViewModel
+import mg.ecoledimanche.presences.ui.donnees.ActionsDonnees
+import mg.ecoledimanche.presences.ui.donnees.DonneesEcran
+import mg.ecoledimanche.presences.ui.donnees.DonneesViewModel
+import mg.ecoledimanche.presences.ui.donnees.ouvrirEcriture
+import mg.ecoledimanche.presences.ui.donnees.ouvrirLecture
 import mg.ecoledimanche.presences.ui.enfants.EnfantsEcran
 import mg.ecoledimanche.presences.ui.enfants.EnfantsViewModel
 import mg.ecoledimanche.presences.ui.exporter.ExporterEcran
@@ -136,11 +141,11 @@ fun AssiduiteRoute(conteneur: ConteneurApp, onOuvrirHistorique: (Long) -> Unit) 
 }
 
 /**
- * Export CSV : le sélecteur de fichiers du système (« Enregistrer sous ») choisit la destination, sans
- * permission de stockage ; le fichier n'est écrit qu'une fois la destination choisie.
+ * Export CSV, complet ou partiel : le sélecteur de fichiers du système (« Enregistrer sous ») choisit la
+ * destination, sans permission de stockage ; le fichier n'est écrit qu'une fois la destination choisie.
  */
 @Composable
-fun ExporterRoute(conteneur: ConteneurApp) {
+fun ExporterRoute(conteneur: ConteneurApp, onRetour: () -> Unit) {
     val vm: ExporterViewModel = viewModel(
         factory = fabrique { ExporterViewModel(conteneur.presenceRepository, conteneur.horloge, conteneur.actualisation.flux) },
     )
@@ -152,9 +157,55 @@ fun ExporterRoute(conteneur: ConteneurApp) {
     }
     ExporterEcran(
         etat = etat,
+        onRetour = onRetour,
         onInclureArchives = vm::inclureArchives,
+        onToutExporter = vm::toutExporter,
+        onGroupe = vm::basculerGroupe,
         onExporter = { choisirDestination.launch(vm.nomFichierSuggere()) },
         onAcquitter = vm::acquitter,
+    )
+}
+
+/** Types proposés par le sélecteur pour une sauvegarde complète (.zip), selon ce qu'annonce le téléphone. */
+val TYPES_SAUVEGARDE = arrayOf(
+    "application/zip",
+    "application/x-zip-compressed",
+    "application/x-zip",
+    "application/octet-stream",
+)
+
+/**
+ * Onglet « Données » : CSV (export, import avec mise à jour), sauvegarde complète, restauration et remise
+ * à zéro. Les fichiers passent par le sélecteur du système : rien ne quitte le téléphone sans que
+ * l'utilisateur l'ait choisi, et aucune permission de stockage n'est demandée.
+ */
+@Composable
+fun DonneesRoute(conteneur: ConteneurApp, onExporter: () -> Unit, onImporter: () -> Unit) {
+    val vm: DonneesViewModel = viewModel(
+        factory = fabrique { DonneesViewModel(conteneur.donneesRepository, conteneur.horloge) { conteneur.rattraperEtEntretenir() } },
+    )
+    val etat by vm.etat.collectAsStateWithLifecycle()
+    val contexte = LocalContext.current
+    val choisirDestination = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { destination ->
+        if (destination != null) vm.sauvegarder(ouvrirEcriture(contexte, destination))
+    }
+    val choisirSauvegarde = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { source ->
+        if (source != null) vm.lireRestauration(ouvrirLecture(contexte, source))
+    }
+    DonneesEcran(
+        etat = etat,
+        actions = ActionsDonnees(
+            onExporterCsv = onExporter,
+            onImporterCsv = onImporter,
+            onSauvegarder = { choisirDestination.launch(vm.nomFichierSuggere()) },
+            onAcquitterSauvegarde = vm::acquitterSauvegarde,
+            onChoisirRestauration = { choisirSauvegarde.launch(TYPES_SAUVEGARDE) },
+            onConfirmerRestauration = vm::confirmerRestauration,
+            onFermerRestauration = vm::fermerRestauration,
+            onDemanderRemiseAZero = vm::demanderRemiseAZero,
+            onConfirmerRemiseAZero = vm::confirmerRemiseAZero,
+            onAnnulerRemiseAZero = vm::annulerRemiseAZero,
+        ),
     )
 }
 

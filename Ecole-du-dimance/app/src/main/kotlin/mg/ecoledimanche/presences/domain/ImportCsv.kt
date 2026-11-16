@@ -9,12 +9,58 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.time.format.ResolverStyle
 
-/** Identité d'un enfant, pour reconnaître un doublon à l'import (casse et accents ignorés). */
+/** Identité d'un enfant (nom, prénom, date de naissance), comparée sans casse ni accents. */
 data class IdentiteEnfant(
     val nom: String,
     val prenom: String,
     val dateNaissance: LocalDate,
 )
+
+/** Un enfant déjà enregistré dans l'application, tel que l'import le voit. */
+data class EnfantConnu(
+    val id: Long,
+    val donnees: DonneesEnfant,
+)
+
+/** Informations d'une fiche qu'un import peut modifier (pour annoncer ce qui change). */
+enum class ChampImport {
+    NOM,
+    PRENOM,
+    SEXE,
+    NAISSANCE,
+    ADRESSE,
+    NOM_PERE,
+    PERE_MEMBRE,
+    NOM_MERE,
+    MERE_MEMBRE,
+    FRATRIE,
+    FRATRIE_MEMBRES,
+    ARRIVEE,
+}
+
+/** Un enfant existant que l'import va modifier : sa fiche avant et après. */
+data class MiseAJourEnfant(
+    val id: Long,
+    val avant: DonneesEnfant,
+    val apres: DonneesEnfant,
+) {
+    /** Informations qui changent, dans l'ordre de la fiche. */
+    val champsModifies: List<ChampImport>
+        get() = buildList {
+            if (avant.nom != apres.nom) add(ChampImport.NOM)
+            if (avant.prenom != apres.prenom) add(ChampImport.PRENOM)
+            if (avant.sexe != apres.sexe) add(ChampImport.SEXE)
+            if (avant.dateNaissance != apres.dateNaissance) add(ChampImport.NAISSANCE)
+            if (avant.adresse != apres.adresse) add(ChampImport.ADRESSE)
+            if (avant.nomPere != apres.nomPere) add(ChampImport.NOM_PERE)
+            if (avant.pereMembre != apres.pereMembre) add(ChampImport.PERE_MEMBRE)
+            if (avant.nomMere != apres.nomMere) add(ChampImport.NOM_MERE)
+            if (avant.mereMembre != apres.mereMembre) add(ChampImport.MERE_MEMBRE)
+            if (avant.nombreFreresSoeurs != apres.nombreFreresSoeurs) add(ChampImport.FRATRIE)
+            if (avant.nombreFreresSoeursMembres != apres.nombreFreresSoeursMembres) add(ChampImport.FRATRIE_MEMBRES)
+            if (avant.dateArrivee != apres.dateArrivee) add(ChampImport.ARRIVEE)
+        }
+}
 
 /** Pourquoi une ligne du fichier n'est pas importée. */
 enum class MotifRejet {
@@ -27,14 +73,34 @@ enum class MotifRejet {
     SEXE_INVALIDE,
     TEXTE_TROP_LONG,
 
-    /** Un enfant de même nom, prénom et date de naissance existe déjà dans l'application. */
+    /** La fiche obtenue aurait la même identité qu'un AUTRE enfant déjà inscrit. */
     DEJA_INSCRIT,
 
-    /** La même identité figure plus haut dans le fichier. */
+    /** La même identité (ou le même enfant à mettre à jour) figure plus haut dans le fichier. */
     DOUBLON_DANS_LE_FICHIER,
 
-    /** Colonne « Statut » à « Archivé » : un enfant archivé n'est pas recréé. */
+    /** Colonne « Statut » à « Archivé » pour un enfant inconnu : un enfant archivé n'est pas recréé. */
     ARCHIVE,
+
+    /** « Identifiant » qui n'est pas un nombre entier. */
+    IDENTIFIANT_INVALIDE,
+
+    /**
+     * L'identifiant existe mais désigne un enfant trop différent (au moins deux informations parmi nom,
+     * prénom et date de naissance diffèrent) : probablement un fichier venant d'un autre téléphone.
+     */
+    IDENTIFIANT_NE_CORRESPOND_PAS,
+
+    /** Colonne Oui/Non (parent membre de l'église) avec une autre valeur. */
+    OUI_NON_INVALIDE,
+
+    /** Nombre de frères et sœurs qui n'est pas un entier de 0 à 99. */
+    NOMBRE_INVALIDE,
+
+    DATE_ARRIVEE_INVALIDE,
+
+    /** Informations contradictoires (arrivée avant la naissance ou dans le futur, plus de membres que de frères et sœurs). */
+    DONNEES_INCOHERENTES,
 }
 
 /** Une ligne écartée, avec son numéro dans le fichier (l'en-tête est la ligne 1). */
@@ -53,20 +119,35 @@ sealed interface AnalyseImport {
     data class ColonnesManquantes(val colonnes: List<String>) : AnalyseImport
 
     data class Pret(
-        /** Enfants valides, dans l'ordre du fichier, prêts à être ajoutés. */
+        /** Nouveaux enfants valides, dans l'ordre du fichier, prêts à être ajoutés. */
         val aAjouter: List<DonneesEnfant>,
         val rejets: List<LigneRejetee>,
+        /** Enfants existants dont la fiche change, dans l'ordre du fichier. */
+        val aMettreAJour: List<MiseAJourEnfant> = emptyList(),
+        /** Enfants existants reconnus dont le fichier ne change rien. */
+        val inchanges: Int = 0,
     ) : AnalyseImport
 }
 
 /**
- * Import CSV : relit un fichier au format de l'export ([ExportCsv]) pour ajouter plusieurs enfants d'un coup.
+ * Import CSV : relit un fichier au format de l'export ([ExportCsv]) pour AJOUTER de nouveaux enfants et
+ * METTRE À JOUR la fiche des enfants déjà inscrits, d'un coup.
  *
  * Colonnes reconnues (dans n'importe quel ordre, casse et accents ignorés) :
  * - obligatoires : « Nom », « Prénom », « Sexe » (Garçon / Fille), « Date de naissance » (JJ/MM/AAAA) ;
- * - facultative : « Statut » (« Archivé » : la ligne est ignorée).
- * Les autres colonnes de l'export (âge, dimanches, totaux) sont ignorées : l'âge est recalculé et
+ * - facultatives : « Identifiant », « Statut », « Adresse », « Nom du père », « Père membre de l'église »
+ *   (Oui / Non), « Nom de la mère », « Mère membre de l'église », « Frères et sœurs »,
+ *   « Frères et sœurs membres de l'église », « Date d'arrivée dans l'église ».
+ * Les autres colonnes de l'export (âge, suivi, dimanches, totaux) sont ignorées : l'âge est recalculé et
  * l'historique des présences n'est pas importé.
+ *
+ * Reconnaître un enfant déjà inscrit :
+ * 1. par son « Identifiant » s'il est rempli et existe, à condition que nom, prénom et date de naissance
+ *    lui correspondent au moins à deux sur trois (on peut ainsi corriger l'un des trois) ;
+ * 2. sinon par son identité : même nom, même prénom et même date de naissance.
+ * Un enfant reconnu est mis à jour avec les cellules REMPLIES de sa ligne : une cellule vide ne change rien
+ * (elle n'efface jamais une information). Un enfant non reconnu est ajouté. L'archivage n'est jamais modifié
+ * par un import.
  *
  * Tolérances : séparateur « ; », « , » ou tabulation (détecté sur l'en-tête), UTF-8 avec ou sans BOM
  * ou Windows-1252 (enregistrement « CSV » d'Excel), guillemets RFC 4180, apostrophe de protection de
@@ -78,9 +159,16 @@ object ImportCsv {
     const val COLONNE_SEXE = "Sexe"
     const val COLONNE_NAISSANCE = "Date de naissance"
 
-    private enum class Colonne { NOM, PRENOM, SEXE, NAISSANCE, STATUT }
+    private enum class Colonne {
+        IDENTIFIANT, NOM, PRENOM, SEXE, NAISSANCE, STATUT,
+        ADRESSE, NOM_PERE, PERE_MEMBRE, NOM_MERE, MERE_MEMBRE, FRATRIE, FRATRIE_MEMBRES, ARRIVEE,
+    }
 
+    /** Titres de colonnes reconnus, après [cleEntete] (minuscules, sans accents ni apostrophes). */
     private val synonymes: Map<String, Colonne> = mapOf(
+        "identifiant" to Colonne.IDENTIFIANT,
+        "id" to Colonne.IDENTIFIANT,
+        "numero" to Colonne.IDENTIFIANT,
         "nom" to Colonne.NOM,
         "nom de famille" to Colonne.NOM,
         "prenom" to Colonne.PRENOM,
@@ -94,10 +182,34 @@ object ImportCsv {
         "ne(e) le" to Colonne.NAISSANCE,
         "nee le" to Colonne.NAISSANCE,
         "statut" to Colonne.STATUT,
+        "adresse" to Colonne.ADRESSE,
+        "nom du pere" to Colonne.NOM_PERE,
+        "pere" to Colonne.NOM_PERE,
+        "nom pere" to Colonne.NOM_PERE,
+        "pere membre de l eglise" to Colonne.PERE_MEMBRE,
+        "pere membre" to Colonne.PERE_MEMBRE,
+        "nom de la mere" to Colonne.NOM_MERE,
+        "mere" to Colonne.NOM_MERE,
+        "nom mere" to Colonne.NOM_MERE,
+        "mere membre de l eglise" to Colonne.MERE_MEMBRE,
+        "mere membre" to Colonne.MERE_MEMBRE,
+        "freres et soeurs" to Colonne.FRATRIE,
+        "nombre de freres et soeurs" to Colonne.FRATRIE,
+        "nombre de freres et/ou soeurs" to Colonne.FRATRIE,
+        "fratrie" to Colonne.FRATRIE,
+        "freres et soeurs membres de l eglise" to Colonne.FRATRIE_MEMBRES,
+        "freres et soeurs membres" to Colonne.FRATRIE_MEMBRES,
+        "nombre de freres et/ou soeurs membres de l eglise" to Colonne.FRATRIE_MEMBRES,
+        "date d arrivee dans l eglise" to Colonne.ARRIVEE,
+        "date d arrivee" to Colonne.ARRIVEE,
+        "arrivee dans l eglise" to Colonne.ARRIVEE,
+        "arrivee" to Colonne.ARRIVEE,
     )
 
     private val garcon = setOf("garcon", "g", "m", "masculin", "homme", "h")
     private val fille = setOf("fille", "f", "feminin", "femme")
+    private val oui = setOf("oui", "o", "yes", "y", "vrai", "1", "x")
+    private val non = setOf("non", "n", "no", "faux", "0")
 
     /** Marque d'ordre des octets UTF-8 (U+FEFF), construite par son code : le lint refuse un BOM littéral. */
     private val BOM: String = 0xFEFF.toChar().toString()
@@ -124,7 +236,29 @@ object ImportCsv {
         return texte.removePrefix(BOM)
     }
 
-    fun analyser(texte: String, aujourdhui: LocalDate, existants: Collection<IdentiteEnfant>): AnalyseImport {
+    /** Une ligne écartée pendant l'analyse : remonte jusqu'à la boucle principale. */
+    private class Rejet(val motif: MotifRejet) : Exception(null, null, false, false)
+
+    /** Valeurs lues sur une ligne ; nul = cellule vide ou colonne absente (« ne rien changer »). */
+    private class Valeurs(
+        val nom: String?,
+        val prenom: String?,
+        val sexe: Sexe?,
+        val naissance: LocalDate?,
+        val adresse: String?,
+        val nomPere: String?,
+        val pereMembre: Boolean?,
+        val nomMere: String?,
+        val mereMembre: Boolean?,
+        val fratrie: Int?,
+        val fratrieMembres: Int?,
+        val arrivee: LocalDate?,
+    )
+
+    /**
+     * @param connus enfants déjà inscrits (actifs et archivés), pour les reconnaître et les mettre à jour.
+     */
+    fun analyser(texte: String, aujourdhui: LocalDate, connus: List<EnfantConnu>): AnalyseImport {
         val propre = texte.removePrefix(BOM)
         val separateur = detecterSeparateur(propre)
         val enregistrements = lire(propre, separateur).filter { (_, cellules) -> cellules.any { it.isNotBlank() } }
@@ -144,64 +278,144 @@ object ImportCsv {
         }
         if (manquantes.isNotEmpty()) return AnalyseImport.ColonnesManquantes(manquantes)
 
-        val dejaVus = existants.mapTo(HashSet()) { cle(it.nom, it.prenom, it.dateNaissance) }
-        val dansLeFichier = HashSet<String>()
+        val parId = connus.associateBy { it.id }
+        val parIdentite = HashMap<String, EnfantConnu>()
+        for (enfant in connus) parIdentite.putIfAbsent(cle(enfant.donnees), enfant)
+        // Identité de chaque enfant inscrit après les mises à jour déjà acceptées (renommages compris).
+        val identiteParId = connus.associateTo(HashMap()) { it.id to cle(it.donnees) }
+        val identitesAjoutees = HashSet<String>()
+        val idsTraites = HashSet<Long>()
+
         val aAjouter = ArrayList<DonneesEnfant>()
+        val aMettreAJour = ArrayList<MiseAJourEnfant>()
+        var inchanges = 0
         val rejets = ArrayList<LigneRejetee>()
 
         for ((numero, cellules) in enregistrements.drop(1)) {
             fun cellule(colonne: Colonne): String = positions[colonne]?.let { cellules.getOrNull(it) }?.let { nettoyer(it) }.orEmpty()
+            val libelle = "${cellule(Colonne.PRENOM)} ${cellule(Colonne.NOM)}".trim()
+            try {
+                val valeurs = lireValeurs(::cellule, aujourdhui)
+                val texteId = cellule(Colonne.IDENTIFIANT)
+                val id = if (texteId.isEmpty()) null else lireIdentifiant(texteId) ?: throw Rejet(MotifRejet.IDENTIFIANT_INVALIDE)
 
-            val nom = cellule(Colonne.NOM)
-            val prenom = cellule(Colonne.PRENOM)
-            val libelle = "$prenom $nom".trim()
-            fun rejeter(motif: MotifRejet) {
-                rejets += LigneRejetee(numero, libelle, motif)
-            }
-
-            if (Recherche.normaliser(cellule(Colonne.STATUT)).startsWith("archiv")) {
-                rejeter(MotifRejet.ARCHIVE)
-                continue
-            }
-
-            val texteNaissance = cellule(Colonne.NAISSANCE)
-            val naissance = if (texteNaissance.isEmpty()) null else lireDate(texteNaissance, aujourdhui)
-            if (texteNaissance.isNotEmpty() && naissance == null) {
-                rejeter(MotifRejet.NAISSANCE_INVALIDE)
-                continue
-            }
-            val texteSexe = Recherche.normaliser(cellule(Colonne.SEXE)).trimEnd('.')
-            val sexe = when (texteSexe) {
-                in garcon -> Sexe.GARCON
-                in fille -> Sexe.FILLE
-                else -> null
-            }
-            if (texteSexe.isNotEmpty() && sexe == null) {
-                rejeter(MotifRejet.SEXE_INVALIDE)
-                continue
-            }
-
-            val resultat = ValidationEnfant.valider(
-                SaisieEnfant(nom = nom, prenom = prenom, dateNaissance = naissance, sexe = sexe),
-                aujourdhui,
-            )
-            when (resultat) {
-                is ResultatValidation.Invalide -> rejeter(motifDepuis(resultat.erreurs))
-                is ResultatValidation.Valide -> {
-                    val donnees = resultat.donnees
-                    val identite = cle(donnees.nom, donnees.prenom, donnees.dateNaissance)
-                    when {
-                        identite in dejaVus -> rejeter(MotifRejet.DEJA_INSCRIT)
-                        !dansLeFichier.add(identite) -> rejeter(MotifRejet.DOUBLON_DANS_LE_FICHIER)
-                        else -> aAjouter += donnees
-                    }
+                // 1. Par l'identifiant (s'il existe ici et correspond), 2. sinon par l'identité complète.
+                val parIdentifiant = id?.let { parId[it] }
+                if (parIdentifiant != null && ecarts(parIdentifiant.donnees, valeurs) >= 2) {
+                    throw Rejet(MotifRejet.IDENTIFIANT_NE_CORRESPOND_PAS)
                 }
+                val cible = parIdentifiant ?: identiteLue(valeurs)?.let { parIdentite[it] }
+
+                if (cible == null) {
+                    if (Recherche.normaliser(cellule(Colonne.STATUT)).startsWith("archiv")) throw Rejet(MotifRejet.ARCHIVE)
+                    val donnees = valider(fusionner(null, valeurs), aujourdhui)
+                    val identite = cle(donnees)
+                    when {
+                        identiteParId.containsValue(identite) -> throw Rejet(MotifRejet.DEJA_INSCRIT)
+                        !identitesAjoutees.add(identite) -> throw Rejet(MotifRejet.DOUBLON_DANS_LE_FICHIER)
+                    }
+                    aAjouter += donnees
+                } else {
+                    val apres = valider(fusionner(cible.donnees, valeurs), aujourdhui)
+                    val identite = cle(apres)
+                    if (cible.id in idsTraites) throw Rejet(MotifRejet.DOUBLON_DANS_LE_FICHIER)
+                    val autre = identiteParId.any { (autreId, autreIdentite) -> autreId != cible.id && autreIdentite == identite }
+                    if (autre || identite in identitesAjoutees) throw Rejet(MotifRejet.DEJA_INSCRIT)
+                    idsTraites += cible.id
+                    identiteParId[cible.id] = identite
+                    if (apres == cible.donnees) inchanges++ else aMettreAJour += MiseAJourEnfant(cible.id, cible.donnees, apres)
+                }
+            } catch (rejet: Rejet) {
+                rejets += LigneRejetee(numero, libelle, rejet.motif)
             }
         }
-        return AnalyseImport.Pret(aAjouter, rejets)
+        return AnalyseImport.Pret(aAjouter, rejets, aMettreAJour, inchanges)
     }
 
-    /** Premier motif dans l'ordre de lecture d'une ligne : nom, prénom, naissance, sexe. */
+    /** Lit et contrôle le format de chaque cellule remplie ; une cellule vide donne nul. */
+    private fun lireValeurs(cellule: (Colonne) -> String, aujourdhui: LocalDate): Valeurs {
+        fun texte(colonne: Colonne): String? = cellule(colonne).ifEmpty { null }
+        fun date(colonne: Colonne, motif: MotifRejet): LocalDate? =
+            texte(colonne)?.let { lireDate(it, aujourdhui) ?: throw Rejet(motif) }
+        fun ouiNon(colonne: Colonne): Boolean? = texte(colonne)?.let {
+            when (Recherche.normaliser(it).trimEnd('.')) {
+                in oui -> true
+                in non -> false
+                else -> throw Rejet(MotifRejet.OUI_NON_INVALIDE)
+            }
+        }
+        fun nombre(colonne: Colonne): Int? = texte(colonne)?.let {
+            ValidationEnfant.analyserEntier(it.removeSuffix(".0").removeSuffix(",0")) ?: throw Rejet(MotifRejet.NOMBRE_INVALIDE)
+        }
+
+        val naissance = date(Colonne.NAISSANCE, MotifRejet.NAISSANCE_INVALIDE)
+        val sexe = texte(Colonne.SEXE)?.let {
+            when (Recherche.normaliser(it).trimEnd('.')) {
+                in garcon -> Sexe.GARCON
+                in fille -> Sexe.FILLE
+                else -> throw Rejet(MotifRejet.SEXE_INVALIDE)
+            }
+        }
+        return Valeurs(
+            nom = texte(Colonne.NOM),
+            prenom = texte(Colonne.PRENOM),
+            sexe = sexe,
+            naissance = naissance,
+            adresse = texte(Colonne.ADRESSE),
+            nomPere = texte(Colonne.NOM_PERE),
+            pereMembre = ouiNon(Colonne.PERE_MEMBRE),
+            nomMere = texte(Colonne.NOM_MERE),
+            mereMembre = ouiNon(Colonne.MERE_MEMBRE),
+            fratrie = nombre(Colonne.FRATRIE),
+            fratrieMembres = nombre(Colonne.FRATRIE_MEMBRES),
+            arrivee = date(Colonne.ARRIVEE, MotifRejet.DATE_ARRIVEE_INVALIDE),
+        )
+    }
+
+    /** « 12 » ; Excel peut écrire « 12.0 » ou « 12,0 ». */
+    private fun lireIdentifiant(texte: String): Long? =
+        texte.removeSuffix(".0").removeSuffix(",0").toLongOrNull()?.takeIf { it > 0 }
+
+    /** Nombre d'informations d'identité REMPLIES dans la ligne qui diffèrent de la fiche. */
+    private fun ecarts(fiche: DonneesEnfant, valeurs: Valeurs): Int {
+        var n = 0
+        if (valeurs.nom != null && Recherche.normaliser(valeurs.nom) != Recherche.normaliser(fiche.nom)) n++
+        if (valeurs.prenom != null && Recherche.normaliser(valeurs.prenom) != Recherche.normaliser(fiche.prenom)) n++
+        if (valeurs.naissance != null && valeurs.naissance != fiche.dateNaissance) n++
+        return n
+    }
+
+    private fun identiteLue(valeurs: Valeurs): String? {
+        val nom = valeurs.nom ?: return null
+        val prenom = valeurs.prenom ?: return null
+        val naissance = valeurs.naissance ?: return null
+        return cle(nom, prenom, naissance)
+    }
+
+    /** Fiche existante (ou vierge) complétée par les cellules remplies de la ligne. */
+    private fun fusionner(fiche: DonneesEnfant?, v: Valeurs): SaisieEnfant = SaisieEnfant(
+        nom = v.nom ?: fiche?.nom.orEmpty(),
+        prenom = v.prenom ?: fiche?.prenom.orEmpty(),
+        dateNaissance = v.naissance ?: fiche?.dateNaissance,
+        sexe = v.sexe ?: fiche?.sexe,
+        adresse = v.adresse ?: fiche?.adresse.orEmpty(),
+        nomPere = v.nomPere ?: fiche?.nomPere.orEmpty(),
+        pereMembre = v.pereMembre ?: fiche?.pereMembre,
+        nomMere = v.nomMere ?: fiche?.nomMere.orEmpty(),
+        mereMembre = v.mereMembre ?: fiche?.mereMembre,
+        nombreFreresSoeurs = (v.fratrie ?: fiche?.nombreFreresSoeurs ?: 0).toString(),
+        nombreFreresSoeursMembres = (v.fratrieMembres ?: fiche?.nombreFreresSoeursMembres ?: 0).toString(),
+        dateArrivee = v.arrivee ?: fiche?.dateArrivee,
+    )
+
+    /** Mêmes règles que le formulaire de l'application. */
+    private fun valider(saisie: SaisieEnfant, aujourdhui: LocalDate): DonneesEnfant =
+        when (val resultat = ValidationEnfant.valider(saisie, aujourdhui)) {
+            is ResultatValidation.Valide -> resultat.donnees
+            is ResultatValidation.Invalide -> throw Rejet(motifDepuis(resultat.erreurs))
+        }
+
+    /** Premier motif dans l'ordre de lecture d'une ligne : nom, prénom, naissance, sexe, puis le reste. */
     private fun motifDepuis(erreurs: Map<ChampEnfant, ErreurChamp>): MotifRejet {
         erreurs[ChampEnfant.NOM]?.let { return if (it == ErreurChamp.TROP_LONG) MotifRejet.TEXTE_TROP_LONG else MotifRejet.NOM_MANQUANT }
         erreurs[ChampEnfant.PRENOM]?.let { return if (it == ErreurChamp.TROP_LONG) MotifRejet.TEXTE_TROP_LONG else MotifRejet.PRENOM_MANQUANT }
@@ -209,14 +423,25 @@ object ImportCsv {
             return if (it == ErreurChamp.DATE_FUTURE) MotifRejet.NAISSANCE_FUTURE else MotifRejet.NAISSANCE_MANQUANTE
         }
         if (ChampEnfant.SEXE in erreurs) return MotifRejet.SEXE_MANQUANT
-        return MotifRejet.TEXTE_TROP_LONG
+        if (erreurs.values.any { it == ErreurChamp.TROP_LONG }) return MotifRejet.TEXTE_TROP_LONG
+        if (erreurs.values.any { it == ErreurChamp.NOMBRE_INVALIDE }) return MotifRejet.NOMBRE_INVALIDE
+        return MotifRejet.DONNEES_INCOHERENTES
     }
+
+    private fun cle(donnees: DonneesEnfant): String = cle(donnees.nom, donnees.prenom, donnees.dateNaissance)
 
     private fun cle(nom: String, prenom: String, naissance: LocalDate): String =
         "${Recherche.normaliser(nom)}|${Recherche.normaliser(prenom)}|$naissance"
 
+    /** « Père membre de l’église ? » devient « pere membre de l eglise ». */
     private fun cleEntete(titre: String): String =
-        Recherche.normaliser(nettoyer(titre)).replace('’', '\'').replace("'", " ").replace(Regex("\\s+"), " ").trim()
+        Recherche.normaliser(nettoyer(titre))
+            .replace("œ", "oe")
+            .replace('’', '\'')
+            .replace("'", " ")
+            .trimEnd('?', ' ', ':')
+            .replace(Regex("\\s+"), " ")
+            .trim()
 
     /** Espaces retirés et apostrophe de protection de l'export enlevée (« '-Rakoto » redevient « -Rakoto »). */
     internal fun nettoyer(valeur: String): String {

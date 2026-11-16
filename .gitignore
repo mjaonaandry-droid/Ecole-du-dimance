@@ -9,3 +9,4 @@ transfert-donnees/*.apk
 transfert-donnees/platform-tools/
 transfert-donnees/sauvegardes/
 transfert-donnees/journal-transfert.txt
+ci-sorties-v12/

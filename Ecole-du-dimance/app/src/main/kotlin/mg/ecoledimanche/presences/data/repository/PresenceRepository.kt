@@ -15,6 +15,7 @@ import mg.ecoledimanche.presences.data.local.SeanceDao
 import mg.ecoledimanche.presences.data.local.SeanceEntity
 import mg.ecoledimanche.presences.domain.AppClock
 import mg.ecoledimanche.presences.domain.CompteursAssiduite
+import mg.ecoledimanche.presences.domain.DetailsExport
 import mg.ecoledimanche.presences.domain.Dimanches
 import mg.ecoledimanche.presences.domain.LigneExport
 import mg.ecoledimanche.presences.domain.PhaseSeance
@@ -77,6 +78,9 @@ enum class MotifRefus {
     ENFANT_NON_ADMISSIBLE,
     ABSENT_INTERDIT_AVANT_CLOTURE,
     ANNULATION_INTERDITE_APRES_CLOTURE,
+
+    /** La date du téléphone est douteuse (voir [ControleHorloge]) : rien n'est enregistré. */
+    HORLOGE_DOUTEUSE,
 }
 
 sealed interface ResultatPointage {
@@ -96,6 +100,8 @@ class PresenceRepository(
     private val presenceDao: PresenceDao,
     private val transaction: ExecuteurTransaction,
     private val clock: AppClock,
+    /** Garde-fou de la date du téléphone : rien n'est clôturé tant qu'elle est douteuse. */
+    private val controleHorloge: ControleHorloge = ControleHorloge.TOUJOURS_FIABLE,
 ) {
     private val verrouRattrapage = Mutex()
     private val comparateur = Recherche.comparateurNoms()
@@ -113,9 +119,13 @@ class PresenceRepository(
      * Aucune séance n'est créée pour un dimanche sans enfant admissible, ni avant un début de
      * suivi, ni pour une séance future.
      *
+     * Rien n'est fait si la date du téléphone est douteuse ([ControleHorloge]) : une date en avance
+     * clôturerait à tort des dimanches futurs, de façon définitive.
+     *
      * @return le nombre de séances clôturées par cet appel.
      */
     suspend fun rattraper(): Int = verrouRattrapage.withLock {
+        if (!controleHorloge.horlogeFiable()) return@withLock 0
         val maintenant = clock.instant()
         val zone = clock.zone()
         val aujourdhui = maintenant.atZone(zone).toLocalDate()
@@ -200,8 +210,10 @@ class PresenceRepository(
      * Une seule ligne par enfant et par dimanche (clé primaire composite) : des clics rapprochés
      * sont sérialisés par la transaction et ne peuvent pas créer de doublon.
      */
-    suspend fun pointer(enfantId: Long, dimanche: LocalDate, statut: StatutPresence): ResultatPointage =
-        transaction.executer { pointerDansTransaction(enfantId, dimanche, statut) }
+    suspend fun pointer(enfantId: Long, dimanche: LocalDate, statut: StatutPresence): ResultatPointage {
+        if (!controleHorloge.horlogeFiable()) return ResultatPointage.Refuse(MotifRefus.HORLOGE_DOUTEUSE)
+        return transaction.executer { pointerDansTransaction(enfantId, dimanche, statut) }
+    }
 
     /** Corps de [pointer], à appeler dans une transaction. */
     private suspend fun pointerDansTransaction(enfantId: Long, dimanche: LocalDate, statut: StatutPresence): ResultatPointage {
@@ -249,8 +261,9 @@ class PresenceRepository(
      *
      * Un enfant déjà admissible à [dimanche] est traité par [pointer] (correction ordinaire).
      */
-    suspend fun pointerAvantInscription(enfantId: Long, dimanche: LocalDate, statut: StatutPresence): ResultatPointage =
-        transaction.executer {
+    suspend fun pointerAvantInscription(enfantId: Long, dimanche: LocalDate, statut: StatutPresence): ResultatPointage {
+        if (!controleHorloge.horlogeFiable()) return ResultatPointage.Refuse(MotifRefus.HORLOGE_DOUTEUSE)
+        return transaction.executer {
             if (!Dimanches.estDimanche(dimanche)) {
                 return@executer ResultatPointage.Refuse(MotifRefus.PAS_UN_DIMANCHE)
             }
@@ -287,6 +300,7 @@ class PresenceRepository(
             presenceDao.changerStatut(enfantId, dimanche, statut, maintenant)
             ResultatPointage.Enregistre(statut)
         }
+    }
 
     // ------------------------------------------------------------------------------------------
     // Lecture
@@ -385,7 +399,8 @@ class PresenceRepository(
     // ------------------------------------------------------------------------------------------
 
     /**
-     * Données de l'export CSV : informations de base des enfants et leur statut pour chaque
+     * Données de l'export CSV : fiche des enfants (toutes les colonnes possibles ; l'export n'écrit que
+     * les groupes choisis) et leur statut pour chaque
      * dimanche, depuis le premier début de suivi jusqu'au dernier dimanche échu (ou jusqu'au dimanche
      * à venir s'il a déjà été pointé). Les statuts sont ceux de l'écran Dimanche (un non-pointé d'une
      * séance clôturée y est « Absent »), les comptes ne portent que sur les séances clôturées.
@@ -440,6 +455,19 @@ class PresenceRepository(
                 archive = enfant.isArchived,
                 statuts = statuts,
                 compteurs = CompteursAssiduite(presents, retards, absences),
+                details = DetailsExport(
+                    id = enfant.id,
+                    adresse = enfant.adresse,
+                    nomPere = enfant.nomPere,
+                    pereMembre = enfant.pereMembre,
+                    nomMere = enfant.nomMere,
+                    mereMembre = enfant.mereMembre,
+                    nombreFreresSoeurs = enfant.nombreFreresSoeurs,
+                    nombreFreresSoeursMembres = enfant.nombreFreresSoeursMembres,
+                    dateArrivee = enfant.dateArriveeEglise,
+                    debutSuivi = enfant.dateDebutSuivi,
+                    finSuivi = enfant.dateFinSuivi,
+                ),
             )
         }
         return TableauExport(dimanches, lignes)

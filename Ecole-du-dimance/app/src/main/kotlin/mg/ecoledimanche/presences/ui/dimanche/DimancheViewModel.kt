@@ -64,6 +64,7 @@ enum class ErreurPointage {
     ENFANT_NON_ADMISSIBLE,
     ABSENT_INTERDIT_AVANT_CLOTURE,
     ANNULATION_INTERDITE_APRES_CLOTURE,
+    HORLOGE_DOUTEUSE,
     ;
 
     companion object {
@@ -72,6 +73,7 @@ enum class ErreurPointage {
             MotifRefus.SEANCE_A_VENIR -> SEANCE_A_VENIR
             MotifRefus.ABSENT_INTERDIT_AVANT_CLOTURE -> ABSENT_INTERDIT_AVANT_CLOTURE
             MotifRefus.ANNULATION_INTERDITE_APRES_CLOTURE -> ANNULATION_INTERDITE_APRES_CLOTURE
+            MotifRefus.HORLOGE_DOUTEUSE -> HORLOGE_DOUTEUSE
         }
     }
 }

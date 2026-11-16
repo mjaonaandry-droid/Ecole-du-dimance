@@ -1,10 +1,13 @@
 package mg.ecoledimanche.presences.di
 
 import android.content.Context
+import mg.ecoledimanche.presences.BuildConfig
 import mg.ecoledimanche.presences.camera.StockagePhotosPrive
 import mg.ecoledimanche.presences.data.local.AppDatabase
 import mg.ecoledimanche.presences.data.local.ExecuteurTransactionRoom
+import mg.ecoledimanche.presences.data.repository.DonneesRepository
 import mg.ecoledimanche.presences.data.repository.EnfantRepository
+import mg.ecoledimanche.presences.data.repository.GardienHorloge
 import mg.ecoledimanche.presences.data.repository.PresenceRepository
 import mg.ecoledimanche.presences.domain.AppClock
 import mg.ecoledimanche.presences.domain.SystemAppClock
@@ -26,12 +29,28 @@ class ConteneurApp(contexte: Context) {
     private val base: AppDatabase by lazy { AppDatabase.creer(contexteApplication) }
     private val transaction by lazy { ExecuteurTransactionRoom(base) }
 
+    /** Garde-fou de la date du téléphone : l'écran racine observe son état. */
+    val gardienHorloge: GardienHorloge by lazy { GardienHorloge(base.parametreDao(), horloge) }
+
     val enfantRepository: EnfantRepository by lazy {
-        EnfantRepository(base.enfantDao(), base.seanceDao(), transaction, stockagePhotos, horloge)
+        EnfantRepository(base.enfantDao(), base.seanceDao(), transaction, stockagePhotos, horloge, gardienHorloge)
     }
 
     val presenceRepository: PresenceRepository by lazy {
-        PresenceRepository(base.enfantDao(), base.seanceDao(), base.presenceDao(), transaction, horloge)
+        PresenceRepository(base.enfantDao(), base.seanceDao(), base.presenceDao(), transaction, horloge, gardienHorloge)
+    }
+
+    /** Sauvegarde complète, restauration, remise à zéro et écran d'accueil. */
+    val donneesRepository: DonneesRepository by lazy {
+        DonneesRepository(
+            base.maintenanceDao(),
+            base.parametreDao(),
+            transaction,
+            stockagePhotos,
+            horloge,
+            BuildConfig.VERSION_NAME,
+            AppDatabase.VERSION,
+        )
     }
 
     /** Ordres de réactualisation des écrans : retour au premier plan, clôture à 10 h, minuit. */

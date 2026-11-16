@@ -219,3 +219,65 @@ interface PresenceDao {
     )
     fun observerHistorique(enfantId: Long): Flow<List<LigneHistorique>>
 }
+
+/** Paramètres de fonctionnement (table PARAMETRES, version 2 de la base). */
+@Dao
+interface ParametreDao {
+    @Query("SELECT valeur FROM parametres WHERE cle = :cle")
+    suspend fun lire(cle: String): String?
+
+    @Query("SELECT valeur FROM parametres WHERE cle = :cle")
+    fun observer(cle: String): Flow<String?>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun ecrire(parametre: ParametreEntity)
+
+    @Query("DELETE FROM parametres WHERE cle = :cle")
+    suspend fun effacer(cle: String)
+
+    @Query("SELECT * FROM parametres")
+    suspend fun tous(): List<ParametreEntity>
+}
+
+/**
+ * Opérations sur TOUTE la base : sauvegarde complète, restauration et « Repartir de zéro ».
+ * L'ordre compte à cause des clés étrangères en RESTRICT : on vide présences → séances → enfants,
+ * et on remplit enfants → séances → présences. À n'appeler que dans une transaction.
+ */
+@Dao
+interface MaintenanceDao {
+    @Query("SELECT * FROM enfants ORDER BY id")
+    suspend fun enfants(): List<EnfantEntity>
+
+    @Query("SELECT * FROM seances ORDER BY dateDimanche")
+    suspend fun seances(): List<SeanceEntity>
+
+    @Query("SELECT * FROM presences ORDER BY enfantId, dateDimanche")
+    suspend fun presences(): List<PresenceEntity>
+
+    @Query("SELECT COUNT(*) FROM enfants")
+    suspend fun nombreEnfants(): Int
+
+    @Query("SELECT COUNT(*) FROM seances")
+    suspend fun nombreSeances(): Int
+
+    @Query("DELETE FROM presences")
+    suspend fun viderPresences()
+
+    @Query("DELETE FROM seances")
+    suspend fun viderSeances()
+
+    @Query("DELETE FROM enfants")
+    suspend fun viderEnfants()
+
+    /** Les identifiants des enfants sont conservés tels quels (colonne « Identifiant » des CSV). */
+    @Insert
+    suspend fun insererEnfants(enfants: List<EnfantEntity>)
+
+    @Insert
+    suspend fun insererSeances(seances: List<SeanceEntity>)
+
+    @Insert
+    suspend fun insererPresences(presences: List<PresenceEntity>)
+}
+

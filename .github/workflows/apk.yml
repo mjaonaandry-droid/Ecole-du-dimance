@@ -114,6 +114,31 @@ jobs:
           fi
           echo "OK : aucune permission INTERNET dans l'APK."
 
+      # L'APK ne met à jour le téléphone SANS DÉSINSTALLER que s'il porte la clé permanente de l'application.
+      - name: Clé de signature de l'APK (mise à jour sans désinstaller ?)
+        if: ${{ !cancelled() }}
+        run: |
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          PERMANENTE="b549da91ebc975828879b9fc9954732a6a04b49101e835068dc46dfa8f676f89"
+          APKSIGNER="$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)"
+          EMPREINTE="$("$APKSIGNER" verify --print-certs "$APK" | grep -m1 'certificate SHA-256 digest' | awk '{print $NF}')"
+          VERSION="$("$(dirname "$APKSIGNER")/aapt2" dump badging "$APK" | grep -m1 '^package:' )"
+          {
+            echo "### APK"
+            echo ""
+            echo "- $VERSION"
+            echo "- SHA-256 de l'APK : \`$(sha256sum "$APK" | cut -d' ' -f1)\`"
+            echo "- Certificat de signature : \`$EMPREINTE\`"
+            if [ "$EMPREINTE" = "$PERMANENTE" ]; then
+              echo "- ✅ **Clé permanente** : cet APK s'installe PAR-DESSUS l'application du téléphone, données conservées."
+            else
+              echo "- ⚠️ **Clé jetable** : cet APK NE PEUT PAS mettre à jour l'application du téléphone. Ajoutez les secrets SIGNATURE_KEYSTORE_B64 et SIGNATURE_PASSWORD, ou re-signez-le avec apksigner."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$EMPREINTE" != "$PERMANENTE" ]; then
+            echo "::warning::APK signé avec une clé jetable : il ne mettra pas à jour l'application installée (voir le résumé)."
+          fi
+
       - name: Enregistrer l'APK
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
@@ -227,7 +252,11 @@ jobs:
           path: nouveau
 
       # APK 1.0.0 installé chez l'utilisateur : build du 09/10/2026 (exécution 37922545226).
+      # Les artefacts GitHub expirent après 90 jours (vers le 07/01/2027) : la vérification 1.0.0 -> 1.1.0
+      # est alors sautée, sans faire échouer la CI (elle a été validée par les exécutions précédentes).
       - name: Ancien APK (1.0.0, celui du téléphone)
+        id: ancien
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: app-debug-apk
@@ -239,6 +268,7 @@ jobs:
       # Si l'APK final (re-signé avec la clé permanente) a été publié sur la branche livraison-apk,
       # c'est CE fichier qui est vérifié : exactement celui que l'utilisateur installera.
       - name: APK final signé (branche livraison-apk), sinon celui de ce build
+        if: ${{ steps.ancien.outcome == 'success' }}
         run: |
           if git fetch -q --depth 1 origin livraison-apk 2>/dev/null; then
             mkdir -p final
@@ -250,6 +280,7 @@ jobs:
           fi
 
       - name: Émulateur Android 14 et vérification
+        if: ${{ steps.ancien.outcome == 'success' }}
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -260,12 +291,142 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
           script: bash ci/test-migration.sh ancien/app-debug.apk final/app.apk
 
+      - name: Vérification 1.0.0 -> 1.1.0 sautée
+        if: ${{ steps.ancien.outcome != 'success' }}
+        run: |
+          echo "::notice::APK 1.0.0 d'origine expiré : vérification 1.0.0 -> 1.1.0 sautée (validée par les exécutions précédentes)."
+
       - name: Enregistrer les sorties de la vérification
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: migration
           path: ci-sorties
+          if-no-files-found: warn
+
+  # -------------------------------------------------------------------------------------------
+  # Tests instrumentés sur émulateur : vraie base Room, MIGRATIONS de schéma (MigrationRoomTest),
+  # sauvegarde complète / restauration / remise à zéro (SauvegardeInstrumenteeTest).
+  # -------------------------------------------------------------------------------------------
+  tests-instrumentes:
+    needs: apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Activer KVM (émulateur accéléré)
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('Ecole-du-dimance/**/*.gradle.kts', 'Ecole-du-dimance/gradle/libs.versions.toml', 'Ecole-du-dimance/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: SDK Android 36 et licences
+        run: |
+          SDKM="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-36" "build-tools;36.0.0" \
+            || sudo env "PATH=$PATH" "JAVA_HOME=$JAVA_HOME" "$SDKM" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Préparer gradlew
+        working-directory: Ecole-du-dimance
+        run: |
+          sed -i 's/\r$//' gradlew
+          chmod +x gradlew
+
+      - name: Tests instrumentés sur émulateur Android 14
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          working-directory: Ecole-du-dimance
+          script: ./gradlew :app:connectedDebugAndroidTest --stacktrace --console=plain
+
+      - name: Enregistrer les rapports des tests instrumentés
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-instrumentes
+          path: |
+            Ecole-du-dimance/app/build/reports/androidTests
+            Ecole-du-dimance/app/build/outputs/androidTest-results
+          if-no-files-found: warn
+
+  # -------------------------------------------------------------------------------------------
+  # Mise à jour 1.1.0 (APK livré, clé permanente) -> nouvelle version SANS DÉSINSTALLER,
+  # migration de la base 1 -> 2 sur des données réalistes, puis tour des nouveautés.
+  # -------------------------------------------------------------------------------------------
+  mise-a-jour:
+    needs: apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Activer KVM (émulateur accéléré)
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install pillow
+
+      - name: Nouvel APK (ce build)
+        uses: actions/download-artifact@v4
+        with:
+          name: app-debug-apk
+          path: nouveau
+
+      - name: APK 1.1.0 livré (branche livraison-apk, clé permanente)
+        run: |
+          git fetch -q --depth 1 origin livraison-apk
+          mkdir -p livre
+          git show FETCH_HEAD:ecole-du-dimance-1.1.0.apk > livre/app.apk
+          sha256sum livre/app.apk
+
+      - name: Émulateur Android 14 et vérification de la mise à jour
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          script: bash ci/test-mise-a-jour.sh livre/app.apk nouveau/app-debug.apk
+
+      - name: Résumé de la mise à jour
+        if: ${{ !cancelled() }}
+        run: |
+          { echo "### Mise à jour 1.1.0 -> nouvelle version"; echo '```'; cat ci-sorties-v12/resume-mise-a-jour.txt 2>/dev/null; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Enregistrer les sorties de la mise à jour
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: mise-a-jour
+          path: ci-sorties-v12
           if-no-files-found: warn
 
   # Le script Windows (.bat) que l'utilisateur lancera : syntaxe cmd et enchaînement vérifiés avec un faux adb.
@@ -283,7 +444,7 @@ jobs:
   # Les sorties sont aussi poussées sur une branche (ci-sorties/<branche>) pour être relues sans
   # passer par l'interface des artefacts.
   publier:
-    needs: [apk, migration, script-windows]
+    needs: [apk, migration, script-windows, tests-instrumentes, mise-a-jour]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
@@ -300,6 +461,7 @@ jobs:
             echo "Commit : ${{ github.sha }}"
             echo "Exécution : ${{ github.run_id }}"
             echo "apk : ${{ needs.apk.result }} ; migration : ${{ needs.migration.result }} ; script-windows : ${{ needs.script-windows.result }}"
+            echo "tests-instrumentes : ${{ needs.tests-instrumentes.result }} ; mise-a-jour : ${{ needs.mise-a-jour.result }}"
           } > ETAT.txt
           git init -q
           git checkout -q -b sorties

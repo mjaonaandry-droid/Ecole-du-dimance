@@ -113,3 +113,22 @@ data class PresenceEntity(
     val createdAt: Instant,
     val updatedAt: Instant,
 )
+
+/**
+ * Table PARAMETRES (version 2 de la base) : petites valeurs de fonctionnement, clé → texte.
+ * Elle fait partie de la base, donc de la sauvegarde complète. Clés connues : [CleParametre].
+ */
+@Entity(tableName = "parametres")
+data class ParametreEntity(
+    @PrimaryKey val cle: String,
+    val valeur: String,
+)
+
+/** Clés de la table PARAMETRES. */
+object CleParametre {
+    /** « 1 » quand l'écran d'accueil (commencer vide ou restaurer une sauvegarde) a été passé. */
+    const val ACCUEIL_FAIT = "accueil.fait"
+
+    /** Instant le plus récent vu sur l'horloge du téléphone (millisecondes Unix) : garde-fou de date. */
+    const val HORLOGE_DERNIERE = "horloge.derniere"
+}

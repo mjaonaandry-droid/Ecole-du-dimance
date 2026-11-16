@@ -30,7 +30,7 @@
     <string name="nav_enfants">Enfants</string>
     <string name="nav_ajouter">Ajouter</string>
     <string name="nav_assiduite">Assiduité</string>
-    <string name="nav_exporter">Exporter</string>
+    <string name="nav_donnees">Données</string>
 
     <!-- Statuts -->
     <string name="statut_non_enregistre">Non enregistré</string>
@@ -199,11 +199,8 @@
 
     <!-- Export CSV -->
     <string name="export_titre">Exporter en CSV</string>
-    <string name="export_explication">Crée un fichier CSV que vous pouvez ouvrir dans Excel, LibreOffice ou Google Sheets. Vous choisissez où l’enregistrer : rien n’est envoyé par Internet.</string>
-    <string name="export_contenu_titre">Contenu du fichier</string>
-    <string name="export_contenu_infos">Un enfant par ligne : nom, prénom, sexe, date de naissance, âge et statut (actif ou archivé).</string>
-    <string name="export_contenu_presences">Sa présence à chaque dimanche (Présent, En retard, Absent), puis le total des présences, retards, absences et l’assiduité.</string>
-    <string name="export_contenu_exclus">Les autres informations (parents, adresse, fratrie, photo…) ne sont pas exportées.</string>
+    <string name="export_explication">Crée un fichier CSV que vous pouvez ouvrir dans Excel, LibreOffice ou Google Sheets : un enfant par ligne. Exportez tout, ou seulement les colonnes cochées. Vous choisissez où l’enregistrer : rien n’est envoyé par Internet.</string>
+    <string name="export_contenu_titre">Colonnes à exporter</string>
     <string name="export_inclure_archives">Inclure les enfants archivés</string>
     <string name="export_aucun_enfant">Aucun enfant à exporter.</string>
     <string name="export_apercu">%1$s · %2$s</string>
@@ -215,18 +212,18 @@
     <string name="export_reussi">Fichier enregistré : %1$s, %2$s.</string>
     <string name="export_echec">Le fichier n’a pas pu être enregistré. Réessayez, ou choisissez un autre emplacement.</string>
     <string name="export_erreur_apercu">Impossible de préparer l’export.</string>
-    <string name="export_astuce_import">Pour ajouter plusieurs enfants depuis un fichier CSV de même format : onglet Enfants ▸ Importer.</string>
+    <string name="export_astuce_import">Le fichier se réimporte tel quel (Données ▸ Importer un CSV) : sur ce téléphone, il met à jour les fiches modifiées dans le tableur ; sur un autre, il ajoute les enfants.</string>
 
     <!-- Import CSV -->
-    <string name="import_titre">Importer des enfants (CSV)</string>
-    <string name="import_explication">Ajoutez plusieurs enfants en une seule fois à partir d’un fichier CSV, par exemple préparé dans Excel ou obtenu avec « Exporter ». Vous verrez la liste avant que quoi que ce soit ne soit enregistré.</string>
+    <string name="import_titre">Importer un CSV : ajout et mise à jour</string>
+    <string name="import_explication">Ajoutez de nouveaux enfants et mettez à jour la fiche des enfants déjà inscrits, en une seule fois, à partir d’un fichier CSV (préparé dans Excel ou obtenu avec « Exporter en CSV »). Vous verrez tout ce qui change avant que quoi que ce soit ne soit enregistré.</string>
     <string name="import_format_titre">Format du fichier (le même que l’export)</string>
-    <string name="import_format_colonnes">Une ligne d’en-tête, puis un enfant par ligne. Colonnes obligatoires : Nom, Prénom, Sexe (Garçon ou Fille), Date de naissance (JJ/MM/AAAA). Séparateur point-virgule.</string>
+    <string name="import_format_colonnes">Une ligne d’en-tête, puis un enfant par ligne. Colonnes obligatoires : Nom, Prénom, Sexe (Garçon ou Fille), Date de naissance (JJ/MM/AAAA). Colonnes facultatives : Identifiant, Adresse, Nom du père, Père membre de l’église (Oui/Non), Nom de la mère, Mère membre de l’église, Frères et sœurs, Frères et sœurs membres de l’église, Date d’arrivée dans l’église. Séparateur point-virgule.</string>
     <string name="import_format_exemple">Nom;Prénom;Sexe;Date de naissance
 Rakoto;Sarah;Fille;15/03/2017
 Rabe;David;Garçon;02/11/2015</string>
-    <string name="import_format_ignore">Les autres colonnes de l’export (Âge, Statut, dimanches, totaux) sont acceptées : l’âge est recalculé, l’historique des présences n’est pas importé, et les lignes « Archivé » sont ignorées.</string>
-    <string name="import_format_regles">Les enfants déjà inscrits (même nom, prénom et date de naissance) ne sont pas ajoutés en double. Les enfants importés n’ont pas encore de photo ; leur suivi commence au prochain dimanche, comme pour un ajout manuel.</string>
+    <string name="import_format_ignore">Les autres colonnes de l’export (Âge, Statut, suivi, dimanches, totaux) sont acceptées : l’âge est recalculé et l’historique des présences n’est pas importé. Un enfant inconnu marqué « Archivé » n’est pas ajouté.</string>
+    <string name="import_format_regles">Un enfant déjà inscrit est reconnu par son Identifiant (si nom, prénom et date de naissance lui correspondent au moins à deux sur trois), sinon par son nom, son prénom et sa date de naissance : sa fiche est mise à jour avec les cellules remplies ; une cellule vide ne change rien. Les autres lignes ajoutent de nouveaux enfants, sans photo ; leur suivi commence au prochain dimanche, comme pour un ajout manuel.</string>
     <string name="import_format_entete">Nom;Prénom;Sexe;Date de naissance</string>
     <string name="import_choisir">Choisir un fichier CSV</string>
     <string name="import_choisir_autre">Choisir un autre fichier</string>
@@ -234,20 +231,16 @@ Rabe;David;Garçon;02/11/2015</string>
     <string name="import_illisible">Ce fichier n’a pas pu être lu. Vérifiez qu’il s’agit bien d’un fichier CSV (texte), de moins de 5 Mo.</string>
     <string name="import_vide">Ce fichier est vide.</string>
     <string name="import_colonnes_manquantes">Colonnes introuvables dans la première ligne : %1$s. La première ligne doit contenir les titres des colonnes, comme dans l’export :</string>
-    <string name="import_apercu_aucun">Aucun enfant à ajouter.</string>
-    <string name="import_apercu_un">%1$d enfant prêt à être ajouté :</string>
-    <string name="import_apercu_plusieurs">%1$d enfants prêts à être ajoutés :</string>
+    <string name="import_apercu_un">%1$d nouvel enfant à ajouter :</string>
+    <string name="import_apercu_plusieurs">%1$d nouveaux enfants à ajouter :</string>
     <string name="import_rejets_un">%1$d ligne ignorée :</string>
     <string name="import_rejets_plusieurs">%1$d lignes ignorées :</string>
     <string name="import_ligne_details">%1$s · né(e) le %2$s</string>
     <string name="import_rejet_ligne">Ligne %1$d : %2$s</string>
-    <string name="import_bouton_un">AJOUTER %1$d ENFANT</string>
-    <string name="import_bouton_plusieurs">AJOUTER %1$d ENFANTS</string>
-    <string name="import_erreur_enregistrement">L’enregistrement a échoué : aucun enfant n’a été ajouté. Réessayez.</string>
+    <string name="import_erreur_enregistrement">L’enregistrement a échoué : rien n’a été modifié. Réessayez.</string>
     <string name="import_termine_un">%1$d enfant ajouté</string>
     <string name="import_termine_plusieurs">%1$d enfants ajoutés</string>
-    <string name="import_termine_aide">Ils apparaissent dans l’onglet Enfants et dans les prochains pointages. Vous pouvez ajouter leur photo depuis leur fiche.</string>
-    <string name="import_voir_liste">Voir la liste des enfants</string>
+    <string name="import_termine_aide">Les changements apparaissent dans l’onglet Enfants et dans les prochains pointages. Vous pouvez ajouter la photo des nouveaux enfants depuis leur fiche.</string>
     <string name="import_autre_fichier">Importer un autre fichier</string>
     <string name="import_motif_nom">Nom manquant.</string>
     <string name="import_motif_prenom">Prénom manquant.</string>
@@ -257,9 +250,9 @@ Rabe;David;Garçon;02/11/2015</string>
     <string name="import_motif_sexe_manquant">Sexe manquant (Garçon ou Fille).</string>
     <string name="import_motif_sexe_invalide">Sexe non reconnu (attendu : Garçon ou Fille).</string>
     <string name="import_motif_trop_long">Texte trop long (100 caractères au plus).</string>
-    <string name="import_motif_deja_inscrit">Déjà inscrit dans l’application.</string>
-    <string name="import_motif_doublon">En double dans le fichier.</string>
-    <string name="import_motif_archive">Enfant archivé : non importé.</string>
+    <string name="import_motif_deja_inscrit">Un autre enfant inscrit a déjà ce nom, ce prénom et cette date de naissance.</string>
+    <string name="import_motif_doublon">En double dans le fichier (même enfant plus haut).</string>
+    <string name="import_motif_archive">Enfant archivé inconnu de l’application : non ajouté.</string>
 
     <!-- Assiduité et historique -->
     <string name="assiduite_titre">Assiduité</string>
@@ -271,4 +264,103 @@ Rabe;David;Garçon;02/11/2015</string>
     <string name="historique_vide_titre">Aucun dimanche pour le moment</string>
     <string name="historique_vide_debut">Le suivi de cet enfant commence le %1$s.</string>
     <string name="historique_vide_archive">Cet enfant a été archivé avant son premier dimanche de suivi.</string>
+
+    <!-- Version 1.2.0 : garde-fou de la date du téléphone -->
+    <string name="erreur_pointage_horloge">La date du téléphone semble incorrecte : rien n’a été enregistré. Vérifiez la date et l’heure du téléphone.</string>
+    <string name="horloge_titre">Vérifiez la date du téléphone</string>
+    <string name="horloge_date_telephone">Date du téléphone : %1$s</string>
+    <string name="horloge_impossible">Cette date est impossible (antérieure à l’application) : le téléphone a probablement perdu son heure, par exemple après une batterie vidée.</string>
+    <string name="horloge_recul">C’est plus tôt que la dernière utilisation de l’application (%1$s) : l’horloge semble avoir été remise en arrière.</string>
+    <string name="horloge_saut">C’est très longtemps après la dernière utilisation de l’application (%1$s) : l’année ou le mois est peut-être mal réglé.</string>
+    <string name="horloge_explication">Tant que la date n’est pas vérifiée, l’application ne marque aucun enfant absent et n’inscrit personne : une mauvaise date fausserait les présences de façon durable.</string>
+    <string name="horloge_reglages">Régler la date et l’heure</string>
+    <string name="horloge_reessayer">J’ai corrigé la date : réessayer</string>
+    <string name="horloge_confirmer">La date affichée est correcte : continuer</string>
+
+    <!-- Version 1.2.0 : premier lancement -->
+    <string name="accueil_titre">Bienvenue dans École du Dimanche</string>
+    <string name="accueil_explication">L’application ne contient encore aucune donnée. Commencez avec une liste vide, ou reprenez les données d’une sauvegarde complète (changement de téléphone, réinstallation).</string>
+    <string name="accueil_commencer_vide">COMMENCER AVEC DES DONNÉES VIERGES</string>
+    <string name="accueil_restaurer">Restaurer une sauvegarde</string>
+    <string name="accueil_restaurer_aide">Une sauvegarde est un fichier .zip créé avec Données ▸ Créer une sauvegarde complète.</string>
+
+    <!-- Version 1.2.0 : onglet Données -->
+    <string name="donnees_titre">Données</string>
+    <string name="donnees_csv_titre">Fichiers CSV (tableur)</string>
+    <string name="donnees_csv_explication">Pour travailler sur la liste dans Excel ou Google Sheets : exporter tout ou partie des informations, puis réimporter pour ajouter des enfants ou mettre à jour leurs fiches.</string>
+    <string name="donnees_exporter_csv">Exporter en CSV</string>
+    <string name="donnees_importer_csv">Importer un CSV (ajout et mise à jour)</string>
+    <string name="donnees_sauvegarde_titre">Sauvegarde complète</string>
+    <string name="donnees_sauvegarde_explication">Un seul fichier .zip avec TOUT : fiches complètes, photos et historique des présences. Il permet de retrouver les données sur un autre téléphone ou après une réinstallation.</string>
+    <string name="donnees_sauvegarder">Créer une sauvegarde complète</string>
+    <string name="donnees_restaurer">Restaurer une sauvegarde</string>
+    <string name="donnees_sauvegarde_conseil">Conseil : faites une sauvegarde régulièrement et gardez-en une copie hors du téléphone (ordinateur, clé USB). Elle contient des informations personnelles sur des enfants : ne la partagez pas.</string>
+    <string name="donnees_sauvegarde_reussie">Sauvegarde enregistrée. Enfants : %1$d · Photos : %2$d.</string>
+    <string name="donnees_sauvegarde_echec">La sauvegarde n’a pas pu être enregistrée. Réessayez, ou choisissez un autre emplacement.</string>
+    <string name="donnees_zero_titre">Repartir de zéro</string>
+    <string name="donnees_zero_explication">Efface toutes les données de l’application (enfants, photos, présences) pour recommencer avec une application vierge.</string>
+    <string name="donnees_zero_bouton">Repartir de zéro…</string>
+
+    <!-- Version 1.2.0 : restauration -->
+    <string name="restauration_lecture">Vérification de la sauvegarde…</string>
+    <string name="restauration_en_cours">Restauration en cours…</string>
+    <string name="restauration_titre">Restaurer cette sauvegarde ?</string>
+    <string name="restauration_contenu">Sauvegarde du %1$s (version %2$s de l’application).</string>
+    <string name="restauration_nombres">Enfants : %1$d · Dimanches : %2$d · Photos : %3$d</string>
+    <string name="restauration_remplace">Elle REMPLACERA toutes les données actuelles (enfants : %1$d, dimanches : %2$d). Cette action est irréversible.</string>
+    <string name="restauration_confirmer">Remplacer par la sauvegarde</string>
+    <string name="restauration_reussie_titre">Sauvegarde restaurée</string>
+    <string name="restauration_reussie">Les données de la sauvegarde sont en place. Enfants : %1$d · Photos : %2$d.</string>
+    <string name="restauration_impossible_titre">Restauration impossible</string>
+    <string name="restauration_echec">La restauration a échoué : les données actuelles n’ont pas été modifiées. Réessayez.</string>
+    <string name="restauration_pas_une_sauvegarde">Ce fichier n’est pas une sauvegarde de l’application École du Dimanche. Choisissez le fichier .zip créé avec « Créer une sauvegarde complète ».</string>
+    <string name="restauration_trop_recente">Cette sauvegarde a été créée par une version plus récente de l’application. Mettez d’abord l’application à jour, puis recommencez.</string>
+    <string name="restauration_illisible">Ce fichier est abîmé ou incomplet : il ne peut pas être restauré. Rien n’a été modifié.</string>
+    <string name="restauration_incoherente">Les données de cette sauvegarde sont incohérentes : elle ne peut pas être restaurée. Rien n’a été modifié.</string>
+    <string name="restauration_trop_volumineuse">Ce fichier est trop volumineux pour être une sauvegarde de l’application. Rien n’a été modifié.</string>
+
+    <!-- Version 1.2.0 : repartir de zéro -->
+    <string name="zero_titre">Repartir de zéro ?</string>
+    <string name="zero_message">Toutes les données seront effacées DÉFINITIVEMENT : enfants : %1$d, dimanches : %2$d, avec les photos et tout l’historique des présences.</string>
+    <string name="zero_conseil">Faites d’abord une sauvegarde complète pour pouvoir revenir en arrière.</string>
+    <string name="zero_sauvegarder_dabord">Sauvegarder d’abord</string>
+    <string name="zero_case">Je comprends que tout sera effacé définitivement.</string>
+    <string name="zero_confirmer">Tout effacer</string>
+    <string name="zero_en_cours">Effacement en cours…</string>
+    <string name="zero_echec">L’effacement a échoué : les données sont toujours là. Réessayez.</string>
+
+    <!-- Version 1.2.0 : export partiel -->
+    <string name="export_tout">Tout exporter</string>
+    <string name="export_groupe_identite">Nom, prénom, sexe, date de naissance (toujours exportés)</string>
+    <string name="export_groupe_identifiant">Identifiant (pour mettre à jour les fiches par import)</string>
+    <string name="export_groupe_age_statut">Âge et statut (actif ou archivé)</string>
+    <string name="export_groupe_adresse">Adresse</string>
+    <string name="export_groupe_parents">Parents (noms, membres de l’église)</string>
+    <string name="export_groupe_fratrie">Frères et sœurs</string>
+    <string name="export_groupe_eglise">Date d’arrivée dans l’église</string>
+    <string name="export_groupe_suivi">Début et fin du suivi</string>
+    <string name="export_groupe_presences">Présence à chaque dimanche</string>
+    <string name="export_groupe_totaux">Totaux et assiduité</string>
+    <string name="export_avertissement_personnel">Le fichier contiendra des informations personnelles sur les familles (adresse, parents, fratrie). Ne le partagez qu’avec les personnes autorisées.</string>
+
+    <!-- Version 1.2.0 : import avec mise à jour -->
+    <string name="import_apercu_rien">Rien à ajouter ni à mettre à jour.</string>
+    <string name="import_maj_un">%1$d fiche à mettre à jour :</string>
+    <string name="import_maj_plusieurs">%1$d fiches à mettre à jour :</string>
+    <string name="import_maj_champs">Change : %1$s</string>
+    <string name="import_inchanges_un">%1$d enfant déjà inscrit, sans changement.</string>
+    <string name="import_inchanges_plusieurs">%1$d enfants déjà inscrits, sans changement.</string>
+    <string name="import_bouton_enregistrer">ENREGISTRER · AJOUTS : %1$d · MISES À JOUR : %2$d</string>
+    <string name="import_termine_maj_un">%1$d fiche mise à jour</string>
+    <string name="import_termine_maj_plusieurs">%1$d fiches mises à jour</string>
+    <string name="import_champ_pere_membre">Père membre</string>
+    <string name="import_champ_mere_membre">Mère membre</string>
+    <string name="import_champ_fratrie">Frères et sœurs</string>
+    <string name="import_champ_fratrie_membres">Frères et sœurs membres</string>
+    <string name="import_motif_identifiant_invalide">Identifiant non reconnu (attendu : un nombre).</string>
+    <string name="import_motif_identifiant_different">Cet identifiant désigne un autre enfant (fichier venant d’un autre téléphone ?) : videz la colonne Identifiant pour l’ajouter.</string>
+    <string name="import_motif_oui_non">Valeur non reconnue dans une colonne « membre de l’église » (attendu : Oui ou Non).</string>
+    <string name="import_motif_nombre">Nombre de frères et sœurs non reconnu (attendu : un entier de 0 à 99).</string>
+    <string name="import_motif_arrivee">Date d’arrivée dans l’église non reconnue (attendu : JJ/MM/AAAA).</string>
+    <string name="import_motif_incoherent">Informations contradictoires (date d’arrivée avant la naissance ou dans le futur, ou plus de frères et sœurs membres que de frères et sœurs).</string>
 </resources>

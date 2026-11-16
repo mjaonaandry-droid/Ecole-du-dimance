@@ -11,7 +11,8 @@ import mg.ecoledimanche.presences.data.local.SeanceDao
 import mg.ecoledimanche.presences.domain.AppClock
 import mg.ecoledimanche.presences.domain.Dimanches
 import mg.ecoledimanche.presences.domain.DonneesEnfant
-import mg.ecoledimanche.presences.domain.IdentiteEnfant
+import mg.ecoledimanche.presences.domain.EnfantConnu
+import mg.ecoledimanche.presences.domain.MiseAJourEnfant
 import mg.ecoledimanche.presences.domain.RegleSeance
 import mg.ecoledimanche.presences.domain.RegleSuivi
 import mg.ecoledimanche.presences.domain.Recherche
@@ -24,6 +25,8 @@ class EnfantRepository(
     private val transaction: ExecuteurTransaction,
     private val photos: StockagePhotos,
     private val clock: AppClock,
+    /** Garde-fou de la date du téléphone : le début de suivi d'un nouvel enfant en dépend. */
+    private val controleHorloge: ControleHorloge = ControleHorloge.TOUJOURS_FIABLE,
 ) {
     private val comparateur = Recherche.comparateurNoms()
 
@@ -51,6 +54,7 @@ class EnfantRepository(
      * @return l'identifiant de l'enfant créé.
      */
     suspend fun ajouter(donnees: DonneesEnfant, cheminPhotoTemporaire: String?): Long = withContext(NonCancellable) {
+        verifierHorloge()
         val cheminFinal = if (cheminPhotoTemporaire == null) PHOTO_NON_PRISE else photos.promouvoirTemporaire(cheminPhotoTemporaire)
         val id = try {
             transaction.executer {
@@ -98,23 +102,7 @@ class EnfantRepository(
      */
     suspend fun modifier(id: Long, donnees: DonneesEnfant): Boolean = transaction.executer {
         val existant = enfantDao.trouver(id) ?: return@executer false
-        enfantDao.mettreAJour(
-            existant.copy(
-                nom = donnees.nom,
-                prenom = donnees.prenom,
-                dateNaissance = donnees.dateNaissance,
-                sexe = donnees.sexe,
-                adresse = donnees.adresse,
-                nomPere = donnees.nomPere,
-                pereMembre = donnees.pereMembre,
-                nomMere = donnees.nomMere,
-                mereMembre = donnees.mereMembre,
-                nombreFreresSoeurs = donnees.nombreFreresSoeurs,
-                nombreFreresSoeursMembres = donnees.nombreFreresSoeursMembres,
-                dateArriveeEglise = donnees.dateArrivee,
-                updatedAt = clock.instant(),
-            ),
-        )
+        enfantDao.mettreAJour(existant.avecDonnees(donnees, clock.instant()))
         true
     }
 
@@ -209,12 +197,15 @@ class EnfantRepository(
     }
 
     /**
-     * Ajoute plusieurs enfants d'un coup (import CSV), sans photo, dans UNE transaction : tous sont
-     * enregistrés, ou aucun. Le début de suivi suit la même règle qu'un ajout manuel.
-     * @return le nombre d'enfants ajoutés.
+     * Applique un import CSV dans UNE transaction : tout est enregistré, ou rien.
+     * - [aAjouter] : nouveaux enfants, sans photo ; le début de suivi suit la même règle qu'un ajout manuel ;
+     * - [aMettreAJour] : fiches existantes remplacées par leur version « après » (informations personnelles
+     *   uniquement : suivi, archivage, photo et historique ne sont jamais touchés).
+     * @return le nombre d'enfants ajoutés et le nombre de fiches mises à jour.
      */
-    suspend fun ajouterPlusieurs(liste: List<DonneesEnfant>): Int {
-        if (liste.isEmpty()) return 0
+    suspend fun appliquerImport(aAjouter: List<DonneesEnfant>, aMettreAJour: List<MiseAJourEnfant> = emptyList()): Pair<Int, Int> {
+        if (aAjouter.isEmpty() && aMettreAJour.isEmpty()) return 0 to 0
+        if (aAjouter.isNotEmpty()) verifierHorloge()
         return transaction.executer {
             val maintenant = clock.instant()
             val zone = clock.zone()
@@ -222,7 +213,11 @@ class EnfantRepository(
             val seanceDuJour = if (Dimanches.estDimanche(aujourdhui)) seanceDao.trouver(aujourdhui) else null
             val phase = RegleSeance.phase(aujourdhui, seanceDuJour?.versEtat(), maintenant, zone)
             val debut = RegleSuivi.dateDebutSuivi(aujourdhui, phase)
-            for (donnees in liste) {
+            for (maj in aMettreAJour) {
+                val existant = enfantDao.trouver(maj.id) ?: throw IllegalStateException("Enfant ${maj.id} introuvable")
+                enfantDao.mettreAJour(existant.avecDonnees(maj.apres, maintenant))
+            }
+            for (donnees in aAjouter) {
                 enfantDao.inserer(
                     EnfantEntity(
                         nom = donnees.nom,
@@ -247,11 +242,54 @@ class EnfantRepository(
                     ),
                 )
             }
-            liste.size
+            aAjouter.size to aMettreAJour.size
         }
     }
 
-    /** Identité (nom, prénom, date de naissance) de tous les enfants, actifs et archivés : détection des doublons à l'import. */
-    suspend fun identitesExistantes(): List<IdentiteEnfant> =
-        enfantDao.tous().map { IdentiteEnfant(it.nom, it.prenom, it.dateNaissance) }
+    /** Ajoute plusieurs enfants d'un coup, sans photo, dans UNE transaction. @return le nombre d'enfants ajoutés. */
+    suspend fun ajouterPlusieurs(liste: List<DonneesEnfant>): Int = appliquerImport(liste).first
+
+    /** Tous les enfants (actifs et archivés) avec leur fiche : reconnaissance et mise à jour à l'import. */
+    suspend fun enfantsConnus(): List<EnfantConnu> = enfantDao.tous().map { EnfantConnu(it.id, it.versDonnees()) }
+
+    /** Refuse d'inscrire un enfant tant que la date du téléphone est douteuse (début de suivi faux sinon). */
+    private suspend fun verifierHorloge() {
+        if (!controleHorloge.horlogeFiable()) throw HorlogeDouteuseException()
+    }
 }
+
+/** La date du téléphone est douteuse : aucune inscription n'est faite (voir [ControleHorloge]). */
+class HorlogeDouteuseException : IllegalStateException("Date du téléphone douteuse")
+
+/** Fiche mise à jour avec des informations personnelles ; suivi, archivage et photo sont conservés. */
+private fun EnfantEntity.avecDonnees(donnees: DonneesEnfant, maintenant: java.time.Instant): EnfantEntity = copy(
+    nom = donnees.nom,
+    prenom = donnees.prenom,
+    dateNaissance = donnees.dateNaissance,
+    sexe = donnees.sexe,
+    adresse = donnees.adresse,
+    nomPere = donnees.nomPere,
+    pereMembre = donnees.pereMembre,
+    nomMere = donnees.nomMere,
+    mereMembre = donnees.mereMembre,
+    nombreFreresSoeurs = donnees.nombreFreresSoeurs,
+    nombreFreresSoeursMembres = donnees.nombreFreresSoeursMembres,
+    dateArriveeEglise = donnees.dateArrivee,
+    updatedAt = maintenant,
+)
+
+/** Informations personnelles de la fiche, au format du formulaire et de l'import. */
+fun EnfantEntity.versDonnees(): DonneesEnfant = DonneesEnfant(
+    nom = nom,
+    prenom = prenom,
+    dateNaissance = dateNaissance,
+    sexe = sexe,
+    adresse = adresse,
+    nomPere = nomPere,
+    pereMembre = pereMembre,
+    nomMere = nomMere,
+    mereMembre = mereMembre,
+    nombreFreresSoeurs = nombreFreresSoeurs,
+    nombreFreresSoeursMembres = nombreFreresSoeursMembres,
+    dateArrivee = dateArriveeEglise,
+)

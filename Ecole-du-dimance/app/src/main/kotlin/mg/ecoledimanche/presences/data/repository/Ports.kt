@@ -24,3 +24,18 @@ interface StockagePhotos {
     /** Vrai si le fichier existe et peut être décodé comme une image. */
     suspend fun existe(chemin: String): Boolean
 }
+
+/**
+ * Fichiers des photos, vus de la sauvegarde complète et de la remise à zéro. Chemins RELATIFS au
+ * répertoire privé (« photos/xxx.jpg »). Fonctions bloquantes : à appeler hors du thread principal.
+ */
+interface FichiersPhotos {
+    /** Contenu de la photo, ou nul si le fichier n'existe pas (ou si le chemin sort du répertoire privé). */
+    fun ouvrir(chemin: String): java.io.InputStream?
+
+    /** Écrit (ou remplace) la photo à ce chemin. Lève une exception si le chemin n'est pas sûr. */
+    fun enregistrer(chemin: String, contenu: java.io.InputStream)
+
+    /** Supprime toutes les photos, définitives et temporaires. */
+    fun toutSupprimer()
+}

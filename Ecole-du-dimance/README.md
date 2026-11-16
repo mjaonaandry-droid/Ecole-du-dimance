@@ -9,6 +9,47 @@ Elle fonctionne **sans aucune connexion Internet**, y compris après un redémar
 
 ---
 
+## Version 1.2.0 (versionCode 3)
+
+1. **Mise à jour sans désinstaller** — la 1.2.0 s'installe **par-dessus** la 1.1.0 (même identifiant, même clé permanente,
+   `versionCode` augmenté) : Android conserve les données, puis Room **migre la base** de la version 1 à la version 2 au
+   premier lancement. La CI le vérifie sur émulateur avec l'APK 1.1.0 réellement livré (job `mise-a-jour`, script
+   `ci/test-mise-a-jour.sh`) et affiche dans le résumé si l'APK produit porte la clé permanente.
+   ⚠️ Les secrets `SIGNATURE_KEYSTORE_B64` et `SIGNATURE_PASSWORD` doivent être définis (§6) : sans eux l'APK de la CI
+   porte une clé jetable et **ne peut pas** mettre à jour le téléphone.
+2. **Migrations de base de données** — `AppDatabase.VERSION = 2` (table `parametres`), migration explicite
+   `MIGRATION_1_2`, schéma `app/schemas/.../2.json` versionné. Les tests `MigrationRoomTest` (base 1 → 2 avec des données,
+   ouverture par Room comme au démarrage) et `SauvegardeInstrumenteeTest` **s'exécutent désormais** sur émulateur (job
+   `tests-instrumentes`). Marche à suivre pour une future version : §7.
+3. **Sauvegarde complète et restauration** (onglet **Données**) — un seul fichier `.zip` : toutes les tables (fiches
+   complètes, séances, présences) et les photos. Restauration sur le même téléphone ou sur un autre, avec aperçu et
+   confirmation ; tout est vérifié avant d'écrire, et la base n'est remplacée qu'en une transaction (un échec ne perd
+   rien). Le contenu est **logique** (`donnees.json`, format versionné) : une sauvegarde d'une ancienne version se
+   restaure dans une version plus récente, quelle que soit l'évolution du schéma. (`data/sauvegarde/`, `DonneesRepository`)
+4. **Données vierges** — à la première installation (ou après « Repartir de zéro »), un écran d'accueil propose
+   « Commencer avec des données vierges » ou « Restaurer une sauvegarde ». **Données ▸ Repartir de zéro** efface tout
+   (enfants, photos, présences) après confirmation, en proposant d'abord une sauvegarde. Une installation existante mise
+   à jour n'affiche pas l'accueil (la migration 1 → 2 le marque comme passé).
+5. **Export CSV complet ou partiel** — « Tout exporter » (par défaut) ou groupes de colonnes au choix : identifiant,
+   âge et statut, adresse, parents, frères et sœurs, arrivée dans l'église, suivi, présences par dimanche, totaux. Nom,
+   prénom, sexe et date de naissance sont toujours exportés. Un avertissement s'affiche quand le fichier contient des
+   informations sur les familles. (`GroupeExport`, `ExportCsv`)
+6. **Import CSV avec mise à jour** — un enfant déjà inscrit est reconnu par sa colonne **Identifiant** (si nom, prénom
+   et date de naissance lui correspondent au moins à deux sur trois : on peut ainsi corriger l'un des trois), sinon par
+   nom + prénom + date de naissance ; sa fiche est mise à jour avec les **cellules remplies** (une cellule vide ne change
+   rien). Les autres lignes ajoutent des enfants. L'aperçu détaille ajouts, mises à jour (avec les champs qui changent),
+   fiches inchangées et lignes écartées ; tout est enregistré en une transaction. Suivi, archivage, photo et historique ne
+   sont jamais modifiés par un import. Un export complet réimporté sur un autre téléphone recrée les fiches complètes.
+   (`ImportCsv`, `EnfantRepository.appliquerImport`)
+7. **Garde-fou de la date du téléphone** — l'application retient la date la plus récente qu'elle a vue. Si l'horloge
+   recule de plus d'un jour, saute de plus de 120 jours, ou est antérieure à 2026, rien n'est clôturé ni inscrit et un
+   écran demande de vérifier la date (bouton vers les réglages ; « la date est correcte » sauf date impossible). Sans ce
+   garde-fou, une date en avance clôturait définitivement des dimanches futurs (enfants « Absent »), et une date en
+   retard donnait des débuts de suivi faux. (`ReglesHorloge`, `GardienHorloge`)
+
+Tests JVM : 28 tests ajoutés (import avec mise à jour, export partiel, garde-fou de l’horloge, sauvegarde / restauration /
+remise à zéro, JSON, export partiel du ViewModel) ; tests instrumentés : 4 ajoutés (migration 1 → 2, sauvegarde sur vraie base).
+
 ## Version 1.1.0 (versionCode 2)
 
 1. **Onglet Dimanche** — les enfants **non pointés** sont en haut, les **pointés** (Présent, En retard) en bas, chaque groupe
@@ -336,12 +377,17 @@ Choisissez donc la clé définitive **avant** d'enregistrer de vraies données.
   les conserve. **Archiver** un enfant conserve fiche, photo et historique.
 - Aucune sauvegarde cloud : `android:allowBackup="false"`, `fullBackupContent` (Android ≤ 11) et `dataExtractionRules`
   (Android 12+, **sauvegarde cloud et transfert d'appareil à appareil**) excluent base, photos et préférences.
-- **Export** : l'onglet « Exporter » produit un CSV des informations de base et des présences (voir « Nouveautés »). Ce n'est **pas**
-  une sauvegarde : ni photos ni informations complètes, et il n'y a pas d'import. Les accès à la base et aux photos sont centralisés
-  (`AppDatabase`, `StockagePhotosPrive`) pour permettre plus tard une sauvegarde **locale** complète, sans service cloud.
-- **Schéma Room** : l'export est activé (`room.schemaLocation` → `app/schemas/`). Le fichier `.../1.json` est **généré par
-  la première compilation** : le versionner ensuite avec le code. À chaque évolution : incrémenter `version`, ajouter une
-  `Migration` explicite dans `AppDatabase.MIGRATIONS` (jamais de migration destructive) et un test dans `MigrationRoomTest`.
+- **Sauvegarde complète** (depuis la 1.2.0) : Données ▸ Créer une sauvegarde complète produit un `.zip` (base + photos) dans
+  l'emplacement choisi avec le sélecteur du système ; aucune sauvegarde cloud. Le CSV, lui, n'est pas une sauvegarde
+  (ni photos, ni historique réimportable).
+- **Schéma Room** : l'export est activé (`room.schemaLocation` → `app/schemas/`). Versions : 1 (applications 1.0 et 1.1),
+  2 (application 1.2 : table `parametres`). **À chaque évolution du schéma** :
+  1. incrémenter `AppDatabase.VERSION` ;
+  2. ajouter une migration explicite `MIGRATION_N_N+1` dans `AppDatabase.MIGRATIONS` (jamais de migration destructive) ;
+  3. compiler, puis versionner le schéma `app/schemas/.../N+1.json` généré ;
+  4. ajouter un test « N → N+1 avec des données » dans `MigrationRoomTest` (exécuté sur émulateur par la CI) ;
+  5. augmenter `versionCode` et garder la **même clé de signature** : l'application se met à jour sans désinstaller.
+  Si `donnees.json` doit changer, augmenter `FormatSauvegarde.FORMAT` et continuer d'accepter la lecture des anciens formats.
 - Fichiers orphelins : au démarrage et dans le travail WorkManager, les photos non référencées **et anciennes** (> 1 h) et les
   brouillons abandonnés (> 24 h) sont supprimés ; un fichier référencé, récent ou en cours d'utilisation ne l'est jamais.
 
@@ -410,7 +456,10 @@ primaire composite, clés étrangères RESTRICT, conservation après fermeture /
 
 ## 11. Limites connues et choix simples
 
-- Pas de suppression définitive ni de réactivation d'un enfant, pas d'import, pas de saisie rétroactive (V1).
+- L'heure de clôture (10 h) n'est pas réglable dans l'application (`ConfigurationSeance.HEURE_CLOTURE`).
+- L'APK installé est la variante *debug* (le script `transfert-donnees/` s'en sert pour `run-as`) : avec le débogage USB,
+  ses données sont lisibles par un ordinateur branché. La sauvegarde complète intégrée rend possible, dans une version
+  suivante, le passage à une variante *release* signée avec la même clé (mise à jour directe).
 - Le sélecteur de dimanches couvre une année avant et une année après le dimanche affiché par défaut (`SEMAINES_PASSEES` / `SEMAINES_A_VENIR` dans `DimancheViewModel`).
 - « Absent » n'est toujours attribué qu'à la clôture (10 h) : avant, le pointage se limite à Présent, En retard et « Annuler le pointage ».
 - L'export CSV exporte tous les dimanches depuis le premier suivi : un fichier de plusieurs années aura beaucoup de colonnes.

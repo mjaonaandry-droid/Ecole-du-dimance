@@ -9,9 +9,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -78,8 +78,15 @@ fun NavigationApp(conteneur: ConteneurApp) {
             composable(Routes.ASSIDUITE) {
                 AssiduiteRoute(conteneur, onOuvrirHistorique = { navigation.navigate(Routes.historique(it)) })
             }
+            composable(Routes.DONNEES) {
+                DonneesRoute(
+                    conteneur,
+                    onExporter = { navigation.navigate(Routes.EXPORTER) { launchSingleTop = true } },
+                    onImporter = { navigation.navigate(Routes.IMPORTER) { launchSingleTop = true } },
+                )
+            }
             composable(Routes.EXPORTER) {
-                ExporterRoute(conteneur)
+                ExporterRoute(conteneur, onRetour = { navigation.popBackStack() })
             }
             composable(Routes.AJOUTER) {
                 AjoutRoute(
@@ -125,7 +132,7 @@ fun NavigationApp(conteneur: ConteneurApp) {
 }
 
 /**
- * Cinq accès : Dimanche, Enfants, Ajouter, Assiduité, Exporter. « Ajouter » est une action centrale
+ * Cinq accès : Dimanche, Enfants, Ajouter, Assiduité, Données (CSV, sauvegarde, remise à zéro). « Ajouter » est une action centrale
  * (jamais sélectionnée) qui ouvre le formulaire d'ajout : pas d'onglet vide.
  */
 @Composable
@@ -148,7 +155,7 @@ private fun BarreNavigation(routeCourante: String?, navigation: NavHostControlle
             colors = NavigationBarItemDefaults.colors(unselectedTextColor = MaterialTheme.colorScheme.primary),
         )
         ElementOnglet(Routes.ASSIDUITE, R.string.nav_assiduite, Icons.Filled.Insights, routeCourante, navigation)
-        ElementOnglet(Routes.EXPORTER, R.string.nav_exporter, Icons.Filled.FileDownload, routeCourante, navigation)
+        ElementOnglet(Routes.DONNEES, R.string.nav_donnees, Icons.Filled.Storage, routeCourante, navigation)
     }
 }
 

@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import mg.ecoledimanche.presences.data.repository.PresenceRepository
 import mg.ecoledimanche.presences.domain.AppClock
 import mg.ecoledimanche.presences.domain.ExportCsv
+import mg.ecoledimanche.presences.domain.GroupeExport
 import mg.ecoledimanche.presences.domain.aujourdhui
 
 /** Ce que contiendra le fichier, annoncé avant l'export. */
@@ -38,10 +39,17 @@ data class EtatEcranExport(
     val inclureArchives: Boolean,
     val apercu: ApercuExport,
     val action: ActionExport,
-)
+    /** Groupes de colonnes choisis (l'identité de l'enfant est toujours exportée). */
+    val groupes: Set<GroupeExport> = GroupeExport.TOUS,
+) {
+    val toutExporter: Boolean get() = groupes.containsAll(GroupeExport.TOUS)
+
+    /** Le fichier contiendra des informations sur la famille (adresse, parents, fratrie). */
+    val contientInfosPersonnelles: Boolean get() = groupes.any { it in GroupeExport.PERSONNELS }
+}
 
 /**
- * Export CSV des enfants (informations de base et présences). Le ViewModel ne connaît ni le système
+ * Export CSV des enfants, complet ou partiel (groupes de colonnes au choix). Le ViewModel ne connaît ni le système
  * de fichiers ni Android : l'écran lui donne la fonction qui écrit le texte dans le fichier choisi.
  */
 class ExporterViewModel(
@@ -51,6 +59,7 @@ class ExporterViewModel(
 ) : ViewModel() {
     private val archives = MutableStateFlow(true)
     private val action = MutableStateFlow<ActionExport>(ActionExport.Repos)
+    private val groupes = MutableStateFlow(GroupeExport.TOUS)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val apercu: Flow<ApercuExport> = combine(archives, actualisation) { inclure, _ -> inclure }
@@ -70,16 +79,33 @@ class ExporterViewModel(
             }
         }
 
-    val etat: StateFlow<EtatEcranExport> = combine(archives, apercu, action) { inclure, contenu, avancement ->
-        EtatEcranExport(inclure, contenu, avancement)
+    val etat: StateFlow<EtatEcranExport> = combine(archives, apercu, action, groupes) { inclure, contenu, avancement, choisis ->
+        EtatEcranExport(inclure, contenu, avancement, choisis)
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5_000),
-        EtatEcranExport(archives.value, ApercuExport.Chargement, ActionExport.Repos),
+        EtatEcranExport(archives.value, ApercuExport.Chargement, ActionExport.Repos, groupes.value),
     )
 
     fun inclureArchives(inclure: Boolean) {
         archives.value = inclure
+        action.value = ActionExport.Repos
+    }
+
+    /** Coche ou décoche un groupe de colonnes. */
+    fun basculerGroupe(groupe: GroupeExport, inclus: Boolean) {
+        groupes.update { if (inclus) it + groupe else it - groupe }
+        action.value = ActionExport.Repos
+    }
+
+    /** « Tout exporter » coché : tous les groupes ; décoché : seulement l'identité des enfants. */
+    fun toutExporter(tout: Boolean) {
+        groupes.value = if (tout) GroupeExport.TOUS else emptySet()
+        action.value = ActionExport.Repos
+    }
+
+    fun choisirGroupes(choisis: Set<GroupeExport>) {
+        groupes.value = choisis
         action.value = ActionExport.Repos
     }
 
@@ -95,10 +121,11 @@ class ExporterViewModel(
         if (action.value == ActionExport.EnCours) return
         action.value = ActionExport.EnCours
         val inclure = archives.value
+        val choisis = groupes.value
         viewModelScope.launch {
             val resultat = try {
                 val tableau = presences.tableauExport(inclure)
-                ecrire(ExportCsv.construire(tableau, horloge.aujourdhui()))
+                ecrire(ExportCsv.construire(tableau, horloge.aujourdhui(), choisis))
                 ActionExport.Reussie(tableau.lignes.size, tableau.dimanches.size)
             } catch (erreur: CancellationException) {
                 throw erreur

@@ -492,6 +492,7 @@ private fun libelleErreurPointage(erreur: ErreurPointage): String = stringResour
         ErreurPointage.ENFANT_NON_ADMISSIBLE -> R.string.erreur_pointage_non_admissible
         ErreurPointage.ABSENT_INTERDIT_AVANT_CLOTURE -> R.string.erreur_pointage_absent_interdit
         ErreurPointage.ANNULATION_INTERDITE_APRES_CLOTURE -> R.string.erreur_pointage_annulation
+        ErreurPointage.HORLOGE_DOUTEUSE -> R.string.erreur_pointage_horloge
     },
 )
 

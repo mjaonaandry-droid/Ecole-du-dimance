@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import mg.ecoledimanche.presences.data.Environnement
 import mg.ecoledimanche.presences.data.instantLocal
+import mg.ecoledimanche.presences.domain.GroupeExport
 import mg.ecoledimanche.presences.domain.StatutPresence
 import mg.ecoledimanche.presences.ui.exporter.ActionExport
 import mg.ecoledimanche.presences.ui.exporter.ApercuExport
@@ -69,6 +70,7 @@ class ExporterViewModelTest : TestAvecMain() {
     fun exporter_confieLeCsvAAecrire_puisAnnonceLeSucces() = runTest(dispatcher) {
         val modele = vm(prepare())
         advanceUntilIdle()
+        modele.choisirGroupes(GroupeExport.BASE_ET_PRESENCES) // contenu de l'export des versions 1.0 et 1.1
         var ecrit: String? = null
         modele.exporter { texte -> ecrit = texte }
         advanceUntilIdle()
@@ -138,5 +140,28 @@ class ExporterViewModelTest : TestAvecMain() {
     fun nomDeFichierSuggere_contientLaDateDuJour() = runTest(dispatcher) {
         val modele = vm(prepare())
         assertEquals("presences-ecole-du-dimanche-2026-10-12.csv", modele.nomFichierSuggere())
+    }
+
+    @Test
+    fun parDefaut_toutEstExporte_etLesGroupesSeChoisissent() = runTest(dispatcher) {
+        val modele = vm(prepare())
+        advanceUntilIdle()
+        assertTrue(modele.etat.value.toutExporter)
+        assertTrue(modele.etat.value.contientInfosPersonnelles)
+        var ecrit = ""
+        modele.exporter { texte -> ecrit = texte }
+        advanceUntilIdle()
+        assertTrue(ecrit.removePrefix(BOM).startsWith("Identifiant;Nom;Prénom;Sexe;Date de naissance;Âge;Statut;Adresse;"))
+
+        modele.toutExporter(false)
+        modele.basculerGroupe(GroupeExport.PARENTS, true)
+        advanceUntilIdle()
+        assertEquals(setOf(GroupeExport.PARENTS), modele.etat.value.groupes)
+        modele.exporter { texte -> ecrit = texte }
+        advanceUntilIdle()
+        assertEquals(
+            "Nom;Prénom;Sexe;Date de naissance;Nom du père;Père membre de l'église;Nom de la mère;Mère membre de l'église",
+            ecrit.removePrefix(BOM).lines().first(),
+        )
     }
 }

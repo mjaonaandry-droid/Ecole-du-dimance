@@ -12,12 +12,16 @@ import mg.ecoledimanche.presences.data.local.EnfantAvecStatut
 import mg.ecoledimanche.presences.data.local.EnfantDao
 import mg.ecoledimanche.presences.data.local.EnfantEntity
 import mg.ecoledimanche.presences.data.local.LigneHistorique
+import mg.ecoledimanche.presences.data.local.MaintenanceDao
+import mg.ecoledimanche.presences.data.local.ParametreDao
+import mg.ecoledimanche.presences.data.local.ParametreEntity
 import mg.ecoledimanche.presences.data.local.PlageSuivi
 import mg.ecoledimanche.presences.data.local.PresenceDao
 import mg.ecoledimanche.presences.data.local.PresenceEntity
 import mg.ecoledimanche.presences.data.local.SeanceDao
 import mg.ecoledimanche.presences.data.local.SeanceEntity
 import mg.ecoledimanche.presences.data.repository.ExecuteurTransaction
+import mg.ecoledimanche.presences.data.repository.FichiersPhotos
 import mg.ecoledimanche.presences.data.repository.StockagePhotos
 import mg.ecoledimanche.presences.domain.AppClock
 import mg.ecoledimanche.presences.domain.StatutPresence
@@ -40,6 +44,7 @@ class FauxMagasin {
     val enfants = LinkedHashMap<Long, EnfantEntity>()
     val seances = LinkedHashMap<LocalDate, SeanceEntity>()
     val presences = LinkedHashMap<Pair<Long, LocalDate>, PresenceEntity>()
+    val parametres = LinkedHashMap<String, String>()
 
     /** Si vrai, `marquerCloturee` échoue : sert à vérifier l'atomicité de la clôture. */
     var echecSurMarquerCloturee = false
@@ -68,15 +73,17 @@ class FauxMagasin {
         val enfants: Map<Long, EnfantEntity>,
         val seances: Map<LocalDate, SeanceEntity>,
         val presences: Map<Pair<Long, LocalDate>, PresenceEntity>,
+        val parametres: Map<String, String>,
         val sequence: Long,
     )
 
-    fun capturer() = Instantane(LinkedHashMap(enfants), LinkedHashMap(seances), LinkedHashMap(presences), sequence)
+    fun capturer() = Instantane(LinkedHashMap(enfants), LinkedHashMap(seances), LinkedHashMap(presences), LinkedHashMap(parametres), sequence)
 
     fun restaurer(i: Instantane) {
         enfants.clear(); enfants.putAll(i.enfants)
         seances.clear(); seances.putAll(i.seances)
         presences.clear(); presences.putAll(i.presences)
+        parametres.clear(); parametres.putAll(i.parametres)
         sequence = i.sequence
         notifier()
     }
@@ -284,6 +291,82 @@ class FauxMagasin {
         }
     }
 
+    val parametreDao = object : ParametreDao {
+        override suspend fun lire(cle: String): String? = parametres[cle]
+
+        override fun observer(cle: String): Flow<String?> = flux { parametres[cle] }
+
+        override suspend fun ecrire(parametre: ParametreEntity) {
+            parametres[parametre.cle] = parametre.valeur
+            notifier()
+        }
+
+        override suspend fun effacer(cle: String) {
+            parametres.remove(cle)
+            notifier()
+        }
+
+        override suspend fun tous(): List<ParametreEntity> = parametres.map { (cle, valeur) -> ParametreEntity(cle, valeur) }
+    }
+
+    /** Si vrai, l'insertion des présences restaurées échoue : sert à vérifier qu'une restauration ratée ne perd rien. */
+    var echecSurInsertionPresences = false
+
+    val maintenanceDao = object : MaintenanceDao {
+        override suspend fun enfants(): List<EnfantEntity> = enfants.values.sortedBy { it.id }
+
+        override suspend fun seances(): List<SeanceEntity> = seances.values.sortedBy { it.dateDimanche }
+
+        override suspend fun presences(): List<PresenceEntity> = presences.values.sortedWith(compareBy({ it.enfantId }, { it.dateDimanche }))
+
+        override suspend fun nombreEnfants(): Int = enfants.size
+
+        override suspend fun nombreSeances(): Int = seances.size
+
+        override suspend fun viderPresences() {
+            presences.clear()
+            notifier()
+        }
+
+        override suspend fun viderSeances() {
+            check(presences.isEmpty()) { "FOREIGN KEY constraint failed (presences)" }
+            seances.clear()
+            notifier()
+        }
+
+        override suspend fun viderEnfants() {
+            check(presences.isEmpty()) { "FOREIGN KEY constraint failed (presences)" }
+            enfants.clear()
+            notifier()
+        }
+
+        override suspend fun insererEnfants(enfants: List<EnfantEntity>) {
+            for (e in enfants) {
+                check(!this@FauxMagasin.enfants.containsKey(e.id)) { "UNIQUE constraint failed: enfants.id" }
+                this@FauxMagasin.enfants[e.id] = e
+                if (e.id > sequence) sequence = e.id
+            }
+            notifier()
+        }
+
+        override suspend fun insererSeances(seances: List<SeanceEntity>) {
+            for (x in seances) {
+                check(!this@FauxMagasin.seances.containsKey(x.dateDimanche)) { "UNIQUE constraint failed: seances" }
+                this@FauxMagasin.seances[x.dateDimanche] = x
+            }
+            notifier()
+        }
+
+        override suspend fun insererPresences(presences: List<PresenceEntity>) {
+            if (echecSurInsertionPresences) throw IllegalStateException("insertion refusée (panne simulée)")
+            for (p in presences) {
+                check(enfants.containsKey(p.enfantId) && seances.containsKey(p.dateDimanche)) { "FOREIGN KEY constraint failed" }
+                this@FauxMagasin.presences[p.enfantId to p.dateDimanche] = p
+            }
+            notifier()
+        }
+    }
+
     val transaction = object : ExecuteurTransaction {
         override suspend fun <T> executer(bloc: suspend () -> T): T {
             val avant = capturer()
@@ -326,3 +409,18 @@ class FauxStockagePhotos : StockagePhotos {
 
     override suspend fun existe(chemin: String): Boolean = chemin in temporaires || chemin in definitives
 }
+
+/** Faux répertoire de photos pour la sauvegarde complète : chemin relatif → contenu. */
+class FauxFichiersPhotos : FichiersPhotos {
+    val contenus = LinkedHashMap<String, ByteArray>()
+
+    override fun ouvrir(chemin: String): java.io.InputStream? = contenus[chemin]?.inputStream()
+
+    override fun enregistrer(chemin: String, contenu: java.io.InputStream) {
+        require(chemin.startsWith("photos/") && ".." !in chemin) { "chemin refusé" }
+        contenus[chemin] = contenu.readBytes()
+    }
+
+    override fun toutSupprimer() = contenus.clear()
+}
+
