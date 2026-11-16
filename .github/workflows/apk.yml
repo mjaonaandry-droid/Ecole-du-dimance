@@ -119,7 +119,8 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           APK=app/build/outputs/apk/debug/app-debug.apk
-          PERMANENTE="b549da91ebc975828879b9fc9954732a6a04b49101e835068dc46dfa8f676f89"
+          # Clé permanente créée le 16/11/2026 (la clé de la 1.1.0 a été perdue) : voir transfert-donnees/LISEZMOI.txt.
+          PERMANENTE="bc3ee6d6f56628518c04a4f4a8ba28e61de78b89a356518f719eb52bd243adcd"
           APKSIGNER="$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)"
           EMPREINTE="$("$APKSIGNER" verify --print-certs "$APK" | grep -m1 'certificate SHA-256 digest' | awk '{print $NF}')"
           VERSION="$("$(dirname "$APKSIGNER")/aapt2" dump badging "$APK" | grep -m1 '^package:' )"
@@ -130,7 +131,7 @@ jobs:
             echo "- SHA-256 de l'APK : \`$(sha256sum "$APK" | cut -d' ' -f1)\`"
             echo "- Certificat de signature : \`$EMPREINTE\`"
             if [ "$EMPREINTE" = "$PERMANENTE" ]; then
-              echo "- ✅ **Clé permanente** : cet APK s'installe PAR-DESSUS l'application du téléphone, données conservées."
+              echo "- ✅ **Clé permanente** : cet APK s'installe PAR-DESSUS une version 1.3.0 ou plus récente, données conservées."
             else
               echo "- ⚠️ **Clé jetable** : cet APK NE PEUT PAS mettre à jour l'application du téléphone. Ajoutez les secrets SIGNATURE_KEYSTORE_B64 et SIGNATURE_PASSWORD, ou re-signez-le avec apksigner."
             fi
@@ -398,12 +399,16 @@ jobs:
           name: app-debug-apk
           path: nouveau
 
-      - name: APK 1.1.0 livré (branche livraison-apk, clé permanente)
+      # Branche livraison-apk : l'APK 1.1.0 installé chez l'utilisateur, et le dernier APK livré (s'il y en a un
+      # plus récent) : celui-ci est vérifié lui aussi, exactement tel que l'utilisateur l'installe.
+      - name: APK livrés (branche livraison-apk)
         run: |
           git fetch -q --depth 1 origin livraison-apk
           mkdir -p livre
           git show FETCH_HEAD:ecole-du-dimance-1.1.0.apk > livre/app.apk
-          sha256sum livre/app.apk
+          RECENT="$(git ls-tree --name-only FETCH_HEAD | grep -E '^ecole-du-dimance-[0-9.]+\.apk$' | grep -v '1\.1\.0' | sort -V | tail -1)"
+          if [ -n "$RECENT" ]; then git show "FETCH_HEAD:$RECENT" > livre/recent.apk; echo "Dernier APK livré : $RECENT"; fi
+          sha256sum livre/*.apk
 
       - name: Émulateur Android 14 et vérification de la mise à jour
         uses: reactivecircus/android-emulator-runner@v2
@@ -414,19 +419,26 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
-          script: bash ci/test-mise-a-jour.sh livre/app.apk nouveau/app-debug.apk
+          script: |
+            bash ci/test-mise-a-jour.sh livre/app.apk nouveau/app-debug.apk ci-sorties-v12
+            if [ -f livre/recent.apk ]; then bash ci/test-mise-a-jour.sh livre/app.apk livre/recent.apk ci-sorties-livraison; fi
 
       - name: Résumé de la mise à jour
         if: ${{ !cancelled() }}
         run: |
-          { echo "### Mise à jour 1.1.0 -> nouvelle version"; echo '```'; cat ci-sorties-v12/resume-mise-a-jour.txt 2>/dev/null; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          { echo "### Mise à jour 1.1.0 -> APK de ce build"; echo '```'; cat ci-sorties-v12/resume-mise-a-jour.txt 2>/dev/null; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          if [ -f ci-sorties-livraison/resume-mise-a-jour.txt ]; then
+            { echo "### Mise à jour 1.1.0 -> dernier APK livré"; echo '```'; cat ci-sorties-livraison/resume-mise-a-jour.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Enregistrer les sorties de la mise à jour
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: mise-a-jour
-          path: ci-sorties-v12
+          path: |
+            ci-sorties-v12
+            ci-sorties-livraison
           if-no-files-found: warn
 
   # Le script Windows (.bat) que l'utilisateur lancera : syntaxe cmd et enchaînement vérifiés avec un faux adb.

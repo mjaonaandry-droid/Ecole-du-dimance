@@ -1,16 +1,17 @@
-﻿ÉCOLE DU DIMANCHE — INSTALLER LA VERSION 1.1.0 SANS PERDRE VOS DONNÉES
-=======================================================================
+﻿ÉCOLE DU DIMANCHE — INSTALLER LA NOUVELLE VERSION SANS PERDRE VOS DONNÉES
+==========================================================================
 
 Pourquoi cette procédure ?
 --------------------------
 Android n'accepte de mettre à jour une application que si la nouvelle version est « signée »
-avec la même clé que l'ancienne. La version 1.0.0 installée sur votre téléphone a été signée par
-GitHub avec une clé temporaire qui n'existe plus. La version 1.1.0 ne peut donc pas s'installer
-« par-dessus » : il faut la remplacer. Ce dossier fait ce remplacement EN GARDANT TOUTES VOS
-DONNÉES (enfants, fiches complètes, photos, historique des présences).
+avec la même clé que l'ancienne. La clé de la version 1.1.0 installée sur votre téléphone a été
+perdue : la version 1.3.0 a donc été signée avec une NOUVELLE clé permanente, et ne peut pas
+s'installer « par-dessus ». Ce dossier fait le remplacement EN GARDANT TOUTES VOS DONNÉES
+(enfants, fiches complètes, photos, historique des présences). Au premier lancement, la nouvelle
+version met elle-même à jour la base de données.
 
-À partir de la 1.1.0, l'application a une clé PERMANENTE : les versions suivantes s'installeront
-directement par-dessus, sans cette procédure.
+Après ce passage, les versions suivantes signées avec la nouvelle clé s'installeront directement
+par-dessus, sans cette procédure. Gardez précieusement la nouvelle clé (voir en bas).
 
 Ce qu'il vous faut (une seule fois, environ 10 minutes)
 -------------------------------------------------------
@@ -20,7 +21,7 @@ Ce qu'il vous faut (une seule fois, environ 10 minutes)
   → « Télécharger SDK Platform-Tools pour Windows », puis décompresser le fichier .zip
     DANS CE DOSSIER. Vous devez obtenir un sous-dossier nommé « platform-tools »
     (avec adb.exe dedans), à côté de TRANSFERER-LES-DONNEES.bat.
-- Le fichier de la nouvelle version : ecole-du-dimance-1.1.0.apk (déjà dans ce dossier).
+- Le fichier de la nouvelle version (ecole-du-dimance-1.3.0.apk), déjà dans ce dossier.
   Ne laissez qu'UN seul fichier .apk dans ce dossier.
 
 Étape 1 — Activer le « Débogage USB » sur le téléphone
@@ -40,7 +41,7 @@ Double-cliquez sur TRANSFERER-LES-DONNEES.bat et suivez les messages. Le script 
 1. sauvegarde la base de données et les photos du téléphone sur cet ordinateur
    (dossier « sauvegardes ») et VÉRIFIE la sauvegarde ;
 2. seulement ensuite, désinstalle l'ancienne version ;
-3. installe la version 1.1.0 ;
+3. installe la nouvelle version ;
 4. remet vos données dans la nouvelle version, puis ouvre l'application.
 
 Si quelque chose ne va pas, le script s'arrête AVANT de désinstaller quoi que ce soit, et
@@ -49,11 +50,12 @@ relancez simplement TRANSFERER-LES-DONNEES.bat : il reprend avec la dernière sa
 
 Gardez le dossier « sauvegardes » : c'est une copie complète de vos données à cette date.
 
-Étape 3 — Vérifier
-------------------
+Étape 3 — Vérifier, puis sauvegarder
+------------------------------------
 Dans l'application : onglet Enfants (tous les enfants sont là, avec leur photo), un enfant
-→ « Voir l'historique » (ses présences passées sont là). Vous pouvez ensuite désactiver le
-« Débogage USB ».
+→ « Voir l'historique » (ses présences passées sont là). Puis onglet Données → « Créer une
+sauvegarde complète » et copiez le fichier .zip hors du téléphone. Vous pouvez ensuite
+désactiver le « Débogage USB ».
 
 Mac ou Linux
 ------------
@@ -61,9 +63,11 @@ Même procédure avec transferer-les-donnees.sh (dans un terminal : ./transferer
 
 Clé de signature (pour la personne qui compile l'application)
 --------------------------------------------------------------
-La clé permanente vous a été remise à part (fichier ecole-dimanche.keystore et son mot de passe).
+Nouvelle clé permanente créée le 16/11/2026 : fichier ecole-dimanche.keystore (alias
+« ecoledimanche ») et son mot de passe, remis à part. Empreinte SHA-256 du certificat :
+bc3ee6d6f56628518c04a4f4a8ba28e61de78b89a356518f719eb52bd243adcd
 CONSERVEZ-LA PRÉCIEUSEMENT (clé USB + copie en ligne privée) : sans elle, une future version
-ne pourra pas s'installer par-dessus celle-ci. Ne la publiez jamais dans le dépôt GitHub.
+ne pourra pas s'installer par-dessus. Ne la publiez jamais dans le dépôt GitHub.
 Pour que GitHub Actions signe automatiquement les prochaines versions avec cette clé :
 dépôt GitHub → Settings → Secrets and variables → Actions → New repository secret :
   SIGNATURE_KEYSTORE_B64 = contenu du fichier ecole-dimanche.keystore.b64.txt

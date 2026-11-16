@@ -371,7 +371,15 @@ Une release **non signée n'est pas installable**. Pour en produire une signée 
 **Ne jamais** versionner la clé ni ses mots de passe, ne pas en afficher, et ne pas présenter une release signée avec
 la clé de *débogage* comme une version de production.
 
-### Clé permanente (depuis la 1.1.0)
+### Clé permanente (nouvelle clé depuis la 1.3.0)
+
+La clé de la 1.1.0 a été perdue. Une **nouvelle clé permanente** a été créée le 16/11/2026 (même alias
+`ecoledimanche`, empreinte SHA-256 du certificat `bc3ee6d6f56628518c04a4f4a8ba28e61de78b89a356518f719eb52bd243adcd`) et
+remise au propriétaire. Le passage 1.1.0 → 1.3.0 se fait donc avec `transfert-donnees/` (clé différente) ; les versions
+suivantes signées avec la nouvelle clé s'installeront par-dessus. La CI affiche dans son résumé si l'APK porte cette clé,
+et vérifie sur émulateur le dernier APK livré (branche `livraison-apk`) tel que l'utilisateur l'installe.
+
+#### Historique : clé de la 1.1.0
 
 L'APK installé sur le téléphone est la variante *debug* signée avec la **clé permanente** `ecole-dimanche.keystore`
 (alias `ecoledimanche`), remise au propriétaire de l'application et **jamais versionnée**. Gradle l'utilise quand ces

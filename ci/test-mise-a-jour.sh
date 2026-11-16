@@ -5,10 +5,10 @@
 #  2. le nouvel APK est installé PAR-DESSUS (adb install -r), comme le fera le téléphone ;
 #  3. au premier lancement, Room migre la base 1 -> dernière version : les données doivent être intactes ;
 #  4. tour des nouveautés : onglets Notes et Données, export partiel, « Repartir de zéro », écran d'accueil.
-#  Si le nouvel APK n'est PAS signé avec la clé permanente (secrets GitHub absents), la mise à jour
-#  directe est impossible : c'est signalé, puis la migration est vérifiée en remettant la base 1.1.0
-#  dans la nouvelle version.
-#  Usage : bash ci/test-mise-a-jour.sh <apk 1.1.0 livré> <nouvel apk>
+#  Si le nouvel APK n'a pas la même clé que la 1.1.0 installée, la mise à jour directe est impossible :
+#  le passage se fait alors avec le script fourni à l'utilisateur (transfert-donnees/), exactement comme
+#  sur son téléphone (sauvegarde, remplacement, restauration), puis les données sont vérifiées.
+#  Usage : bash ci/test-mise-a-jour.sh <apk 1.1.0 livré> <nouvel apk> [dossier de sortie]
 # =============================================================================================
 set -uo pipefail
 PKG="mg.ecoledimanche.presences"
@@ -16,7 +16,7 @@ ICI="$(cd "$(dirname "$0")" && pwd)"
 RACINE="$(dirname "$ICI")"
 ANCIEN="$1"
 NOUVEAU="$2"
-SORTIES="$RACINE/ci-sorties-v12"
+SORTIES="$RACINE/${3:-ci-sorties-v12}"
 CAPTURES="$SORTIES/captures"
 mkdir -p "$CAPTURES"
 RESUME="$SORTIES/resume-mise-a-jour.txt"
@@ -25,8 +25,11 @@ UI="python3 $ICI/ui.py"
 SCHEMAS="$RACINE/Ecole-du-dimance/app/schemas/mg.ecoledimanche.presences.data.local.AppDatabase"
 ECHECS_DONNEES=0
 ECHECS_ECRANS=0
-# Empreinte (SHA-256 du certificat) de la clé PERMANENTE de l'application, celle de la 1.1.0 livrée.
-EMPREINTE_PERMANENTE="b549da91ebc975828879b9fc9954732a6a04b49101e835068dc46dfa8f676f89"
+# Empreintes (SHA-256 du certificat) des clés de l'application :
+# - celle de la 1.1.0 livrée le 12/10/2026 (clé perdue depuis) ;
+# - la clé PERMANENTE actuelle, créée le 16/11/2026 pour la 1.3.0 et les versions suivantes.
+EMPREINTE_1_1_0="b549da91ebc975828879b9fc9954732a6a04b49101e835068dc46dfa8f676f89"
+EMPREINTE_PERMANENTE="bc3ee6d6f56628518c04a4f4a8ba28e61de78b89a356518f719eb52bd243adcd"
 
 ok() { echo "OK      $*" | tee -a "$RESUME"; }
 info() { echo "INFO    $*" | tee -a "$RESUME"; }
@@ -75,13 +78,11 @@ E_ANCIEN="$(empreinte "$ANCIEN")"
 E_NOUVEAU="$(empreinte "$NOUVEAU")"
 info "clé de l'APK 1.1.0 livré : $E_ANCIEN"
 info "clé du nouvel APK        : $E_NOUVEAU"
-[ "$E_ANCIEN" = "$EMPREINTE_PERMANENTE" ] && ok "l'APK 1.1.0 vérifié porte la clé permanente" || ko_donnees "l'APK 1.1.0 ne porte pas la clé permanente"
+[ "$E_ANCIEN" = "$EMPREINTE_1_1_0" ] && ok "l'APK 1.1.0 vérifié est bien celui du téléphone" || ko_donnees "l'APK 1.1.0 n'est pas celui du téléphone"
 if [ "$E_NOUVEAU" = "$EMPREINTE_PERMANENTE" ]; then
-    MEME_CLE=1
-    ok "le nouvel APK porte la clé permanente : il s'installera par-dessus la 1.1.0"
+    ok "le nouvel APK porte la clé permanente actuelle : les versions suivantes s'installeront par-dessus"
 else
-    MEME_CLE=0
-    attention "le nouvel APK N'EST PAS signé avec la clé permanente (secrets SIGNATURE_KEYSTORE_B64 / SIGNATURE_PASSWORD absents) : il ne pourra pas mettre à jour le téléphone sans être re-signé"
+    attention "le nouvel APK N'EST PAS signé avec la clé permanente (secrets SIGNATURE_KEYSTORE_B64 / SIGNATURE_PASSWORD absents) : il devra être re-signé"
 fi
 
 # --- 1. Version 1.1.0 avec des données réalistes (base version 1) ------------------------------
@@ -95,20 +96,24 @@ verifier_ecran "Sarah" 60
 capture "01-version-1.1.0"
 adb shell am force-stop "$PKG"
 
-# --- 2. Mise à jour par-dessus, sans désinstaller ----------------------------------------------
+# --- 2. Mise à jour : par-dessus si la clé est la même, sinon avec le script de transfert ------------
 SORTIE="$(adb install -r "$NOUVEAU" 2>&1)"
 echo "$SORTIE" >> "$SORTIES/adb.log"
 if echo "$SORTIE" | grep -q "Success"; then
     ok "mise à jour 1.1.0 -> $VERSION_ATTENDUE installée PAR-DESSUS (adb install -r), sans désinstaller"
 elif echo "$SORTIE" | grep -q "INSTALL_FAILED_UPDATE_INCOMPATIBLE"; then
-    if [ "$MEME_CLE" = 1 ]; then
+    if [ "$E_NOUVEAU" = "$E_ANCIEN" ]; then
         ko_donnees "mise à jour refusée alors que les clés sont identiques : $SORTIE"
     else
-        attention "mise à jour directe refusée (clé différente, attendu sans les secrets) : vérification de la migration en remettant la base 1.1.0 dans la nouvelle version"
+        info "clé différente de la 1.1.0 installée : passage par le script de transfert (comme sur le téléphone)"
     fi
-    adb uninstall "$PKG" > /dev/null
-    adb install "$NOUVEAU" | tee -a "$SORTIES/adb.log"
-    deposer_base_v1
+    if ADB=adb bash "$RACINE/transfert-donnees/transferer-les-donnees.sh" "$NOUVEAU" --oui > "$SORTIES/transfert.log" 2>&1; then
+        ok "script de transfert terminé sans erreur (sauvegarde, remplacement, restauration)"
+    else
+        ko_donnees "le script de transfert a échoué (voir transfert.log)"
+    fi
+    cat "$SORTIES/transfert.log"
+    grep -q "Sauvegarde verifiee" "$SORTIES/transfert.log" && ok "sauvegarde des données vérifiée avant désinstallation" || ko_donnees "sauvegarde non vérifiée"
 else
     ko_donnees "installation du nouvel APK impossible : $SORTIE"
 fi
