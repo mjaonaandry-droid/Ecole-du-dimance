@@ -1,0 +1,2 @@
+11-16 08:27:31.911  4987  5021 I TestRunner: started: clePrimaireComposite_refuseUneDeuxiemePresence(mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest)
+11-16 08:27:31.944  4987  5021 I TestRunner: finished: clePrimaireComposite_refuseUneDeuxiemePresence(mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest)

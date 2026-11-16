@@ -1,0 +1,29 @@
+11-16 08:27:32.297  4987  5021 I TestRunner: started: migration2vers3_ajouteExamensEtNotes_sansToucherAuReste(mg.ecoledimanche.presences.data.MigrationRoomTest)
+11-16 08:27:32.353  1017  1017 V MediaPlayerList: mPackageChangedBroadcastReceiver: action: android.intent.action.PACKAGE_CHANGED
+11-16 08:27:32.353  1017  1017 V MediaPlayerList: mPackageChangedBroadcastReceiver: action: android.intent.action.PACKAGE_CHANGED
+11-16 08:27:32.354   833   833 D ControlsListingControllerImpl: ServiceConfig reloaded, count: 0
+11-16 08:27:32.354  1041  1041 D CarrierSvcBindHelper: onPackageModified: mg.ecoledimanche.presences
+11-16 08:27:32.358   834  3194 I PermissionControllerServiceImpl: Updating user sensitive for uid 10192
+11-16 08:27:32.358  1041  1041 D CarrierSvcBindHelper: No carrier app for: 0
+11-16 08:27:32.365  1017  1017 V MediaPlayerList: mPackageChangedBroadcastReceiver: action: android.intent.action.PACKAGE_CHANGED
+11-16 08:27:32.365   833   833 D ControlsListingControllerImpl: ServiceConfig reloaded, count: 0
+11-16 08:27:32.365  1017  1017 V MediaPlayerList: mPackageChangedBroadcastReceiver: action: android.intent.action.PACKAGE_CHANGED
+11-16 08:27:32.368   834  3194 I PermissionControllerServiceImpl: Updating user sensitive for uid 10154
+11-16 08:27:32.371   520   612 I RoleService: Granting default roles...
+11-16 08:27:32.378   520   624 I InputReader: Reconfiguring input devices, changes=KEYBOARD_LAYOUTS
+11-16 08:27:32.380   833   898 D StylusManager: Stylus InputDevice changed: 13 virtio_input_multi_touch_10
+11-16 08:27:32.385  1041  1336 D ImsResolver: maybeAddedImsService, packageName: mg.ecoledimanche.presences
+11-16 08:27:32.390  1041  1041 D CarrierSvcBindHelper: onPackageModified: com.google.android.contacts
+11-16 08:27:32.391  1041  1041 D CarrierSvcBindHelper: No carrier app for: 0
+11-16 08:27:32.397   834  1010 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.gms.supervision, role: android.app.role.SYSTEM_SUPERVISION
+11-16 08:27:32.403  1041  1336 D ImsResolver: maybeAddedImsService, packageName: com.google.android.contacts
+11-16 08:27:32.404   520   624 I InputReader: Reconfiguring input devices, changes=KEYBOARD_LAYOUTS
+11-16 08:27:32.409   833   898 D StylusManager: Stylus InputDevice changed: 12 virtio_input_multi_touch_9
+11-16 08:27:32.410   833   898 D StylusManager: Stylus InputDevice changed: 7 virtio_input_multi_touch_4
+11-16 08:27:32.410   833   898 D StylusManager: Stylus InputDevice changed: 11 virtio_input_multi_touch_8
+11-16 08:27:32.410   834  1010 I Role    : com.google.android.gms not qualified for android.app.role.SYSTEM_CALL_STREAMING due to missing RequiredComponent{mIntentFilterData=IntentFilterData{mAction='android.telecom.CallStreamingService', mCategories='[]', mDataScheme='null', mDataType='null'}, mMinTargetSdkVersion=1, mFlags='0', mPermission='android.permission.BIND_CALL_STREAMING_SERVICE', mQueryFlags=0, mMetaData=[]}
+11-16 08:27:32.410   833   898 D StylusManager: Stylus InputDevice changed: 8 virtio_input_multi_touch_5
+11-16 08:27:32.411   834  1010 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.gms, role: android.app.role.SYSTEM_CALL_STREAMING
+11-16 08:27:32.411   833   898 D StylusManager: Stylus InputDevice changed: 10 virtio_input_multi_touch_7
+11-16 08:27:32.413   833   898 D StylusManager: Stylus InputDevice changed: 6 virtio_input_multi_touch_3
+11-16 08:27:32.414  4987  5021 I TestRunner: finished: migration2vers3_ajouteExamensEtNotes_sansToucherAuReste(mg.ecoledimanche.presences.data.MigrationRoomTest)

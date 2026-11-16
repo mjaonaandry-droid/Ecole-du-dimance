@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuite name="mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest" tests="13" failures="0" errors="0" skipped="0" time="2.199" timestamp="2026-11-16T08:27:34" hostname="localhost">
+  <properties>
+    <property name="device" value="emulator-5554 - 14" />
+    <property name="flavor" value="" />
+    <property name="project" value=":app" />
+  </properties>
+  <testcase name="archivage_conserveLHistorique_etExclutLesProchainsDimanches" classname="mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest" time="0.069" />
+  <testcase name="scenarioPrincipal_surLaVraieBase" classname="mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest" time="0.089" />
+  <testcase name="donneesConserveesApresFermetureEtRelance_baseSurDisque" classname="mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest" time="0.056" />
+  <testcase name="clePrimaireComposite_refuseUneDeuxiemePresence" classname="mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest" time="0.052" />
+  <testcase name="deuxHomonymes_ontDesIdentifiantsDistincts" classname="mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest" time="0.025" />
+  <testcase name="clesEtrangeres_interdisentPresenceOrpheline_etSuppressionAvecHistorique" classname="mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest" time="0.024" />
+  <testcase name="rattrapageDeTroisDimanches_sansSeanceExistante" classname="mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest" time="0.1" />
+  <testcase name="schemaExporteActuel_correspondAuCodeDeLApplication" classname="mg.ecoledimanche.presences.data.MigrationRoomTest" time="0.051" />
+  <testcase name="migration1versActuelle_conserveLesDonnees_etMarqueLAccueilCommePasse" classname="mg.ecoledimanche.presences.data.MigrationRoomTest" time="0.077" />
+  <testcase name="baseVersion1Vide_migree_lAccueilNeSAffichePas" classname="mg.ecoledimanche.presences.data.MigrationRoomTest" time="0.052" />
+  <testcase name="migration2vers3_ajouteExamensEtNotes_sansToucherAuReste" classname="mg.ecoledimanche.presences.data.MigrationRoomTest" time="0.128" />
+  <testcase name="sauvegardeSurUnTelephone_restaurationSurUnAutre_toutEstIdentique" classname="mg.ecoledimanche.presences.data.SauvegardeInstrumenteeTest" time="0.282" />
+  <testcase name="repartirDeZero_videLaBase_etRameneALAccueil" classname="mg.ecoledimanche.presences.data.SauvegardeInstrumenteeTest" time="0.081" />
+</testsuite>

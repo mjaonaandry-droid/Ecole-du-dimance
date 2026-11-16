@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="mg.ecoledimanche.presences.domain.ReglesHorlogeTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-16T07:34:57.840Z" hostname="runnervmccnms" time="0.001">
+  <properties/>
+  <testcase name="vacancesDEte_tolerees_anneeMalReglee_signalee" classname="mg.ecoledimanche.presences.domain.ReglesHorlogeTest" time="0.0"/>
+  <testcase name="premiereUtilisation_fiableSaufDateImpossible" classname="mg.ecoledimanche.presences.domain.ReglesHorlogeTest" time="0.001"/>
+  <testcase name="petitRecul_toleré_grandRecul_signale" classname="mg.ecoledimanche.presences.domain.ReglesHorlogeTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

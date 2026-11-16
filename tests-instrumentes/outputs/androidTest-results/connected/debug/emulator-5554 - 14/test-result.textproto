@@ -1,0 +1,749 @@
+# proto-message: google.testing.platform.proto.api.core.TestSuiteResult
+# 2026-11-16T08:27:34.105073682Z:
+test_suite_meta_data {
+  scheduled_test_case_count: 13
+  device {
+    id: "emulator-5554"
+    friendly_name: "primary"
+  }
+}
+test_status: PASSED
+test_result {
+  test_case {
+    test_class: "BaseRoomInstrumenteeTest"
+    test_package: "mg.ecoledimanche.presences.data"
+    test_method: "archivage_conserveLHistorique_etExclutLesProchainsDimanches"
+    start_time {
+      seconds: 1794817651
+      nanos: 765000000
+    }
+    end_time {
+      seconds: 1794817651
+      nanos: 890000000
+    }
+    device {
+      id: "emulator-5554"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/logcat-mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest-archivage_conserveLHistorique_etExclutLesProchainsDimanches.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "BaseRoomInstrumenteeTest"
+    test_package: "mg.ecoledimanche.presences.data"
+    test_method: "scenarioPrincipal_surLaVraieBase"
+    start_time {
+      seconds: 1794817651
+      nanos: 911000000
+    }
+    end_time {
+      seconds: 1794817652
+      nanos: 13000000
+    }
+    device {
+      id: "emulator-5554"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/logcat-mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest-scenarioPrincipal_surLaVraieBase.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "BaseRoomInstrumenteeTest"
+    test_package: "mg.ecoledimanche.presences.data"
+    test_method: "donneesConserveesApresFermetureEtRelance_baseSurDisque"
+    start_time {
+      seconds: 1794817652
+      nanos: 15000000
+    }
+    end_time {
+      seconds: 1794817652
+      nanos: 66000000
+    }
+    device {
+      id: "emulator-5554"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/logcat-mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest-donneesConserveesApresFermetureEtRelance_baseSurDisque.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "BaseRoomInstrumenteeTest"
+    test_package: "mg.ecoledimanche.presences.data"
+    test_method: "clePrimaireComposite_refuseUneDeuxiemePresence"
+    start_time {
+      seconds: 1794817652
+      nanos: 71000000
+    }
+    end_time {
+      seconds: 1794817652
+      nanos: 122000000
+    }
+    device {
+      id: "emulator-5554"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/logcat-mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest-clePrimaireComposite_refuseUneDeuxiemePresence.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "BaseRoomInstrumenteeTest"
+    test_package: "mg.ecoledimanche.presences.data"
+    test_method: "deuxHomonymes_ontDesIdentifiantsDistincts"
+    start_time {
+      seconds: 1794817652
+      nanos: 124000000
+    }
+    end_time {
+      seconds: 1794817652
+      nanos: 150000000
+    }
+    device {
+      id: "emulator-5554"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/logcat-mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest-deuxHomonymes_ontDesIdentifiantsDistincts.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "BaseRoomInstrumenteeTest"
+    test_package: "mg.ecoledimanche.presences.data"
+    test_method: "clesEtrangeres_interdisentPresenceOrpheline_etSuppressionAvecHistorique"
+    start_time {
+      seconds: 1794817652
+      nanos: 151000000
+    }
+    end_time {
+      seconds: 1794817652
+      nanos: 177000000
+    }
+    device {
+      id: "emulator-5554"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/logcat-mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest-clesEtrangeres_interdisentPresenceOrpheline_etSuppressionAvecHistorique.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "BaseRoomInstrumenteeTest"
+    test_package: "mg.ecoledimanche.presences.data"
+    test_method: "rattrapageDeTroisDimanches_sansSeanceExistante"
+    start_time {
+      seconds: 1794817652
+      nanos: 179000000
+    }
+    end_time {
+      seconds: 1794817652
+      nanos: 279000000
+    }
+    device {
+      id: "emulator-5554"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/logcat-mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest-rattrapageDeTroisDimanches_sansSeanceExistante.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "MigrationRoomTest"
+    test_package: "mg.ecoledimanche.presences.data"
+    test_method: "schemaExporteActuel_correspondAuCodeDeLApplication"
+    start_time {
+      seconds: 1794817652
+      nanos: 281000000
+    }
+    end_time {
+      seconds: 1794817652
+      nanos: 332000000
+    }
+    device {
+      id: "emulator-5554"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/logcat-mg.ecoledimanche.presences.data.MigrationRoomTest-schemaExporteActuel_correspondAuCodeDeLApplication.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "MigrationRoomTest"
+    test_package: "mg.ecoledimanche.presences.data"
+    test_method: "migration1versActuelle_conserveLesDonnees_etMarqueLAccueilCommePasse"
+    start_time {
+      seconds: 1794817652
+      nanos: 334000000
+    }
+    end_time {
+      seconds: 1794817652
+      nanos: 410000000
+    }
+    device {
+      id: "emulator-5554"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/logcat-mg.ecoledimanche.presences.data.MigrationRoomTest-migration1versActuelle_conserveLesDonnees_etMarqueLAccueilCommePasse.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "MigrationRoomTest"
+    test_package: "mg.ecoledimanche.presences.data"
+    test_method: "baseVersion1Vide_migree_lAccueilNeSAffichePas"
+    start_time {
+      seconds: 1794817652
+      nanos: 411000000
+    }
+    end_time {
+      seconds: 1794817652
+      nanos: 461000000
+    }
+    device {
+      id: "emulator-5554"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/logcat-mg.ecoledimanche.presences.data.MigrationRoomTest-baseVersion1Vide_migree_lAccueilNeSAffichePas.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "MigrationRoomTest"
+    test_package: "mg.ecoledimanche.presences.data"
+    test_method: "migration2vers3_ajouteExamensEtNotes_sansToucherAuReste"
+    start_time {
+      seconds: 1794817652
+      nanos: 463000000
+    }
+    end_time {
+      seconds: 1794817652
+      nanos: 589000000
+    }
+    device {
+      id: "emulator-5554"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/logcat-mg.ecoledimanche.presences.data.MigrationRoomTest-migration2vers3_ajouteExamensEtNotes_sansToucherAuReste.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "SauvegardeInstrumenteeTest"
+    test_package: "mg.ecoledimanche.presences.data"
+    test_method: "sauvegardeSurUnTelephone_restaurationSurUnAutre_toutEstIdentique"
+    start_time {
+      seconds: 1794817652
+      nanos: 590000000
+    }
+    end_time {
+      seconds: 1794817652
+      nanos: 872000000
+    }
+    device {
+      id: "emulator-5554"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/logcat-mg.ecoledimanche.presences.data.SauvegardeInstrumenteeTest-sauvegardeSurUnTelephone_restaurationSurUnAutre_toutEstIdentique.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/cpuinfo"
+    }
+  }
+}
+test_result {
+  test_case {
+    test_class: "SauvegardeInstrumenteeTest"
+    test_package: "mg.ecoledimanche.presences.data"
+    test_method: "repartirDeZero_videLaBase_etRameneALAccueil"
+    start_time {
+      seconds: 1794817652
+      nanos: 873000000
+    }
+    end_time {
+      seconds: 1794817652
+      nanos: 953000000
+    }
+    device {
+      id: "emulator-5554"
+      friendly_name: "primary"
+    }
+  }
+  test_status: PASSED
+  output_artifact {
+    label {
+      label: "logcat"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/logcat-mg.ecoledimanche.presences.data.SauvegardeInstrumenteeTest-repartirDeZero_videLaBase_etRameneALAccueil.txt"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/device-info.pb"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.meminfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/meminfo"
+    }
+  }
+  output_artifact {
+    label {
+      label: "device-info.cpuinfo"
+      namespace: "android"
+    }
+    source_path {
+      path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/cpuinfo"
+    }
+  }
+}
+output_artifact {
+  label {
+    label: "test-results.log"
+    namespace: "com.google.testing.platform.runtime.android.driver.AndroidInstrumentationDriver"
+  }
+  source_path {
+    path: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/androidTest-results/connected/debug/emulator-5554 - 14/testlog/test-results.log"
+  }
+  type: TEST_DATA
+  mime_type: "text/plain"
+}

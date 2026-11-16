@@ -1,0 +1,2 @@
+11-16 08:27:32.716  4987  5021 I TestRunner: started: repartirDeZero_videLaBase_etRameneALAccueil(mg.ecoledimanche.presences.data.SauvegardeInstrumenteeTest)
+11-16 08:27:32.782  4987  5021 I TestRunner: finished: repartirDeZero_videLaBase_etRameneALAccueil(mg.ecoledimanche.presences.data.SauvegardeInstrumenteeTest)

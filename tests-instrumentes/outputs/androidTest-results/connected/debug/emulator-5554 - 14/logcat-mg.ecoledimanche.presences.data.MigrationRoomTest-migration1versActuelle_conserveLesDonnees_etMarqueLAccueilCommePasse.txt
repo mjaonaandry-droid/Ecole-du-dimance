@@ -1,0 +1,2 @@
+11-16 08:27:32.165  4987  5021 I TestRunner: started: migration1versActuelle_conserveLesDonnees_etMarqueLAccueilCommePasse(mg.ecoledimanche.presences.data.MigrationRoomTest)
+11-16 08:27:32.231  4987  5021 I TestRunner: finished: migration1versActuelle_conserveLesDonnees_etMarqueLAccueilCommePasse(mg.ecoledimanche.presences.data.MigrationRoomTest)

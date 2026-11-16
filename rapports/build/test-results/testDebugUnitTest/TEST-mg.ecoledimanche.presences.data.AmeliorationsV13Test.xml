@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="mg.ecoledimanche.presences.data.AmeliorationsV13Test" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-11-16T07:34:57.469Z" hostname="runnervmccnms" time="0.054">
+  <properties/>
+  <testcase name="lectureEtAffichageDesNotes" classname="mg.ecoledimanche.presences.data.AmeliorationsV13Test" time="0.004"/>
+  <testcase name="cumul_exempleDeLEcole_troisExamens_unEnfantEnADeux_laTroisiemeCompteZero" classname="mg.ecoledimanche.presences.data.AmeliorationsV13Test" time="0.002"/>
+  <testcase name="tableauDesNotes_tousLesEnfantsActifs_noteManquanteZero_nouvelEnfantAussi" classname="mg.ecoledimanche.presences.data.AmeliorationsV13Test" time="0.013"/>
+  <testcase name="export_colonnesDeNotes_etDimancheSansPointageVideEtNonCompte" classname="mg.ecoledimanche.presences.data.AmeliorationsV13Test" time="0.015"/>
+  <testcase name="enfantArchive_masque_maisSesNotesSontConservees" classname="mg.ecoledimanche.presences.data.AmeliorationsV13Test" time="0.005"/>
+  <testcase name="supprimerUnExamen_ouUnEnfant_retireSesNotes" classname="mg.ecoledimanche.presences.data.AmeliorationsV13Test" time="0.002"/>
+  <testcase name="intituleEtNotesControles" classname="mg.ecoledimanche.presences.data.AmeliorationsV13Test" time="0.002"/>
+  <testcase name="sauvegardeAuFormat1_1_2_0_seRestaureSansNotes" classname="mg.ecoledimanche.presences.data.AmeliorationsV13Test" time="0.005"/>
+  <testcase name="sauvegardeRestaurationEtRemiseAZero_avecLesNotes" classname="mg.ecoledimanche.presences.data.AmeliorationsV13Test" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

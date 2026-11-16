@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="mg.ecoledimanche.presences.domain.ImportMiseAJourTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-11-16T07:34:57.824Z" hostname="runnervmccnms" time="0.011">
+  <properties/>
+  <testcase name="identifiantDUnAutreTelephone_deuxDifferences_refuse" classname="mg.ecoledimanche.presences.domain.ImportMiseAJourTest" time="0.001"/>
+  <testcase name="valeursInvalides_etIncoherences" classname="mg.ecoledimanche.presences.domain.ImportMiseAJourTest" time="0.001"/>
+  <testcase name="sansIdentifiant_uneDateDifferente_estUnNouvelEnfant" classname="mg.ecoledimanche.presences.domain.ImportMiseAJourTest" time="0.001"/>
+  <testcase name="identifiantInconnu_reconnaissanceParIdentite_sinonAjout" classname="mg.ecoledimanche.presences.domain.ImportMiseAJourTest" time="0.001"/>
+  <testcase name="renommageQuiCreeraitUnDoublon_refuseDejaInscrit" classname="mg.ecoledimanche.presences.domain.ImportMiseAJourTest" time="0.0"/>
+  <testcase name="enfantArchiveConnu_misAJour_inconnuIgnore" classname="mg.ecoledimanche.presences.domain.ImportMiseAJourTest" time="0.001"/>
+  <testcase name="celluleVide_neChangeRien_celluleRemplie_remplace" classname="mg.ecoledimanche.presences.domain.ImportMiseAJourTest" time="0.001"/>
+  <testcase name="allerRetour_exportCompletPuisImport_rienNeChange" classname="mg.ecoledimanche.presences.domain.ImportMiseAJourTest" time="0.003"/>
+  <testcase name="parIdentifiant_onPeutCorrigerLaDateDeNaissance" classname="mg.ecoledimanche.presences.domain.ImportMiseAJourTest" time="0.0"/>
+  <testcase name="ligneSansChangement_compteeInchangee" classname="mg.ecoledimanche.presences.domain.ImportMiseAJourTest" time="0.001"/>
+  <testcase name="memeEnfantDeuxFois_ouRenommeEnUnAutre_refuse" classname="mg.ecoledimanche.presences.domain.ImportMiseAJourTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

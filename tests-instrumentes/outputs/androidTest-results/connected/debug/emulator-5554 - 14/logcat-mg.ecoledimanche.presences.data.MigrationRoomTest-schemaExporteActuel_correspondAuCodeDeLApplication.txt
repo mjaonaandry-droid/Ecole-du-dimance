@@ -1,0 +1,2 @@
+11-16 08:27:32.103  4987  5021 I TestRunner: started: schemaExporteActuel_correspondAuCodeDeLApplication(mg.ecoledimanche.presences.data.MigrationRoomTest)
+11-16 08:27:32.164  4987  5021 I TestRunner: finished: schemaExporteActuel_correspondAuCodeDeLApplication(mg.ecoledimanche.presences.data.MigrationRoomTest)

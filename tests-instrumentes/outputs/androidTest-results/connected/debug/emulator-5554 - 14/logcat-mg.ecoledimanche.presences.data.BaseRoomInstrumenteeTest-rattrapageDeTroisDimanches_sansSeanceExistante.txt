@@ -1,0 +1,2 @@
+11-16 08:27:32.007  4987  5021 I TestRunner: started: rattrapageDeTroisDimanches_sansSeanceExistante(mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest)
+11-16 08:27:32.102  4987  5021 I TestRunner: finished: rattrapageDeTroisDimanches_sansSeanceExistante(mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest)

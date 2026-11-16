@@ -1,0 +1,17 @@
+11-16 08:27:32.416  4987  5021 I TestRunner: started: sauvegardeSurUnTelephone_restaurationSurUnAutre_toutEstIdentique(mg.ecoledimanche.presences.data.SauvegardeInstrumenteeTest)
+11-16 08:27:32.431   833   898 D StylusManager: Stylus InputDevice changed: 4 virtio_input_multi_touch_1
+11-16 08:27:32.431   834  1010 W Role    : Default holder doesn't have required signing certificate: com.google.android.apps.work.clouddpc:23962F4B43B9857638EA66F4D419518EAE282491ACDA4B94707BD59003C45E58
+11-16 08:27:32.433   833   898 D StylusManager: Stylus InputDevice changed: 14 virtio_input_multi_touch_11
+11-16 08:27:32.434   833   898 D StylusManager: Stylus InputDevice changed: 9 virtio_input_multi_touch_6
+11-16 08:27:32.437   833   898 D StylusManager: Stylus InputDevice changed: 13 virtio_input_multi_touch_10
+11-16 08:27:32.446  1646  1646 I AiAiEcho: AppFetcherImpl onPackageChanged mg.ecoledimanche.presences.
+11-16 08:27:32.447  1646  3612 I AiAiEcho: AppIndexer Package:[mg.ecoledimanche.presences] UserProfile:[0] Enabled:[true].
+11-16 08:27:32.447  1646  3612 I AiAiEcho: AppFetcherImplV2 updateApps package:[mg.ecoledimanche.presences], userId:[0], reason:[package is updated.].
+11-16 08:27:32.450   520   548 E system_server: No package ID 7f found for resource ID 0x7f080107.
+11-16 08:27:32.450   520   548 E system_server: No package ID 7f found for resource ID 0x7f150560.
+11-16 08:27:32.454  1646  1646 I AiAiEcho: AppFetcherImpl onPackageChanged com.google.android.contacts.
+11-16 08:27:32.456  1646  3610 I AiAiEcho: AppIndexer Package:[com.google.android.contacts] UserProfile:[0] Enabled:[true].
+11-16 08:27:32.456  1646  3610 I AiAiEcho: AppFetcherImplV2 updateApps package:[com.google.android.contacts], userId:[0], reason:[package is updated.].
+11-16 08:27:32.495  1084  1951 D EGL_emulation: app_time_stats: avg=1963.78ms min=433.50ms max=3494.06ms count=2
+11-16 08:27:32.578   520   529 I system_server: Background young concurrent copying GC freed 1025782(23MB) AllocSpace objects, 9(176KB) LOS objects, 46% free, 27MB/50MB, paused 3.025ms,52us total 107.603ms
+11-16 08:27:32.715  4987  5021 I TestRunner: finished: sauvegardeSurUnTelephone_restaurationSurUnAutre_toutEstIdentique(mg.ecoledimanche.presences.data.SauvegardeInstrumenteeTest)

@@ -1,0 +1,4 @@
+11-16 08:27:32.232  4987  5021 I TestRunner: started: baseVersion1Vide_migree_lAccueilNeSAffichePas(mg.ecoledimanche.presences.data.MigrationRoomTest)
+11-16 08:27:32.233  1456  5001 I Icing   : Indexing com.google.android.gms-apps from com.google.android.gms
+11-16 08:27:32.235  1456  5001 I Icing   : Indexing done com.google.android.gms-apps
+11-16 08:27:32.296  4987  5021 I TestRunner: finished: baseVersion1Vide_migree_lAccueilNeSAffichePas(mg.ecoledimanche.presences.data.MigrationRoomTest)

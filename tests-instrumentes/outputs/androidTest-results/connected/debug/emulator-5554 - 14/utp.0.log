@@ -1,0 +1,52 @@
+INFO: Constructing runner from config.
+INFO: Configuring Android Instrumentation driver: android_instrumentation_runtime {
+  instrumentation_info {
+    app_package: "mg.ecoledimanche.presences"
+    test_package: "mg.ecoledimanche.presences.test"
+    test_runner_class: "androidx.test.runner.AndroidJUnitRunner"
+  }
+  instrumentation_args {
+    args_map {
+      key: "additionalTestOutputDir"
+      value: "/sdcard/Android/media/mg.ecoledimanche.presences/additional_test_output"
+    }
+  }
+}
+am_instrument_timeout: 31536000
+
+INFO: Configuring AndroidTestApkInstallerPlugin: apks_to_install {
+  apk_paths: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/apk/debug/app-debug.apk"
+  install_options {
+  }
+  uninstall_after_test: true
+}
+apks_to_install {
+  apk_paths: "/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
+  install_options {
+  }
+  uninstall_after_test: true
+}
+instrumentation_target_package_id: "mg.ecoledimanche.presences"
+
+INFO: No installables found in test fixture. Nothing to install.
+INFO: Installing [/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/apk/debug/app-debug.apk] on device emulator-5554.
+INFO: Installing [/home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk] on device emulator-5554.
+INFO: Start logcat streaming.
+INFO: Running Android Instrumentation driver.
+INFO: Copying files from device to host: /sdcard/Android/media/mg.ecoledimanche.presences/additional_test_output to /home/runner/work/Ecole-du-dimance/Ecole-du-dimance/Ecole-du-dimance/app/build/outputs/connected_android_test_additional_output/debugAndroidTest/connected/emulator-5554 - 14
+INFO: Stop logcat streaming.
+INFO: Uninstalling mg.ecoledimanche.presences for device emulator-5554.
+INFO: Uninstalling mg.ecoledimanche.presences.test for device emulator-5554.
+INFO: Execute mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest.archivage_conserveLHistorique_etExclutLesProchainsDimanches: PASSED
+INFO: Execute mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest.scenarioPrincipal_surLaVraieBase: PASSED
+INFO: Execute mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest.donneesConserveesApresFermetureEtRelance_baseSurDisque: PASSED
+INFO: Execute mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest.clePrimaireComposite_refuseUneDeuxiemePresence: PASSED
+INFO: Execute mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest.deuxHomonymes_ontDesIdentifiantsDistincts: PASSED
+INFO: Execute mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest.clesEtrangeres_interdisentPresenceOrpheline_etSuppressionAvecHistorique: PASSED
+INFO: Execute mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest.rattrapageDeTroisDimanches_sansSeanceExistante: PASSED
+INFO: Execute mg.ecoledimanche.presences.data.MigrationRoomTest.schemaExporteActuel_correspondAuCodeDeLApplication: PASSED
+INFO: Execute mg.ecoledimanche.presences.data.MigrationRoomTest.migration1versActuelle_conserveLesDonnees_etMarqueLAccueilCommePasse: PASSED
+INFO: Execute mg.ecoledimanche.presences.data.MigrationRoomTest.baseVersion1Vide_migree_lAccueilNeSAffichePas: PASSED
+INFO: Execute mg.ecoledimanche.presences.data.MigrationRoomTest.migration2vers3_ajouteExamensEtNotes_sansToucherAuReste: PASSED
+INFO: Execute mg.ecoledimanche.presences.data.SauvegardeInstrumenteeTest.sauvegardeSurUnTelephone_restaurationSurUnAutre_toutEstIdentique: PASSED
+INFO: Execute mg.ecoledimanche.presences.data.SauvegardeInstrumenteeTest.repartirDeZero_videLaBase_etRameneALAccueil: PASSED

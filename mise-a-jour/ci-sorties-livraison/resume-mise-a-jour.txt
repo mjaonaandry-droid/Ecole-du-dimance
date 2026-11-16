@@ -1,0 +1,28 @@
+Version attendue : 1.3.0 ; schéma : 3.json
+Appareil : 14 / API 34
+INFO    clé de l'APK 1.1.0 livré : b549da91ebc975828879b9fc9954732a6a04b49101e835068dc46dfa8f676f89
+INFO    clé du nouvel APK        : bc3ee6d6f56628518c04a4f4a8ba28e61de78b89a356518f719eb52bd243adcd
+OK      l'APK 1.1.0 vérifié est bien celui du téléphone
+OK      le nouvel APK porte la clé permanente actuelle : les versions suivantes s'installeront par-dessus
+Base créée : 9 enfants, 16 présences, 3 photos ; s1=2026-11-08 s0=2026-11-15
+OK      écran : « Sarah » visible
+INFO    clé différente de la 1.1.0 installée : passage par le script de transfert (comme sur le téléphone)
+OK      script de transfert terminé sans erreur (sauvegarde, remplacement, restauration)
+OK      sauvegarde des données vérifiée avant désinstallation
+OK      version installée : 1.3.0
+OK      écran : « Sarah » visible
+   base version 3, 9 enfants, 16 présences, paramètres ['accueil.fait', 'horloge.derniere']
+OK      migration Room 1 -> 3 : schéma exact, enfants et présences intacts, écran d'accueil non affiché
+OK      écran : « Sarah » visible
+OK      écran : « Nouvel examen » visible
+OK      écran : « ENREGISTRER · NOTES » visible
+OK      écran : « Sauvegarde complète » visible
+OK      écran : « Tout exporter » visible
+OK      écran : « Parents » visible
+OK      écran : « ajout et mise à jour » visible
+OK      écran : « Sauvegarder d’abord » visible
+OK      écran : « COMMENCER AVEC DES DONNÉES VIERGES » visible
+OK      écran : « Aucun enfant » visible
+OK      écran : « Restaurer une sauvegarde » visible
+
+Échecs : données 0, écrans 0

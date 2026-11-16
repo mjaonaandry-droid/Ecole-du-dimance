@@ -1,0 +1,7 @@
+11-16 08:27:31.600  4987  5021 I TestRunner: started: archivage_conserveLHistorique_etExclutLesProchainsDimanches(mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest)
+11-16 08:27:31.633  4987  5022 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=8e117a8a-a909-4930-afb7-04a17c235fc9, tags={ mg.ecoledimanche.presences.worker.RattrapageWorker } ]
+11-16 08:27:31.639  4987  4987 D WM-Processor: Processor 8e117a8a-a909-4930-afb7-04a17c235fc9 executed; reschedule = false
+11-16 08:27:31.640  4987  4987 D WM-SystemJobService: 8e117a8a-a909-4930-afb7-04a17c235fc9 executed on JobScheduler
+11-16 08:27:31.644  4987  5020 D WM-GreedyScheduler: Cancelling work ID 8e117a8a-a909-4930-afb7-04a17c235fc9
+11-16 08:27:31.667  4987  5020 D WM-SystemJobScheduler: Scheduling work ID 8e117a8a-a909-4930-afb7-04a17c235fc9Job ID 0
+11-16 08:27:31.735  4987  5021 I TestRunner: finished: archivage_conserveLHistorique_etExclutLesProchainsDimanches(mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest)

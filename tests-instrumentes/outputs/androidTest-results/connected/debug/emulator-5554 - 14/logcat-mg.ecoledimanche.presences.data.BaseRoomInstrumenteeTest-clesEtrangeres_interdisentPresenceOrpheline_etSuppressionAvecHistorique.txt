@@ -1,0 +1,2 @@
+11-16 08:27:31.978  4987  5021 I TestRunner: started: clesEtrangeres_interdisentPresenceOrpheline_etSuppressionAvecHistorique(mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest)
+11-16 08:27:32.006  4987  5021 I TestRunner: finished: clesEtrangeres_interdisentPresenceOrpheline_etSuppressionAvecHistorique(mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest)

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="mg.ecoledimanche.presences.data.AmeliorationsV12Test" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-11-16T07:34:57.408Z" hostname="runnervmccnms" time="0.058">
+  <properties/>
+  <testcase name="appliquerImport_ajoutsEtMisesAJour_uneSeuleTransaction" classname="mg.ecoledimanche.presences.data.AmeliorationsV12Test" time="0.007"/>
+  <testcase name="photoAbsenteDeLaSauvegarde_silhouetteALaRestauration" classname="mg.ecoledimanche.presences.data.AmeliorationsV12Test" time="0.018"/>
+  <testcase name="sauvegardePuisRestaurationSurUnTelephoneVierge_toutEstIdentique" classname="mg.ecoledimanche.presences.data.AmeliorationsV12Test" time="0.008"/>
+  <testcase name="json_allerRetour_caracteresSpeciaux" classname="mg.ecoledimanche.presences.data.AmeliorationsV12Test" time="0.0"/>
+  <testcase name="horlogeEnAvanceDUnAn_rienNEstCloture_puisConfirmation" classname="mg.ecoledimanche.presences.data.AmeliorationsV12Test" time="0.005"/>
+  <testcase name="horlogeEnArriere_signalee_confirmationPossible_dateImpossible_non" classname="mg.ecoledimanche.presences.data.AmeliorationsV12Test" time="0.001"/>
+  <testcase name="repartirDeZero_effaceToutEtRameneALAccueil" classname="mg.ecoledimanche.presences.data.AmeliorationsV12Test" time="0.003"/>
+  <testcase name="vacances_troisMoisSansOuvrir_pasDAlerte" classname="mg.ecoledimanche.presences.data.AmeliorationsV12Test" time="0.001"/>
+  <testcase name="fichiersQuiNeSontPasDesSauvegardes_refuses" classname="mg.ecoledimanche.presences.data.AmeliorationsV12Test" time="0.007"/>
+  <testcase name="restauration_remplaceLesDonneesActuelles_etUnEchecNePerdRien" classname="mg.ecoledimanche.presences.data.AmeliorationsV12Test" time="0.007"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

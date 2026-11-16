@@ -1,0 +1,2 @@
+11-16 08:27:31.856  4987  5021 I TestRunner: started: donneesConserveesApresFermetureEtRelance_baseSurDisque(mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest)
+11-16 08:27:31.909  4987  5021 I TestRunner: finished: donneesConserveesApresFermetureEtRelance_baseSurDisque(mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest)

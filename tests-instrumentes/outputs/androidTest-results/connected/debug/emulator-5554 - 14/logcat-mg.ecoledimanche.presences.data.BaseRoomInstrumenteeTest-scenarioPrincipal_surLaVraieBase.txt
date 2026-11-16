@@ -1,0 +1,2 @@
+11-16 08:27:31.737  4987  5021 I TestRunner: started: scenarioPrincipal_surLaVraieBase(mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest)
+11-16 08:27:31.855  4987  5021 I TestRunner: finished: scenarioPrincipal_surLaVraieBase(mg.ecoledimanche.presences.data.BaseRoomInstrumenteeTest)
